@@ -694,7 +694,7 @@ export default function Zommy() {
                   ) : (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }}>
                       {filteredEntries.map((entry) => (
-                        <div key={entry.id} className="wallItem b" style={{ aspectRatio: "1", overflow: "hidden", cursor: "pointer", background: T.card }}
+                        <div key={entry.id} className="wallItem b" style={{ aspectRatio: "9 / 16", overflow: "hidden", cursor: "pointer", background: T.card }}
                           onClick={() => { setExpandedEntry(entry); setExpandedProfile(active); }}>
                           <img src={entry.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                         </div>
