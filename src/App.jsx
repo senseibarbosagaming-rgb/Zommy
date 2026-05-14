@@ -48,7 +48,6 @@ const LANGS = {
     notifications: "Push notifications",
     notificationsOn: "On",
     notificationsOff: "Off",
-    notificationsHelp: "Enable push notifications for memory anniversaries and future reminders.",
     notificationsEnabled: "Push notifications on ✓",
     notificationsDisabled: "Push notifications off",
     notificationsBlocked: "Notifications are blocked in this browser",
@@ -109,7 +108,6 @@ const LANGS = {
     notifications: "Notificações push",
     notificationsOn: "Ligado",
     notificationsOff: "Desligado",
-    notificationsHelp: "Ativa notificações push para aniversários de memórias e futuros lembretes.",
     notificationsEnabled: "Notificações push ligadas ✓",
     notificationsDisabled: "Notificações push desligadas",
     notificationsBlocked: "As notificações estão bloqueadas neste browser",
@@ -932,18 +930,13 @@ export default function Zommy() {
                   {
                     title: t.notifications,
                     content: (
-                      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 14 }}>
-                        <div style={{ color: T.textSub, fontSize: 13, lineHeight: 1.5, marginBottom: 12 }}>{t.notificationsHelp}</div>
-                        <ToggleSwitch
-                          checked={prefs.notifications}
-                          disabled={notificationStatus === "unsupported"}
-                          onClick={toggleNotifications}
-                          label={prefs.notifications ? `🔔 ${t.notificationsOn}` : `🔕 ${t.notificationsOff}`}
-                          T={T}
-                        />
-                        {notificationStatus === "denied" && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>{t.notificationsBlocked}</div>}
-                        {notificationStatus === "unsupported" && <div style={{ color: T.textMuted, fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>{t.notificationsUnsupported}</div>}
-                      </div>
+                      <ToggleSwitch
+                        checked={prefs.notifications}
+                        disabled={notificationStatus === "unsupported"}
+                        onClick={toggleNotifications}
+                        label={prefs.notifications ? `🔔 ${t.notificationsOn}` : `🔕 ${t.notificationsOff}`}
+                        T={T}
+                      />
                     ),
                   },
                   {
