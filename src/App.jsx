@@ -44,6 +44,16 @@ const LANGS = {
     theme: "Theme",
     changelog: "Changelog",
     exportZip: "Export photos",
+    notifications: "Memory reminders",
+    notificationsOn: "On",
+    notificationsOff: "Off",
+    notificationsHelp: "Get a reminder when a photo is 1, 2, 3+ years old today.",
+    notificationsEnabled: "Memory reminders on ✓",
+    notificationsDisabled: "Memory reminders off",
+    notificationsBlocked: "Notifications are blocked in this browser",
+    notificationsUnsupported: "Notifications are not supported here",
+    memoryNotificationTitle: (years) => `${years} year${years !== 1 ? "s" : ""} ago today`,
+    memoryNotificationBody: (name, date) => `${name ? `${name} · ` : ""}${date}`,
     onThisDay: (age) => `${age} on this day`,
     filterAll: "All",
     settingsTitle: "Settings",
@@ -94,6 +104,16 @@ const LANGS = {
     theme: "Tema",
     changelog: "Novidades",
     exportZip: "Exportar fotos",
+    notifications: "Recordações",
+    notificationsOn: "Ligado",
+    notificationsOff: "Desligado",
+    notificationsHelp: "Recebe um lembrete quando uma foto fizer 1, 2, 3+ anos hoje.",
+    notificationsEnabled: "Recordações ligadas ✓",
+    notificationsDisabled: "Recordações desligadas",
+    notificationsBlocked: "As notificações estão bloqueadas neste browser",
+    notificationsUnsupported: "As notificações não são suportadas aqui",
+    memoryNotificationTitle: (years) => `Há ${years} ano${years !== 1 ? "s" : ""} neste dia`,
+    memoryNotificationBody: (name, date) => `${name ? `${name} · ` : ""}${date}`,
     onThisDay: (age) => `${age} neste dia`,
     filterAll: "Tudo",
     settingsTitle: "Definições",
@@ -111,7 +131,11 @@ const MONTHS_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-const today = () => new Date().toISOString().split("T")[0];
+const today = () => {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().split("T")[0];
+};
 
 const formatDate = (d, lang) =>
   new Date(d + "T12:00:00").toLocaleDateString(lang === "pt" ? "pt-PT" : "en-GB", {
@@ -188,6 +212,7 @@ const THEMES = {
 };
 
 const CHANGELOG = [
+  { version: "1.7", date: "2026", notes: "Memory anniversary reminders with a Settings toggle for browser notifications." },
   { version: "1.6", date: "2025", notes: "Premium UI redesign. Share to apps. Simplified themes. Centred memory button." },
   { version: "1.5", date: "2025", notes: "Supabase sync — data shared across all devices in real time." },
   { version: "1.4", date: "2025", notes: "Settings, language, themes, export. Timeline photo wall. Entry detail view." },
@@ -195,11 +220,34 @@ const CHANGELOG = [
   { version: "1.0", date: "2025", notes: "Initial release." },
 ];
 
+const DEFAULT_PREFS = { lang: "en", theme: "dark", notifications: false };
+
 const loadPrefs = () => {
-  try { return JSON.parse(localStorage.getItem("zommy_prefs") || '{"lang":"en","theme":"dark"}'); }
-  catch { return { lang: "en", theme: "dark" }; }
+  try { return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem("zommy_prefs") || "{}") }; }
+  catch { return DEFAULT_PREFS; }
 };
 const savePrefs = (p) => { try { localStorage.setItem("zommy_prefs", JSON.stringify(p)); } catch {} };
+
+const notificationPermission = () => {
+  if (typeof window === "undefined" || !("Notification" in window)) return "unsupported";
+  return Notification.permission;
+};
+
+const readNotifiedKeys = () => {
+  try { return JSON.parse(localStorage.getItem("zommy_notified_anniversaries") || "[]"); }
+  catch { return []; }
+};
+
+const saveNotifiedKeys = (keys) => {
+  try { localStorage.setItem("zommy_notified_anniversaries", JSON.stringify(keys)); } catch {}
+};
+
+const isSameMonthDay = (date, targetDate) => date.slice(5, 10) === targetDate.slice(5, 10);
+
+const getAnniversaryYears = (date, targetDate) => {
+  if (!date || !isSameMonthDay(date, targetDate)) return 0;
+  return parseInt(targetDate.slice(0, 4), 10) - parseInt(date.slice(0, 4), 10);
+};
 
 // ── component ─────────────────────────────────────────────────────────────────
 
@@ -232,12 +280,69 @@ export default function Zommy() {
   const [compareId, setCompareId] = useState(null);
   const [compareA, setCompareA] = useState(null);
   const [compareB, setCompareB] = useState(null);
+  const [notificationStatus, setNotificationStatus] = useState(notificationPermission);
 
   const t = LANGS[prefs.lang] || LANGS.en;
   const T = THEMES[prefs.theme] || THEMES.dark;
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
   const updatePrefs = (p) => { setPrefs(p); savePrefs(p); };
+
+  const sendDueMemoryNotifications = useCallback(() => {
+    if (!prefs.notifications || notificationStatus !== "granted") return;
+
+    const todayDate = today();
+    const alreadyNotified = new Set(readNotifiedKeys());
+    const nextKeys = new Set(alreadyNotified);
+    const due = profiles.flatMap((profile) => (entries[profile.id] || [])
+      .map((entry) => ({ entry, profile, years: getAnniversaryYears(entry.date, todayDate) }))
+      .filter(({ years }) => years > 0));
+
+    due.forEach(({ entry, profile, years }) => {
+      const key = `${entry.id}:${todayDate}:${years}`;
+      if (alreadyNotified.has(key)) return;
+
+      const title = t.memoryNotificationTitle(years);
+      const body = [
+        t.memoryNotificationBody(profile?.name, formatDate(entry.date, prefs.lang)),
+        entry.note,
+      ].filter(Boolean).join(" · ");
+
+      try {
+        new Notification(title, {
+          body,
+          icon: entry.photo,
+          image: entry.photo,
+          tag: `zommy-${key}`,
+        });
+        nextKeys.add(key);
+      } catch {}
+    });
+
+    if (nextKeys.size !== alreadyNotified.size) saveNotifiedKeys([...nextKeys].slice(-500));
+  }, [entries, notificationStatus, prefs.lang, prefs.notifications, profiles, t]);
+
+  const toggleNotifications = async () => {
+    if (prefs.notifications) {
+      updatePrefs({ ...prefs, notifications: false });
+      showToast(t.notificationsDisabled);
+      return;
+    }
+
+    if (notificationStatus === "unsupported") { showToast(t.notificationsUnsupported); return; }
+    if (notificationStatus === "denied") { showToast(t.notificationsBlocked); return; }
+
+    let permission = notificationStatus;
+    if (permission !== "granted") permission = await Notification.requestPermission();
+    setNotificationStatus(permission);
+
+    if (permission === "granted") {
+      updatePrefs({ ...prefs, notifications: true });
+      showToast(t.notificationsEnabled);
+    } else if (permission === "denied") {
+      showToast(t.notificationsBlocked);
+    }
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -256,6 +361,15 @@ export default function Zommy() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => { setNotificationStatus(notificationPermission()); }, []);
+
+  useEffect(() => { sendDueMemoryNotifications(); }, [sendDueMemoryNotifications]);
+
+  useEffect(() => {
+    const interval = window.setInterval(sendDueMemoryNotifications, 60 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [sendDueMemoryNotifications]);
 
   const active = profiles.find((p) => p.id === activeId);
   const activeEntries = activeId ? (entries[activeId] || []) : [];
@@ -767,6 +881,21 @@ export default function Zommy() {
                 <h2 style={{ fontFamily: fontSerif, fontSize: 22, color: T.text, fontWeight: 600, marginBottom: 28 }}>{t.settingsTitle}</h2>
 
                 {[
+                  {
+                    title: t.notifications,
+                    content: (
+                      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 14 }}>
+                        <div style={{ color: T.textSub, fontSize: 13, lineHeight: 1.5, marginBottom: 12 }}>{t.notificationsHelp}</div>
+                        <button className="b" onClick={toggleNotifications}
+                          disabled={notificationStatus === "unsupported"}
+                          style={{ width: "100%", padding: "13px", background: prefs.notifications ? "#34D399" : "transparent", border: `1px solid ${prefs.notifications ? "#34D399" : T.border}`, borderRadius: 10, fontSize: 14, color: prefs.notifications ? "#111" : T.textSub, cursor: notificationStatus === "unsupported" ? "not-allowed" : "pointer", fontFamily: font, fontWeight: 600, opacity: notificationStatus === "unsupported" ? 0.55 : 1 }}>
+                          {prefs.notifications ? `🔔 ${t.notificationsOn}` : `🔕 ${t.notificationsOff}`}
+                        </button>
+                        {notificationStatus === "denied" && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>{t.notificationsBlocked}</div>}
+                        {notificationStatus === "unsupported" && <div style={{ color: T.textMuted, fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>{t.notificationsUnsupported}</div>}
+                      </div>
+                    ),
+                  },
                   {
                     title: t.language,
                     content: (
