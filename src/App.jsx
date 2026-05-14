@@ -28,7 +28,9 @@ const LANGS = {
     photo: "Photo",
     note: "Note",
     noteOptional: "(optional)",
-    tapPhoto: "Tap to choose a photo",
+    tapPhoto: "Add a photo",
+    takePhoto: "Take photo",
+    uploadPhoto: "Upload photo",
     saveEntry: "Save memory",
     saveChanges: "Save changes",
     noEntries: "No memories yet.",
@@ -43,7 +45,6 @@ const LANGS = {
     language: "Language",
     theme: "Theme",
     darkTheme: "Dark theme",
-    changelog: "Changelog",
     exportZip: "Export photos",
     notifications: "Push notifications",
     notificationsOn: "On",
@@ -88,7 +89,9 @@ const LANGS = {
     photo: "Foto",
     note: "Nota",
     noteOptional: "(opcional)",
-    tapPhoto: "Toca para escolher uma foto",
+    tapPhoto: "Adicionar foto",
+    takePhoto: "Tirar foto",
+    uploadPhoto: "Carregar foto",
     saveEntry: "Guardar",
     saveChanges: "Guardar alterações",
     noEntries: "Sem memórias ainda.",
@@ -103,7 +106,6 @@ const LANGS = {
     language: "Idioma",
     theme: "Tema",
     darkTheme: "Tema escuro",
-    changelog: "Novidades",
     exportZip: "Exportar fotos",
     notifications: "Notificações push",
     notificationsOn: "Ligado",
@@ -141,26 +143,6 @@ const formatDate = (d, lang) =>
   new Date(d + "T12:00:00").toLocaleDateString(lang === "pt" ? "pt-PT" : "en-GB", {
     day: "numeric", month: "long", year: "numeric",
   });
-
-const formatDateShort = (d, lang) =>
-  new Date(d + "T12:00:00").toLocaleDateString(lang === "pt" ? "pt-PT" : "en-GB", {
-    day: "numeric", month: "short",
-  });
-
-const getAge = (birthdate, onDate) => {
-  if (!birthdate || !onDate) return null;
-  const birth = new Date(birthdate + "T12:00:00");
-  const on = new Date(onDate + "T12:00:00");
-  const diffMs = on - birth;
-  if (diffMs < 0) return null;
-  const totalDays = Math.floor(diffMs / 86400000);
-  const years = Math.floor(totalDays / 365.25);
-  const months = Math.floor((totalDays % 365.25) / 30.44);
-  const days = Math.floor(totalDays % 30.44);
-  if (years >= 1) return months === 0 ? `${years}y` : `${years}y ${months}m`;
-  if (months >= 1) return days === 0 ? `${months}m` : `${months}m ${days}d`;
-  return `${totalDays}d`;
-};
 
 const getAgeFull = (birthdate, onDate) => {
   if (!birthdate || !onDate) return null;
@@ -210,15 +192,6 @@ const THEMES = {
     overlay: "rgba(0,0,0,0.92)",
   },
 };
-
-const CHANGELOG = [
-  { version: "1.7", date: "2026", notes: "Memory anniversary reminders with a Settings toggle for push notifications." },
-  { version: "1.6", date: "2025", notes: "Premium UI redesign. Share to apps. Simplified themes. Centred memory button." },
-  { version: "1.5", date: "2025", notes: "Supabase sync — data shared across all devices in real time." },
-  { version: "1.4", date: "2025", notes: "Settings, language, themes, export. Timeline photo wall. Entry detail view." },
-  { version: "1.3", date: "2025", notes: "Edit and delete entries. Improved age display." },
-  { version: "1.0", date: "2025", notes: "Initial release." },
-];
 
 const DEFAULT_PREFS = { lang: "en", theme: "dark", notifications: false };
 
@@ -313,6 +286,7 @@ export default function Zommy() {
   const [logPreview, setLogPreview] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const fileRef = useRef();
+  const cameraRef = useRef();
 
   const [expandedEntry, setExpandedEntry] = useState(null);
   const [expandedProfile, setExpandedProfile] = useState(null);
@@ -423,6 +397,41 @@ export default function Zommy() {
     b.date !== a.date ? b.date.localeCompare(a.date) : b.id - a.id), [activeEntries]);
   const availableMonths = useMemo(() => Array.from(new Set(sortedEntries.map((e) => e.date.slice(0, 7)))).sort((a, b) => b.localeCompare(a)), [sortedEntries]);
   const filteredEntries = useMemo(() => !filterMonth ? sortedEntries : sortedEntries.filter((e) => e.date.startsWith(filterMonth)), [sortedEntries, filterMonth]);
+
+  const orderComparePair = useCallback((a, b) => {
+    if (!a || !b) return [a || null, b || null];
+    const byDate = a.date.localeCompare(b.date);
+    const aId = Number(a.id);
+    const bId = Number(b.id);
+    const byId = Number.isFinite(aId) && Number.isFinite(bId) ? aId - bId : String(a.id).localeCompare(String(b.id));
+    return byDate < 0 || (byDate === 0 && byId <= 0) ? [a, b] : [b, a];
+  }, []);
+
+  const pickRandomCompare = useCallback((profileId = compareId) => {
+    const pool = profileId ? (entries[profileId] || []) : [];
+    if (pool.length === 0) {
+      setCompareA(null);
+      setCompareB(null);
+      return;
+    }
+    if (pool.length === 1) {
+      setCompareA(pool[0]);
+      setCompareB(null);
+      return;
+    }
+
+    const firstIndex = Math.floor(Math.random() * pool.length);
+    let secondIndex = Math.floor(Math.random() * (pool.length - 1));
+    if (secondIndex >= firstIndex) secondIndex += 1;
+
+    const [left, right] = orderComparePair(pool[firstIndex], pool[secondIndex]);
+    setCompareA(left);
+    setCompareB(right);
+  }, [compareId, entries, orderComparePair]);
+
+  useEffect(() => {
+    if (view === "compare" && compareId && !compareA && !compareB) pickRandomCompare(compareId);
+  }, [compareA, compareB, compareId, pickRandomCompare, view]);
 
   const handlePhoto = (e) => {
     const file = e.target.files[0];
@@ -570,7 +579,7 @@ export default function Zommy() {
           <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 100, display: "flex", flexDirection: "column", overflowY: "auto" }}>
             {/* photo */}
             <div style={{ position: "relative", flexShrink: 0 }}>
-              <img src={entry.photo} alt="" style={{ width: "100%", maxHeight: "60vh", objectFit: "cover", display: "block" }} />
+              <img src={entry.photo} alt="" style={{ width: "100%", maxHeight: "60vh", objectFit: "contain", display: "block", background: "#000" }} />
               {/* close */}
               <button className="b" onClick={() => setExpandedEntry(null)}
                 style={{ position: "absolute", top: 16, left: 16, background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", width: 36, height: 36, borderRadius: "50%", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(8px)" }}>
@@ -722,7 +731,7 @@ export default function Zommy() {
                 {profiles.length >= 2 && (
                   <button className="b"
                     style={{ width: "100%", padding: "13px", background: "transparent", border: `1px solid ${T.border}`, borderRadius: 12, fontSize: 14, color: T.textSub, cursor: "pointer", fontFamily: font }}
-                    onClick={() => { setCompareId(profiles[0].id); setCompareA(null); setCompareB(null); setView("compare"); }}>
+                    onClick={() => { setCompareId(profiles[0].id); pickRandomCompare(profiles[0].id); setView("compare"); }}>
                     {t.compareDays}
                   </button>
                 )}
@@ -780,17 +789,27 @@ export default function Zommy() {
                         <span style={{ fontSize: 11, color: T.textSub, textTransform: "uppercase", letterSpacing: "0.7px", fontWeight: 600 }}>{t.photo}</span>
                         {logPreview ? (
                           <div style={{ position: "relative", borderRadius: 12, overflow: "hidden" }}>
-                            <img src={logPreview} alt="" style={{ width: "100%", maxHeight: 280, objectFit: "cover", display: "block" }} />
+                            <img src={logPreview} alt="" style={{ width: "100%", maxHeight: 280, objectFit: "contain", display: "block", background: T.bg }} />
                             <button className="b"
                               style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.6)", color: "#fff", border: "none", borderRadius: 100, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontFamily: font, backdropFilter: "blur(4px)" }}
                               onClick={() => { setLogPhoto(null); setLogPreview(null); }}>remove</button>
                           </div>
                         ) : (
-                          <div className="b"
-                            style={{ border: `1px dashed ${T.border}`, borderRadius: 12, padding: "32px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer", background: T.card }}
-                            onClick={() => fileRef.current.click()}>
+                          <div
+                            style={{ border: `1px dashed ${T.border}`, borderRadius: 12, padding: "28px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, background: T.card }}>
                             <span style={{ fontSize: 28 }}>📷</span>
                             <span style={{ color: T.textMuted, fontSize: 13 }}>{t.tapPhoto}</span>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, width: "100%" }}>
+                              <button type="button" className="b" onClick={() => cameraRef.current.click()}
+                                style={{ padding: "12px", borderRadius: 10, border: `1px solid ${T.border}`, background: active.color + "20", color: active.color, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font }}>
+                                📸 {t.takePhoto}
+                              </button>
+                              <button type="button" className="b" onClick={() => fileRef.current.click()}
+                                style={{ padding: "12px", borderRadius: 10, border: `1px solid ${T.border}`, background: "transparent", color: T.textSub, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font }}>
+                                🖼️ {t.uploadPhoto}
+                              </button>
+                            </div>
+                            <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handlePhoto} />
                             <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhoto} />
                           </div>
                         )}
@@ -871,7 +890,7 @@ export default function Zommy() {
                 <h2 style={{ fontFamily: fontSerif, fontSize: 22, color: T.text, fontWeight: 600, marginBottom: 16 }}>{t.compare}</h2>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
                   {profiles.map((p) => (
-                    <button key={p.id} className="b chip" onClick={() => { setCompareId(p.id); setCompareA(null); setCompareB(null); }}
+                    <button key={p.id} className="b chip" onClick={() => { setCompareId(p.id); pickRandomCompare(p.id); }}
                       style={{ padding: "7px 16px", borderRadius: 100, border: `1px solid ${compareId === p.id ? p.color : T.border}`, background: compareId === p.id ? p.color + "20" : "transparent", color: compareId === p.id ? p.color : T.textSub, fontSize: 13, fontWeight: compareId === p.id ? 600 : 400, cursor: "pointer", fontFamily: font }}>
                       {p.emoji} {p.name}
                     </button>
@@ -879,43 +898,37 @@ export default function Zommy() {
                 </div>
                 {(() => {
                   const cp = profiles.find((p) => p.id === compareId);
-                  const cpe = [...(entries[compareId] || [])].sort((a, b) => b.date !== a.date ? b.date.localeCompare(a.date) : b.id - a.id);
+                  const cpe = entries[compareId] || [];
                   return (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      {[{ sel: compareA, set: setCompareA, lbl: t.dayA }, { sel: compareB, set: setCompareB, lbl: t.dayB }].map(({ sel, set, lbl }) => (
-                        <div key={lbl} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          <div style={{ fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.7px", fontWeight: 600 }}>{lbl}</div>
-                          {sel ? (
-                            <div style={{ background: T.card, borderRadius: 12, overflow: "hidden", border: `1px solid ${T.border}` }}>
-                              <img src={sel.photo} alt="" style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
-                              <div style={{ padding: "10px 12px 6px" }}>
-                                <div style={{ fontFamily: fontSerif, fontSize: 13, fontWeight: 600, color: cp?.color }}>{formatDate(sel.date, prefs.lang)}</div>
-                                {cp && getAgeFull(cp.birthdate, sel.date) && <div style={{ fontSize: 11, color: T.textMuted, fontStyle: "italic", marginTop: 2 }}>{getAgeFull(cp.birthdate, sel.date)}</div>}
-                                {sel.note && <div style={{ fontSize: 11, color: T.textSub, marginTop: 3, lineHeight: 1.4 }}>{sel.note}</div>}
+                    <>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        {[{ sel: compareA, lbl: t.dayA }, { sel: compareB, lbl: t.dayB }].map(({ sel, lbl }) => (
+                          <div key={lbl} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div style={{ fontSize: 10, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.7px", fontWeight: 600 }}>{lbl}</div>
+                            {sel ? (
+                              <div style={{ background: T.card, borderRadius: 12, overflow: "hidden", border: `1px solid ${T.border}` }}>
+                                <img src={sel.photo} alt="" style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
+                                <div style={{ padding: "10px 12px 12px" }}>
+                                  <div style={{ fontFamily: fontSerif, fontSize: 13, fontWeight: 600, color: cp?.color }}>{formatDate(sel.date, prefs.lang)}</div>
+                                  {cp && getAgeFull(cp.birthdate, sel.date) && <div style={{ fontSize: 11, color: T.textMuted, fontStyle: "italic", marginTop: 2 }}>{getAgeFull(cp.birthdate, sel.date)}</div>}
+                                  {sel.note && <div style={{ fontSize: 11, color: T.textSub, marginTop: 3, lineHeight: 1.4 }}>{sel.note}</div>}
+                                </div>
                               </div>
-                              <button className="b" onClick={() => set(null)} style={{ background: "none", border: "none", color: T.textMuted, fontSize: 11, cursor: "pointer", padding: "4px 12px 10px", fontFamily: font }}>{t.change}</button>
-                            </div>
-                          ) : (
-                            <div style={{ background: T.card, borderRadius: 12, padding: 12, minHeight: 150, border: `1px dashed ${T.border}` }}>
-                              <p style={{ color: T.textMuted, fontSize: 12, marginBottom: 10 }}>{t.pickDay}</p>
-                              {cpe.length === 0 && <p style={{ color: T.textMuted, fontSize: 11 }}>{t.noEntriesYet}</p>}
-                              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 260, overflowY: "auto" }}>
-                                {cpe.map((e) => (
-                                  <button key={e.id} className="b" onClick={() => set(e)}
-                                    style={{ display: "flex", alignItems: "center", gap: 8, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 8px", cursor: "pointer", fontFamily: font, textAlign: "left" }}>
-                                    <img src={e.photo} alt="" style={{ width: 34, height: 34, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
-                                    <span style={{ fontSize: 11, color: T.text, lineHeight: 1.4 }}>
-                                      {formatDateShort(e.date, prefs.lang)}
-                                      {cp && getAge(cp.birthdate, e.date) && <span style={{ display: "block", color: cp.color, fontWeight: 600 }}>{getAge(cp.birthdate, e.date)}</span>}
-                                    </span>
-                                  </button>
-                                ))}
+                            ) : (
+                              <div style={{ background: T.card, borderRadius: 12, padding: 12, minHeight: 150, border: `1px dashed ${T.border}` }}>
+                                <p style={{ color: T.textMuted, fontSize: 12 }}>{cpe.length === 0 ? t.noEntriesYet : t.pickDay}</p>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {cpe.length > 1 && (
+                        <button className="b" onClick={() => pickRandomCompare(compareId)}
+                          style={{ width: "100%", marginTop: 14, padding: "13px", background: "transparent", border: `1px solid ${T.border}`, borderRadius: 12, fontSize: 14, color: T.textSub, cursor: "pointer", fontFamily: font }}>
+                          ⇄ {t.change}
+                        </button>
+                      )}
+                    </>
                   );
                 })()}
               </div>
@@ -928,18 +941,6 @@ export default function Zommy() {
 
                 {[
                   {
-                    title: t.notifications,
-                    content: (
-                      <ToggleSwitch
-                        checked={prefs.notifications}
-                        disabled={notificationStatus === "unsupported"}
-                        onClick={toggleNotifications}
-                        label={prefs.notifications ? `🔔 ${t.notificationsOn}` : `🔕 ${t.notificationsOff}`}
-                        T={T}
-                      />
-                    ),
-                  },
-                  {
                     title: t.language,
                     content: (
                       <div style={{ display: "flex", gap: 8 }}>
@@ -950,6 +951,18 @@ export default function Zommy() {
                           </button>
                         ))}
                       </div>
+                    ),
+                  },
+                  {
+                    title: t.notifications,
+                    content: (
+                      <ToggleSwitch
+                        checked={prefs.notifications}
+                        disabled={notificationStatus === "unsupported"}
+                        onClick={toggleNotifications}
+                        label={prefs.notifications ? `🔔 ${t.notificationsOn}` : `🔕 ${t.notificationsOff}`}
+                        T={T}
+                      />
                     ),
                   },
                   {
@@ -978,20 +991,6 @@ export default function Zommy() {
                     {content}
                   </div>
                 ))}
-
-                <div style={{ marginBottom: 28 }}>
-                  <div style={{ fontSize: 11, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 600, marginBottom: 12 }}>{t.changelog}</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {CHANGELOG.map((c) => (
-                      <div key={c.version} style={{ background: T.card, borderRadius: 12, padding: "14px 16px", border: `1px solid ${T.border}` }}>
-                        <div style={{ fontFamily: fontSerif, fontSize: 14, fontWeight: 600, color: T.text }}>
-                          v{c.version} <span style={{ fontFamily: font, fontSize: 12, color: T.textMuted, fontWeight: 400 }}>— {c.date}</span>
-                        </div>
-                        <div style={{ fontSize: 13, color: T.textSub, marginTop: 4, lineHeight: 1.5 }}>{c.notes}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             )}
 
@@ -1025,7 +1024,7 @@ export default function Zommy() {
               style={{ width: 58, height: 40, borderRadius: 22, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0, background: isActive ? activeFooterPill : "transparent", border: "none", cursor: "pointer", fontFamily: font, padding: "4px 10px", minWidth: 48, transition: "background 0.15s" }}
               onClick={() => {
                 if (n.id === "timeline" && !activeId && profiles.length > 0) setActiveId(profiles[0].id);
-                if (n.id === "compare" && profiles.length > 0) { setCompareId(profiles[0].id); setCompareA(null); setCompareB(null); }
+                if (n.id === "compare" && profiles.length > 0) { setCompareId(profiles[0].id); pickRandomCompare(profiles[0].id); }
                 setExpandedEntry(null); setView(n.id);
               }}>
               <span style={{ fontSize: 24, color: isActive ? n.color : "#b6c4d0", transition: "color 0.15s", lineHeight: 1 }}>{n.icon}</span>
