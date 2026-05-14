@@ -360,13 +360,14 @@ export default function Zommy() {
     try {
       const id = `child_${Date.now()}`;
       const pal = PALETTE[newPalette];
-      const { error } = await supabase.from("profiles").insert({ id, name: newName.trim(), birth_date: newBirth, emoji: newEmoji, color: pal.color, bg: pal.bg });
+      const { error } = await supabase.from("profiles").insert({ id, name: newName.trim(), birthdate: newBirth, emoji: newEmoji, color: pal.color, bg: pal.bg });
       if (error) throw error;
       await loadData();
       setNewName(""); setNewBirth(""); setNewEmoji("👶"); setNewPalette(0); setShowForm(false);
       showToast(`${newName.trim()} added 🎉`);
     } catch (err) {
       showToast(t.error);
+      console.error(err);
     }
     setSaving(false);
   };
@@ -519,8 +520,8 @@ export default function Zommy() {
             </div>
             <div style={S.overlayBody}>
               <div style={{ ...S.overlayDate, color: profile?.color || "#fff" }}>{formatDate(entry.date, prefs.lang)}</div>
-              {profile && getAgeFull(profile.birth_date, entry.date) && (
-                <div style={S.overlayAge}>{getAgeFull(profile.birth_date, entry.date)}</div>
+              {profile && getAgeFull(profile.birthdate, entry.date) && (
+                <div style={S.overlayAge}>{getAgeFull(profile.birthdate, entry.date)}</div>
               )}
               {entry.note && <div style={S.overlayNote}>{entry.note}</div>}
               <div style={S.overlayActions}>
@@ -564,7 +565,7 @@ export default function Zommy() {
                   {profiles.map((p) => {
                     const pe = entries[p.id] || [];
                     const latest = [...pe].sort((a, b) => b.date.localeCompare(a.date))[0];
-                    const age = getAgeFull(p.birth_date, today());
+                    const age = getAgeFull(p.birthdate, today());
                     return (
                       <div key={p.id} className="b" style={{ ...S.card, borderColor: p.color + "33" }}
                         onClick={() => { setActiveId(p.id); setView("timeline"); }}>
@@ -627,8 +628,8 @@ export default function Zommy() {
                       <span style={{ fontSize: 24 }}>{active.emoji}</span>
                       <div>
                         <h2 style={S.secTitle}>{editingId ? t.editEntry : t.logFor(active.name)}</h2>
-                        {getAgeFull(active.birth_date, logDate) && (
-                          <div style={{ color: active.color, fontSize: 14, marginTop: 3, fontStyle: "italic" }}>{t.onThisDay(getAgeFull(active.birth_date, logDate))}</div>
+                        {getAgeFull(active.birthdate, logDate) && (
+                          <div style={{ color: active.color, fontSize: 14, marginTop: 3, fontStyle: "italic" }}>{t.onThisDay(getAgeFull(active.birthdate, logDate))}</div>
                         )}
                       </div>
                     </div>
@@ -743,8 +744,8 @@ export default function Zommy() {
                               <img src={sel.photo} alt={sel.date} style={S.cmpPhoto} />
                               <div style={{ padding: "8px 10px 4px" }}>
                                 <div style={{ fontFamily: "'Lora',serif", fontSize: 13, fontWeight: 600, color: cp?.color }}>{formatDate(sel.date, prefs.lang)}</div>
-                                {cp && getAgeFull(cp.birth_date, sel.date) && (
-                                  <div style={{ fontSize: 11, color: theme.sub, fontStyle: "italic", marginTop: 2 }}>{getAgeFull(cp.birth_date, sel.date)}</div>
+                                {cp && getAgeFull(cp.birthdate, sel.date) && (
+                                  <div style={{ fontSize: 11, color: theme.sub, fontStyle: "italic", marginTop: 2 }}>{getAgeFull(cp.birthdate, sel.date)}</div>
                                 )}
                                 {sel.note && <div style={{ fontSize: 12, color: theme.sub, marginTop: 3, lineHeight: 1.4 }}>{sel.note}</div>}
                               </div>
@@ -760,8 +761,8 @@ export default function Zommy() {
                                     <img src={e.photo} alt={e.date} style={S.cmpThumb} />
                                     <span style={{ fontSize: 12, color: theme.text, textAlign: "left", lineHeight: 1.4 }}>
                                       {formatDateShort(e.date, prefs.lang)}
-                                      {cp && getAge(cp.birth_date, e.date) && (
-                                        <span style={{ display: "block", color: cp.color, fontSize: 11, fontWeight: 500 }}>{getAge(cp.birth_date, e.date)}</span>
+                                      {cp && getAge(cp.birthdate, e.date) && (
+                                        <span style={{ display: "block", color: cp.color, fontSize: 11, fontWeight: 500 }}>{getAge(cp.birthdate, e.date)}</span>
                                       )}
                                     </span>
                                   </button>
