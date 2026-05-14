@@ -42,8 +42,19 @@ const LANGS = {
     change: "change",
     language: "Language",
     theme: "Theme",
+    darkTheme: "Dark theme",
     changelog: "Changelog",
     exportZip: "Export photos",
+    notifications: "Push notifications",
+    notificationsOn: "On",
+    notificationsOff: "Off",
+    notificationsHelp: "Enable push notifications for memory anniversaries and future reminders.",
+    notificationsEnabled: "Push notifications on ✓",
+    notificationsDisabled: "Push notifications off",
+    notificationsBlocked: "Notifications are blocked in this browser",
+    notificationsUnsupported: "Notifications are not supported here",
+    memoryNotificationTitle: (years) => `${years} year${years !== 1 ? "s" : ""} ago today`,
+    memoryNotificationBody: (name, date) => `${name ? `${name} · ` : ""}${date}`,
     onThisDay: (age) => `${age} on this day`,
     filterAll: "All",
     settingsTitle: "Settings",
@@ -92,8 +103,19 @@ const LANGS = {
     change: "alterar",
     language: "Idioma",
     theme: "Tema",
+    darkTheme: "Tema escuro",
     changelog: "Novidades",
     exportZip: "Exportar fotos",
+    notifications: "Notificações push",
+    notificationsOn: "Ligado",
+    notificationsOff: "Desligado",
+    notificationsHelp: "Ativa notificações push para aniversários de memórias e futuros lembretes.",
+    notificationsEnabled: "Notificações push ligadas ✓",
+    notificationsDisabled: "Notificações push desligadas",
+    notificationsBlocked: "As notificações estão bloqueadas neste browser",
+    notificationsUnsupported: "As notificações não são suportadas aqui",
+    memoryNotificationTitle: (years) => `Há ${years} ano${years !== 1 ? "s" : ""} neste dia`,
+    memoryNotificationBody: (name, date) => `${name ? `${name} · ` : ""}${date}`,
     onThisDay: (age) => `${age} neste dia`,
     filterAll: "Tudo",
     settingsTitle: "Definições",
@@ -111,7 +133,11 @@ const MONTHS_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-const today = () => new Date().toISOString().split("T")[0];
+const today = () => {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().split("T")[0];
+};
 
 const formatDate = (d, lang) =>
   new Date(d + "T12:00:00").toLocaleDateString(lang === "pt" ? "pt-PT" : "en-GB", {
@@ -188,6 +214,7 @@ const THEMES = {
 };
 
 const CHANGELOG = [
+  { version: "1.7", date: "2026", notes: "Memory anniversary reminders with a Settings toggle for push notifications." },
   { version: "1.6", date: "2025", notes: "Premium UI redesign. Share to apps. Simplified themes. Centred memory button." },
   { version: "1.5", date: "2025", notes: "Supabase sync — data shared across all devices in real time." },
   { version: "1.4", date: "2025", notes: "Settings, language, themes, export. Timeline photo wall. Entry detail view." },
@@ -195,11 +222,80 @@ const CHANGELOG = [
   { version: "1.0", date: "2025", notes: "Initial release." },
 ];
 
+const DEFAULT_PREFS = { lang: "en", theme: "dark", notifications: false };
+
 const loadPrefs = () => {
-  try { return JSON.parse(localStorage.getItem("zommy_prefs") || '{"lang":"en","theme":"dark"}'); }
-  catch { return { lang: "en", theme: "dark" }; }
+  try { return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem("zommy_prefs") || "{}") }; }
+  catch { return DEFAULT_PREFS; }
 };
 const savePrefs = (p) => { try { localStorage.setItem("zommy_prefs", JSON.stringify(p)); } catch {} };
+
+const notificationPermission = () => {
+  if (typeof window === "undefined" || !("Notification" in window)) return "unsupported";
+  return Notification.permission;
+};
+
+const readNotifiedKeys = () => {
+  try { return JSON.parse(localStorage.getItem("zommy_notified_anniversaries") || "[]"); }
+  catch { return []; }
+};
+
+const saveNotifiedKeys = (keys) => {
+  try { localStorage.setItem("zommy_notified_anniversaries", JSON.stringify(keys)); } catch {}
+};
+
+const isSameMonthDay = (date, targetDate) => date.slice(5, 10) === targetDate.slice(5, 10);
+
+const getAnniversaryYears = (date, targetDate) => {
+  if (!date || !isSameMonthDay(date, targetDate)) return 0;
+  return parseInt(targetDate.slice(0, 4), 10) - parseInt(date.slice(0, 4), 10);
+};
+
+const ToggleSwitch = ({ checked, disabled = false, onClick, label, T }) => (
+  <button
+    type="button"
+    className="b"
+    role="switch"
+    aria-checked={checked}
+    disabled={disabled}
+    onClick={onClick}
+    style={{
+      width: "100%",
+      padding: "13px 14px",
+      background: checked ? "#34D399" : "transparent",
+      border: `1px solid ${checked ? "#34D399" : T.border}`,
+      borderRadius: 14,
+      color: checked ? "#111" : T.textSub,
+      cursor: disabled ? "not-allowed" : "pointer",
+      fontFamily: "'Inter', sans-serif",
+      fontSize: 14,
+      fontWeight: 600,
+      opacity: disabled ? 0.55 : 1,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    }}
+  >
+    <span>{label}</span>
+    <span
+      aria-hidden="true"
+      style={{
+        width: 46,
+        height: 26,
+        borderRadius: 100,
+        background: checked ? "rgba(17,17,17,0.2)" : T.border,
+        padding: 3,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: checked ? "flex-end" : "flex-start",
+        flexShrink: 0,
+      }}
+    >
+      <span style={{ width: 20, height: 20, borderRadius: "50%", background: checked ? "#111" : T.textMuted, display: "block" }} />
+    </span>
+  </button>
+);
 
 // ── component ─────────────────────────────────────────────────────────────────
 
@@ -232,12 +328,69 @@ export default function Zommy() {
   const [compareId, setCompareId] = useState(null);
   const [compareA, setCompareA] = useState(null);
   const [compareB, setCompareB] = useState(null);
+  const [notificationStatus, setNotificationStatus] = useState(notificationPermission);
 
   const t = LANGS[prefs.lang] || LANGS.en;
   const T = THEMES[prefs.theme] || THEMES.dark;
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
   const updatePrefs = (p) => { setPrefs(p); savePrefs(p); };
+
+  const sendDueMemoryNotifications = useCallback(() => {
+    if (!prefs.notifications || notificationStatus !== "granted") return;
+
+    const todayDate = today();
+    const alreadyNotified = new Set(readNotifiedKeys());
+    const nextKeys = new Set(alreadyNotified);
+    const due = profiles.flatMap((profile) => (entries[profile.id] || [])
+      .map((entry) => ({ entry, profile, years: getAnniversaryYears(entry.date, todayDate) }))
+      .filter(({ years }) => years > 0));
+
+    due.forEach(({ entry, profile, years }) => {
+      const key = `${entry.id}:${todayDate}:${years}`;
+      if (alreadyNotified.has(key)) return;
+
+      const title = t.memoryNotificationTitle(years);
+      const body = [
+        t.memoryNotificationBody(profile?.name, formatDate(entry.date, prefs.lang)),
+        entry.note,
+      ].filter(Boolean).join(" · ");
+
+      try {
+        new Notification(title, {
+          body,
+          icon: entry.photo,
+          image: entry.photo,
+          tag: `zommy-${key}`,
+        });
+        nextKeys.add(key);
+      } catch {}
+    });
+
+    if (nextKeys.size !== alreadyNotified.size) saveNotifiedKeys([...nextKeys].slice(-500));
+  }, [entries, notificationStatus, prefs.lang, prefs.notifications, profiles, t]);
+
+  const toggleNotifications = async () => {
+    if (prefs.notifications) {
+      updatePrefs({ ...prefs, notifications: false });
+      showToast(t.notificationsDisabled);
+      return;
+    }
+
+    if (notificationStatus === "unsupported") { showToast(t.notificationsUnsupported); return; }
+    if (notificationStatus === "denied") { showToast(t.notificationsBlocked); return; }
+
+    let permission = notificationStatus;
+    if (permission !== "granted") permission = await Notification.requestPermission();
+    setNotificationStatus(permission);
+
+    if (permission === "granted") {
+      updatePrefs({ ...prefs, notifications: true });
+      showToast(t.notificationsEnabled);
+    } else if (permission === "denied") {
+      showToast(t.notificationsBlocked);
+    }
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -256,6 +409,15 @@ export default function Zommy() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => { setNotificationStatus(notificationPermission()); }, []);
+
+  useEffect(() => { sendDueMemoryNotifications(); }, [sendDueMemoryNotifications]);
+
+  useEffect(() => {
+    const interval = window.setInterval(sendDueMemoryNotifications, 60 * 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, [sendDueMemoryNotifications]);
 
   const active = profiles.find((p) => p.id === activeId);
   const activeEntries = activeId ? (entries[activeId] || []) : [];
@@ -456,8 +618,8 @@ export default function Zommy() {
 
       {/* HEADER */}
       <header style={{ background: T.navBg, borderBottom: `1px solid ${T.navBorder}`, padding: "18px 20px 16px", minHeight: 78, display: "flex", alignItems: "center", justifyContent: "center", position: "sticky", top: 0, zIndex: 10 }}>
-        <div aria-label="Zoomy" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", color: T.text, fontFamily: font, fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: "-1.2px", textAlign: "center" }}>
-          Zoomy
+        <div aria-label="ZOOMY" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", color: T.text, fontFamily: font, fontSize: 26, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.8px", textAlign: "center" }}>
+          ZOOMY
         </div>
         {/* subtle active profile indicator */}
         {active && (view === "timeline" || view === "log") && (
@@ -768,6 +930,23 @@ export default function Zommy() {
 
                 {[
                   {
+                    title: t.notifications,
+                    content: (
+                      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 14 }}>
+                        <div style={{ color: T.textSub, fontSize: 13, lineHeight: 1.5, marginBottom: 12 }}>{t.notificationsHelp}</div>
+                        <ToggleSwitch
+                          checked={prefs.notifications}
+                          disabled={notificationStatus === "unsupported"}
+                          onClick={toggleNotifications}
+                          label={prefs.notifications ? `🔔 ${t.notificationsOn}` : `🔕 ${t.notificationsOff}`}
+                          T={T}
+                        />
+                        {notificationStatus === "denied" && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>{t.notificationsBlocked}</div>}
+                        {notificationStatus === "unsupported" && <div style={{ color: T.textMuted, fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>{t.notificationsUnsupported}</div>}
+                      </div>
+                    ),
+                  },
+                  {
                     title: t.language,
                     content: (
                       <div style={{ display: "flex", gap: 8 }}>
@@ -783,14 +962,12 @@ export default function Zommy() {
                   {
                     title: t.theme,
                     content: (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        {[["dark", "🌙 " + t.themeDark], ["light", "☀️ " + t.themeLight]].map(([id, label]) => (
-                          <button key={id} className="b" onClick={() => updatePrefs({ ...prefs, theme: id })}
-                            style={{ flex: 1, padding: "11px", borderRadius: 10, border: `1px solid ${prefs.theme === id ? T.text : T.border}`, background: prefs.theme === id ? T.text + "10" : "transparent", color: prefs.theme === id ? T.text : T.textSub, fontSize: 14, fontWeight: prefs.theme === id ? 600 : 400, cursor: "pointer", fontFamily: font }}>
-                            {label}
-                          </button>
-                        ))}
-                      </div>
+                      <ToggleSwitch
+                        checked={prefs.theme === "dark"}
+                        onClick={() => updatePrefs({ ...prefs, theme: prefs.theme === "dark" ? "light" : "dark" })}
+                        label={`🌙 ${t.darkTheme}`}
+                        T={T}
+                      />
                     ),
                   },
                   {
