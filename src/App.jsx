@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "./supabase";
 
-// ── i18n ──────────────────────────────────────────────────────────────────────
+// ── i18n ────────────────────────────────────────────────────────────────────
 
 const LANGS = {
   en: {
@@ -109,7 +109,7 @@ const LANGS = {
 const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const MONTHS_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── helpers ────────────────────────────────────────────────────────────────
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -189,7 +189,7 @@ const savePrefs = (prefs) => {
   try { localStorage.setItem("zommy_prefs", JSON.stringify(prefs)); } catch {}
 };
 
-// ── component ─────────────────────────────────────────────────────────────────
+// ── component ──────────────────────────────────────────────────────────────
 
 export default function Zommy() {
   const [profiles, setProfiles] = useState([]);
@@ -229,7 +229,7 @@ export default function Zommy() {
 
   const updatePrefs = (newPrefs) => { setPrefs(newPrefs); savePrefs(newPrefs); };
 
-  // ── data loading ──────────────────────────────────────────────────────────
+  // ── data loading ────────────────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -258,7 +258,7 @@ export default function Zommy() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // ── derived ───────────────────────────────────────────────────────────────
+  // ── derived ────────────────────────────────────────────────────────────
 
   const active = profiles.find((p) => p.id === activeId);
   const activeEntries = activeId ? (entries[activeId] || []) : [];
@@ -276,7 +276,7 @@ export default function Zommy() {
     [sortedEntries, filterMonth]
   );
 
-  // ── photo upload to supabase storage ─────────────────────────────────────
+  // ── photo upload to supabase storage ────────────────────────────────────
 
   const uploadPhoto = async (dataUrl) => {
     const base64 = dataUrl.split(",")[1];
@@ -288,7 +288,7 @@ export default function Zommy() {
     return urlData.publicUrl;
   };
 
-  // ── handlers ──────────────────────────────────────────────────────────────
+  // ── handlers ───────────────────────────────────────────────────────────
 
   const handlePhoto = (e) => {
     const file = e.target.files[0];
@@ -360,7 +360,7 @@ export default function Zommy() {
     try {
       const id = `child_${Date.now()}`;
       const pal = PALETTE[newPalette];
-      const { error } = await supabase.from("profiles").insert({ id, name: newName.trim(), birthdate: newBirth, emoji: newEmoji, color: pal.color, bg: pal.bg });
+      const { error } = await supabase.from("profiles").insert({ id, name: newName.trim(), birth_date: newBirth, emoji: newEmoji, color: pal.color, bg: pal.bg });
       if (error) throw error;
       await loadData();
       setNewName(""); setNewBirth(""); setNewEmoji("👶"); setNewPalette(0); setShowForm(false);
@@ -399,7 +399,7 @@ export default function Zommy() {
     return `${months[parseInt(m, 10) - 1]} ${y}`;
   };
 
-  // ── styles ────────────────────────────────────────────────────────────────
+  // ── styles ─────────────────────────────────────────────────────────────
 
   const S = {
     root: { fontFamily: "'DM Sans',sans-serif", background: theme.bg, minHeight: "100vh", maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column" },
@@ -424,7 +424,7 @@ export default function Zommy() {
     pActions: { display: "flex", flexDirection: "column", gap: 6, width: "100%", marginTop: 6 },
     btn1: { padding: "9px 14px", borderRadius: 100, border: "none", color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", textAlign: "center" },
     btn2: { padding: "9px 14px", borderRadius: 100, border: "1.5px solid", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", textAlign: "center" },
-    addBtn: { width: "100%", padding: "13px", background: theme.card, border: `1.5px dashed ${theme.border}`, borderRadius: 12, fontSize: 14, color: theme.sub, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", marginBottom: 10 },
+    addBtn: { width: "100%", padding: "13px", background: theme.card, border: `1.5px dashed ${theme.border}`, borderRadius: 12, fontSize: 14, color: theme.sub, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" },
     cmpBtn: { width: "100%", padding: "13px", background: theme.card, border: `1.5px solid ${theme.border}`, borderRadius: 12, fontSize: 14, color: theme.sub, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" },
     formCard: { background: theme.card, border: `1.5px solid ${theme.border}`, borderRadius: 16, padding: "18px 16px", marginBottom: 12, display: "flex", flexDirection: "column", gap: 12 },
     formTitle: { fontFamily: "'Lora',serif", fontSize: 18, color: theme.text, fontWeight: 600 },
@@ -446,7 +446,7 @@ export default function Zommy() {
     prevWrap: { position: "relative", borderRadius: 12, overflow: "hidden" },
     prev: { width: "100%", maxHeight: 260, objectFit: "cover", borderRadius: 12, display: "block" },
     remBtn: { position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.5)", color: "#fff", border: "none", borderRadius: 100, padding: "6px 13px", fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" },
-    ta: { padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${theme.border}`, fontSize: 15, fontFamily: "'DM Sans',sans-serif", color: theme.text, background: theme.card, resize: "none", lineHeight: 1.6, width: "100%" },
+    ta: { padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${theme.border}`, fontSize: 15, fontFamily: "'DM Sans',sans-serif", color: theme.text, background: theme.card, resize: "none" },
     filterRow: { display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 14, scrollbarWidth: "none" },
     filterChip: { padding: "5px 12px", borderRadius: 100, border: "1.5px solid", fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 500, whiteSpace: "nowrap", flexShrink: 0 },
     photoWall: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 3 },
@@ -460,8 +460,8 @@ export default function Zommy() {
     overlayNote: { fontSize: 16, color: "#ddd", lineHeight: 1.6, marginTop: 4 },
     overlayActions: { display: "flex", gap: 10, marginTop: "auto", paddingTop: 20 },
     editBtn: { flex: 1, padding: "13px", background: "#fff", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 500, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", color: "#1a1a1a" },
-    delBtn: { flex: 1, padding: "13px", background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.3)", borderRadius: 12, fontSize: 15, fontWeight: 500, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", color: "#ff6b6b" },
-    overlayClose: { position: "absolute", top: 16, right: 16, background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", fontSize: 20, width: 36, height: 36, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 51 },
+    delBtn: { flex: 1, padding: "13px", background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.3)", borderRadius: 12, fontSize: 15, fontWeight: 500, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", color: "#ff5050" },
+    overlayClose: { position: "absolute", top: 16, right: 16, background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", fontSize: 20, width: 36, height: 36, borderRadius: "50%", cursor: "pointer" },
     cmpGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
     cmpCol: { display: "flex", flexDirection: "column", gap: 8 },
     cmpLbl: { fontSize: 11, color: theme.sub, textTransform: "uppercase", letterSpacing: "0.6px", fontWeight: 500 },
@@ -470,7 +470,7 @@ export default function Zommy() {
     chgBtn: { background: "none", border: "none", color: theme.sub, fontSize: 12, cursor: "pointer", padding: "4px 10px 8px", fontFamily: "'DM Sans',sans-serif" },
     cmpPicker: { background: theme.card, borderRadius: 12, padding: 10, minHeight: 150, border: `1.5px dashed ${theme.border}` },
     cmpList: { display: "flex", flexDirection: "column", gap: 6, maxHeight: 280, overflowY: "auto" },
-    cmpItem: { display: "flex", alignItems: "center", gap: 8, background: theme.bg, border: "1.5px solid", borderRadius: 8, padding: "6px 8px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", textAlign: "left" },
+    cmpItem: { display: "flex", alignItems: "center", gap: 8, background: theme.bg, border: "1.5px solid", borderRadius: 8, padding: "6px 8px", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: theme.text },
     cmpThumb: { width: 36, height: 36, borderRadius: 6, objectFit: "cover", flexShrink: 0 },
     settingsSection: { marginBottom: 28 },
     settingsSectionTitle: { fontSize: 12, color: theme.sub, letterSpacing: "0.7px", textTransform: "uppercase", fontWeight: 600, marginBottom: 12 },
@@ -482,11 +482,11 @@ export default function Zommy() {
     changelogVersion: { fontFamily: "'Lora',serif", fontSize: 15, fontWeight: 600, color: theme.text },
     changelogNotes: { fontSize: 13, color: theme.sub, marginTop: 4, lineHeight: 1.5 },
     exportBtn: { width: "100%", padding: "14px", background: "#1a1a1a", border: "none", borderRadius: 12, fontSize: 15, color: "#fff", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 500 },
-    nav: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: theme.navBg, borderTop: `1px solid ${theme.border}`, display: "flex", justifyContent: "space-around", padding: "6px 0 10px", zIndex: 10 },
-    navItem: { display: "flex", flexDirection: "column", alignItems: "center", background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", padding: "4px 10px", gap: 3, borderRadius: 10 },
+    nav: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: theme.navBg, borderTop: `1px solid ${theme.border}`, display: "flex", justifyContent: "space-around", zIndex: 100 },
+    navItem: { display: "flex", flexDirection: "column", alignItems: "center", background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", padding: "4px 10px", gap: 3, flex: 1 },
   };
 
-  // ── render ────────────────────────────────────────────────────────────────
+  // ── render ─────────────────────────────────────────────────────────────
 
   return (
     <div style={S.root}>
@@ -519,8 +519,8 @@ export default function Zommy() {
             </div>
             <div style={S.overlayBody}>
               <div style={{ ...S.overlayDate, color: profile?.color || "#fff" }}>{formatDate(entry.date, prefs.lang)}</div>
-              {profile && getAgeFull(profile.birthdate, entry.date) && (
-                <div style={S.overlayAge}>{getAgeFull(profile.birthdate, entry.date)}</div>
+              {profile && getAgeFull(profile.birth_date, entry.date) && (
+                <div style={S.overlayAge}>{getAgeFull(profile.birth_date, entry.date)}</div>
               )}
               {entry.note && <div style={S.overlayNote}>{entry.note}</div>}
               <div style={S.overlayActions}>
@@ -564,7 +564,7 @@ export default function Zommy() {
                   {profiles.map((p) => {
                     const pe = entries[p.id] || [];
                     const latest = [...pe].sort((a, b) => b.date.localeCompare(a.date))[0];
-                    const age = getAgeFull(p.birthdate, today());
+                    const age = getAgeFull(p.birth_date, today());
                     return (
                       <div key={p.id} className="b" style={{ ...S.card, borderColor: p.color + "33" }}
                         onClick={() => { setActiveId(p.id); setView("timeline"); }}>
@@ -591,7 +591,7 @@ export default function Zommy() {
                     ))}</div>
                     <label style={S.lbl}>{t.colour}</label>
                     <div style={S.palRow}>{PALETTE.map((p, i) => (
-                      <button key={i} className="b" onClick={() => setNewPalette(i)} style={{ ...S.palDot, background: p.color, outline: newPalette === i ? `3px solid ${p.color}` : "none", outlineOffset: 2 }} />
+                      <button key={i} className="b" onClick={() => setNewPalette(i)} style={{ ...S.palDot, background: p.color, outline: newPalette === i ? `3px solid ${p.color}` : "none", outlineOffset: "2px" }}></button>
                     ))}</div>
                     <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                       <button className="b" style={{ ...S.saveBtn, background: "#1a1a1a" }} onClick={createProfile} disabled={saving}>{saving ? t.saving : t.addChildBtn}</button>
@@ -627,8 +627,8 @@ export default function Zommy() {
                       <span style={{ fontSize: 24 }}>{active.emoji}</span>
                       <div>
                         <h2 style={S.secTitle}>{editingId ? t.editEntry : t.logFor(active.name)}</h2>
-                        {getAgeFull(active.birthdate, logDate) && (
-                          <div style={{ color: active.color, fontSize: 14, marginTop: 3, fontStyle: "italic" }}>{t.onThisDay(getAgeFull(active.birthdate, logDate))}</div>
+                        {getAgeFull(active.birth_date, logDate) && (
+                          <div style={{ color: active.color, fontSize: 14, marginTop: 3, fontStyle: "italic" }}>{t.onThisDay(getAgeFull(active.birth_date, logDate))}</div>
                         )}
                       </div>
                     </div>
@@ -636,7 +636,8 @@ export default function Zommy() {
                       <div style={{ ...S.tabs, marginBottom: 20 }}>
                         {profiles.map((p) => (
                           <button key={p.id} className="b" onClick={() => setActiveId(p.id)}
-                            style={{ ...S.tab, background: activeId === p.id ? p.color : "transparent", color: activeId === p.id ? "#fff" : theme.sub, borderColor: activeId === p.id ? p.color : theme.border }}>
+                            style={{ ...S.tab, background: activeId === p.id ? p.color : "transparent", color: activeId === p.id ? "#fff" : theme.sub, borderColor: activeId === p.id ? p.color : theme.border }}
+                          >
                             {p.emoji} {p.name}
                           </button>
                         ))}
@@ -681,7 +682,8 @@ export default function Zommy() {
                   <div style={S.tabs}>
                     {profiles.map((p) => (
                       <button key={p.id} className="b" onClick={() => { setActiveId(p.id); setFilterMonth(null); }}
-                        style={{ ...S.tab, background: activeId === p.id ? p.color : "transparent", color: activeId === p.id ? "#fff" : theme.sub, borderColor: activeId === p.id ? p.color : theme.border }}>
+                        style={{ ...S.tab, background: activeId === p.id ? p.color : "transparent", color: activeId === p.id ? "#fff" : theme.sub, borderColor: activeId === p.id ? p.color : theme.border }}
+                      >
                         {p.emoji} {p.name}
                       </button>
                     ))}
@@ -690,12 +692,14 @@ export default function Zommy() {
                 {availableMonths.length > 1 && (
                   <div className="filterRow" style={S.filterRow}>
                     <button className="b" onClick={() => setFilterMonth(null)}
-                      style={{ ...S.filterChip, background: !filterMonth ? (active?.color || "#1a1a1a") : "transparent", color: !filterMonth ? "#fff" : theme.sub, borderColor: !filterMonth ? (active?.color || "#1a1a1a") : theme.border }}>
+                      style={{ ...S.filterChip, background: !filterMonth ? (active?.color || "#1a1a1a") : "transparent", color: !filterMonth ? "#fff" : theme.sub, borderColor: !filterMonth ? (active?.color || "#1a1a1a") : theme.border }}
+                    >
                       {t.filterAll}
                     </button>
                     {availableMonths.map((ym) => (
                       <button key={ym} className="b" onClick={() => setFilterMonth(ym === filterMonth ? null : ym)}
-                        style={{ ...S.filterChip, background: filterMonth === ym ? (active?.color || "#1a1a1a") : "transparent", color: filterMonth === ym ? "#fff" : theme.sub, borderColor: filterMonth === ym ? (active?.color || "#1a1a1a") : theme.border }}>
+                        style={{ ...S.filterChip, background: filterMonth === ym ? (active?.color || "#1a1a1a") : "transparent", color: filterMonth === ym ? "#fff" : theme.sub, borderColor: filterMonth === ym ? (active?.color || "#1a1a1a") : theme.border }}
+                      >
                         {monthLabel(ym)}
                       </button>
                     ))}
@@ -720,7 +724,8 @@ export default function Zommy() {
                 <div style={S.tabs}>
                   {profiles.map((p) => (
                     <button key={p.id} className="b" onClick={() => { setCompareId(p.id); setCompareA(null); setCompareB(null); }}
-                      style={{ ...S.tab, background: compareId === p.id ? p.color : "transparent", color: compareId === p.id ? "#fff" : theme.sub, borderColor: compareId === p.id ? p.color : theme.border }}>
+                      style={{ ...S.tab, background: compareId === p.id ? p.color : "transparent", color: compareId === p.id ? "#fff" : theme.sub, borderColor: compareId === p.id ? p.color : theme.border }}
+                    >
                       {p.emoji} {p.name}
                     </button>
                   ))}
@@ -738,8 +743,8 @@ export default function Zommy() {
                               <img src={sel.photo} alt={sel.date} style={S.cmpPhoto} />
                               <div style={{ padding: "8px 10px 4px" }}>
                                 <div style={{ fontFamily: "'Lora',serif", fontSize: 13, fontWeight: 600, color: cp?.color }}>{formatDate(sel.date, prefs.lang)}</div>
-                                {cp && getAgeFull(cp.birthdate, sel.date) && (
-                                  <div style={{ fontSize: 11, color: theme.sub, fontStyle: "italic", marginTop: 2 }}>{getAgeFull(cp.birthdate, sel.date)}</div>
+                                {cp && getAgeFull(cp.birth_date, sel.date) && (
+                                  <div style={{ fontSize: 11, color: theme.sub, fontStyle: "italic", marginTop: 2 }}>{getAgeFull(cp.birth_date, sel.date)}</div>
                                 )}
                                 {sel.note && <div style={{ fontSize: 12, color: theme.sub, marginTop: 3, lineHeight: 1.4 }}>{sel.note}</div>}
                               </div>
@@ -755,8 +760,8 @@ export default function Zommy() {
                                     <img src={e.photo} alt={e.date} style={S.cmpThumb} />
                                     <span style={{ fontSize: 12, color: theme.text, textAlign: "left", lineHeight: 1.4 }}>
                                       {formatDateShort(e.date, prefs.lang)}
-                                      {cp && getAge(cp.birthdate, e.date) && (
-                                        <span style={{ display: "block", color: cp.color, fontSize: 11, fontWeight: 500 }}>{getAge(cp.birthdate, e.date)}</span>
+                                      {cp && getAge(cp.birth_date, e.date) && (
+                                        <span style={{ display: "block", color: cp.color, fontSize: 11, fontWeight: 500 }}>{getAge(cp.birth_date, e.date)}</span>
                                       )}
                                     </span>
                                   </button>
@@ -783,7 +788,8 @@ export default function Zommy() {
                     <div style={S.segmented}>
                       {["en", "pt"].map((l) => (
                         <button key={l} className="b" onClick={() => updatePrefs({ ...prefs, lang: l })}
-                          style={{ ...S.segBtn, background: prefs.lang === l ? "#1a1a1a" : "transparent", color: prefs.lang === l ? "#fff" : theme.sub, borderColor: prefs.lang === l ? "#1a1a1a" : theme.border }}>
+                          style={{ ...S.segBtn, background: prefs.lang === l ? "#1a1a1a" : "transparent", color: prefs.lang === l ? "#fff" : theme.sub, borderColor: prefs.lang === l ? "#1a1a1a" : theme.border }}
+                        >
                           {l === "en" ? "🇬🇧 EN" : "🇵🇹 PT"}
                         </button>
                       ))}
@@ -797,7 +803,8 @@ export default function Zommy() {
                     <div style={S.segmented}>
                       {[["light", t.themeLight, "☀️"], ["warm", t.themeWarm, "🍂"], ["dark", t.themeDark, "🌙"]].map(([id, label, icon]) => (
                         <button key={id} className="b" onClick={() => updatePrefs({ ...prefs, theme: id })}
-                          style={{ ...S.segBtn, background: prefs.theme === id ? "#1a1a1a" : "transparent", color: prefs.theme === id ? "#fff" : theme.sub, borderColor: prefs.theme === id ? "#1a1a1a" : theme.border }}>
+                          style={{ ...S.segBtn, background: prefs.theme === id ? "#1a1a1a" : "transparent", color: prefs.theme === id ? "#fff" : theme.sub, borderColor: prefs.theme === id ? "#1a1a1a" : theme.border }}
+                        >
                           {icon} {label}
                         </button>
                       ))}
