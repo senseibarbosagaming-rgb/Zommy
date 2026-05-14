@@ -42,14 +42,15 @@ const LANGS = {
     change: "change",
     language: "Language",
     theme: "Theme",
+    darkTheme: "Dark theme",
     changelog: "Changelog",
     exportZip: "Export photos",
-    notifications: "Memory reminders",
+    notifications: "Push notifications",
     notificationsOn: "On",
     notificationsOff: "Off",
-    notificationsHelp: "Get a reminder when a photo is 1, 2, 3+ years old today.",
-    notificationsEnabled: "Memory reminders on ✓",
-    notificationsDisabled: "Memory reminders off",
+    notificationsHelp: "Enable push notifications for memory anniversaries and future reminders.",
+    notificationsEnabled: "Push notifications on ✓",
+    notificationsDisabled: "Push notifications off",
     notificationsBlocked: "Notifications are blocked in this browser",
     notificationsUnsupported: "Notifications are not supported here",
     memoryNotificationTitle: (years) => `${years} year${years !== 1 ? "s" : ""} ago today`,
@@ -102,14 +103,15 @@ const LANGS = {
     change: "alterar",
     language: "Idioma",
     theme: "Tema",
+    darkTheme: "Tema escuro",
     changelog: "Novidades",
     exportZip: "Exportar fotos",
-    notifications: "Recordações",
+    notifications: "Notificações push",
     notificationsOn: "Ligado",
     notificationsOff: "Desligado",
-    notificationsHelp: "Recebe um lembrete quando uma foto fizer 1, 2, 3+ anos hoje.",
-    notificationsEnabled: "Recordações ligadas ✓",
-    notificationsDisabled: "Recordações desligadas",
+    notificationsHelp: "Ativa notificações push para aniversários de memórias e futuros lembretes.",
+    notificationsEnabled: "Notificações push ligadas ✓",
+    notificationsDisabled: "Notificações push desligadas",
     notificationsBlocked: "As notificações estão bloqueadas neste browser",
     notificationsUnsupported: "As notificações não são suportadas aqui",
     memoryNotificationTitle: (years) => `Há ${years} ano${years !== 1 ? "s" : ""} neste dia`,
@@ -212,7 +214,7 @@ const THEMES = {
 };
 
 const CHANGELOG = [
-  { version: "1.7", date: "2026", notes: "Memory anniversary reminders with a Settings toggle for browser notifications." },
+  { version: "1.7", date: "2026", notes: "Memory anniversary reminders with a Settings toggle for push notifications." },
   { version: "1.6", date: "2025", notes: "Premium UI redesign. Share to apps. Simplified themes. Centred memory button." },
   { version: "1.5", date: "2025", notes: "Supabase sync — data shared across all devices in real time." },
   { version: "1.4", date: "2025", notes: "Settings, language, themes, export. Timeline photo wall. Entry detail view." },
@@ -248,6 +250,52 @@ const getAnniversaryYears = (date, targetDate) => {
   if (!date || !isSameMonthDay(date, targetDate)) return 0;
   return parseInt(targetDate.slice(0, 4), 10) - parseInt(date.slice(0, 4), 10);
 };
+
+const ToggleSwitch = ({ checked, disabled = false, onClick, label, T }) => (
+  <button
+    type="button"
+    className="b"
+    role="switch"
+    aria-checked={checked}
+    disabled={disabled}
+    onClick={onClick}
+    style={{
+      width: "100%",
+      padding: "13px 14px",
+      background: checked ? "#34D399" : "transparent",
+      border: `1px solid ${checked ? "#34D399" : T.border}`,
+      borderRadius: 14,
+      color: checked ? "#111" : T.textSub,
+      cursor: disabled ? "not-allowed" : "pointer",
+      fontFamily: "'Inter', sans-serif",
+      fontSize: 14,
+      fontWeight: 600,
+      opacity: disabled ? 0.55 : 1,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    }}
+  >
+    <span>{label}</span>
+    <span
+      aria-hidden="true"
+      style={{
+        width: 46,
+        height: 26,
+        borderRadius: 100,
+        background: checked ? "rgba(17,17,17,0.2)" : T.border,
+        padding: 3,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: checked ? "flex-end" : "flex-start",
+        flexShrink: 0,
+      }}
+    >
+      <span style={{ width: 20, height: 20, borderRadius: "50%", background: checked ? "#111" : T.textMuted, display: "block" }} />
+    </span>
+  </button>
+);
 
 // ── component ─────────────────────────────────────────────────────────────────
 
@@ -570,8 +618,8 @@ export default function Zommy() {
 
       {/* HEADER */}
       <header style={{ background: T.navBg, borderBottom: `1px solid ${T.navBorder}`, padding: "18px 20px 16px", minHeight: 78, display: "flex", alignItems: "center", justifyContent: "center", position: "sticky", top: 0, zIndex: 10 }}>
-        <div aria-label="Zoomy" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", color: T.text, fontFamily: font, fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: "-1.2px", textAlign: "center" }}>
-          Zoomy
+        <div aria-label="ZOOMY" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", color: T.text, fontFamily: font, fontSize: 26, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.8px", textAlign: "center" }}>
+          ZOOMY
         </div>
         {/* subtle active profile indicator */}
         {active && (view === "timeline" || view === "log") && (
@@ -886,11 +934,13 @@ export default function Zommy() {
                     content: (
                       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 14 }}>
                         <div style={{ color: T.textSub, fontSize: 13, lineHeight: 1.5, marginBottom: 12 }}>{t.notificationsHelp}</div>
-                        <button className="b" onClick={toggleNotifications}
+                        <ToggleSwitch
+                          checked={prefs.notifications}
                           disabled={notificationStatus === "unsupported"}
-                          style={{ width: "100%", padding: "13px", background: prefs.notifications ? "#34D399" : "transparent", border: `1px solid ${prefs.notifications ? "#34D399" : T.border}`, borderRadius: 10, fontSize: 14, color: prefs.notifications ? "#111" : T.textSub, cursor: notificationStatus === "unsupported" ? "not-allowed" : "pointer", fontFamily: font, fontWeight: 600, opacity: notificationStatus === "unsupported" ? 0.55 : 1 }}>
-                          {prefs.notifications ? `🔔 ${t.notificationsOn}` : `🔕 ${t.notificationsOff}`}
-                        </button>
+                          onClick={toggleNotifications}
+                          label={prefs.notifications ? `🔔 ${t.notificationsOn}` : `🔕 ${t.notificationsOff}`}
+                          T={T}
+                        />
                         {notificationStatus === "denied" && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>{t.notificationsBlocked}</div>}
                         {notificationStatus === "unsupported" && <div style={{ color: T.textMuted, fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>{t.notificationsUnsupported}</div>}
                       </div>
@@ -912,14 +962,12 @@ export default function Zommy() {
                   {
                     title: t.theme,
                     content: (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        {[["dark", "🌙 " + t.themeDark], ["light", "☀️ " + t.themeLight]].map(([id, label]) => (
-                          <button key={id} className="b" onClick={() => updatePrefs({ ...prefs, theme: id })}
-                            style={{ flex: 1, padding: "11px", borderRadius: 10, border: `1px solid ${prefs.theme === id ? T.text : T.border}`, background: prefs.theme === id ? T.text + "10" : "transparent", color: prefs.theme === id ? T.text : T.textSub, fontSize: 14, fontWeight: prefs.theme === id ? 600 : 400, cursor: "pointer", fontFamily: font }}>
-                            {label}
-                          </button>
-                        ))}
-                      </div>
+                      <ToggleSwitch
+                        checked={prefs.theme === "dark"}
+                        onClick={() => updatePrefs({ ...prefs, theme: prefs.theme === "dark" ? "light" : "dark" })}
+                        label={`🌙 ${t.darkTheme}`}
+                        T={T}
+                      />
                     ),
                   },
                   {
