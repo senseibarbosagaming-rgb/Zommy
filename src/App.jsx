@@ -371,9 +371,10 @@ export default function Zommy() {
   // ── styles ────────────────────────────────────────────────────────────────
 
   const css = `
-    @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap');
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-    body{background:${T.bg}}
+    html{background:#43596a}
+    body{background:#43596a;overscroll-behavior:none}
     .f{animation:fu 0.25s ease forwards}
     @keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
     .b{transition:all .12s;cursor:pointer}
@@ -387,9 +388,11 @@ export default function Zommy() {
 
   const font = "'Inter', sans-serif";
   const fontSerif = "'Lora', serif";
+  const footerBg = "#43596a";
+  const activeFooterPill = "#3a5163";
 
   return (
-    <div style={{ fontFamily: font, background: T.bg, minHeight: "100vh", maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column" }}>
+    <div style={{ fontFamily: font, background: T.bg, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
       <style>{css}</style>
 
       {/* TOAST */}
@@ -452,21 +455,20 @@ export default function Zommy() {
       })()}
 
       {/* HEADER */}
-      <header style={{ background: T.navBg, borderBottom: `1px solid ${T.navBorder}`, padding: "0 20px", height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-          <span style={{ fontFamily: fontSerif, fontStyle: "italic", fontSize: 24, color: T.text, lineHeight: 1 }}>z</span>
-          <span style={{ fontFamily: fontSerif, fontSize: 20, color: T.text, fontWeight: 400, letterSpacing: "-0.3px" }}>ommy</span>
+      <header style={{ background: T.navBg, borderBottom: `1px solid ${T.navBorder}`, padding: "18px 20px 16px", minHeight: 78, display: "flex", alignItems: "center", justifyContent: "center", position: "sticky", top: 0, zIndex: 10 }}>
+        <div aria-label="Zoomy" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", color: T.text, fontFamily: font, fontSize: 32, fontWeight: 800, lineHeight: 1, letterSpacing: "-1.2px", textAlign: "center" }}>
+          Zoomy
         </div>
         {/* subtle active profile indicator */}
         {active && (view === "timeline" || view === "log") && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 7, height: 7, borderRadius: "50%", background: active.color }} />
-            <span style={{ fontSize: 13, color: T.textSub, fontWeight: 500 }}>{active.name}</span>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, maxWidth: 118, overflow: "hidden" }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: active.color, flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: T.textSub, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{active.name}</span>
           </div>
         )}
       </header>
 
-      <main style={{ flex: 1, paddingBottom: 80, overflowY: "auto" }}>
+      <main style={{ flex: 1, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))", overflowY: "auto" }}>
         {loading ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", color: T.textMuted, fontSize: 14, fontStyle: "italic", fontFamily: fontSerif }}>
             {t.loading}
@@ -828,7 +830,7 @@ export default function Zommy() {
       </main>
 
       {/* ── BOTTOM NAV ── */}
-      <nav style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: T.navBg, borderTop: `1px solid ${T.navBorder}`, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "8px 0 14px", zIndex: 10 }}>
+      <nav style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: footerBg, borderTop: "none", boxShadow: "0 -1px 0 rgba(255,255,255,0.04), 0 -10px 30px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "space-around", padding: "12px 12px calc(18px + env(safe-area-inset-bottom, 0px))", zIndex: 10 }}>
         {[
           { id: "home",     icon: "⌂",  label: "Home",      color: "#60A5FA", big: false },
           { id: "timeline", icon: "▦",  label: t.timeline,  color: "#34D399", big: false },
@@ -839,25 +841,25 @@ export default function Zommy() {
           const isActive = view === n.id;
           if (n.big) return (
             <button key={n.id} className="b"
-              style={{ width: 52, height: 52, borderRadius: "50%", background: "#ffffff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 20px rgba(255,255,255,0.2)", marginBottom: 6, flexShrink: 0 }}
+              style={{ width: 40, height: 40, borderRadius: "50%", background: "transparent", border: "3px solid #17d86f", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 0 0 1px rgba(23,216,111,0.18), 0 8px 20px rgba(0,0,0,0.16)", marginBottom: 0, flexShrink: 0 }}
               onClick={() => {
                 if (!activeId && profiles.length > 0) setActiveId(profiles[0].id);
                 setEditingId(null); setLogDate(today()); setLogNote(""); setLogPhoto(null); setLogPreview(null);
                 setExpandedEntry(null); setView("log");
               }}>
-              <span style={{ fontSize: 26, color: "#111", fontWeight: 300, lineHeight: 1, marginTop: -2 }}>+</span>
+              <span style={{ fontSize: 28, color: "#17d86f", fontWeight: 500, lineHeight: 1, marginTop: -3 }}>+</span>
             </button>
           );
           return (
             <button key={n.id} className="b"
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", fontFamily: font, padding: "4px 10px", minWidth: 48 }}
+              style={{ width: 58, height: 40, borderRadius: 22, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0, background: isActive ? activeFooterPill : "transparent", border: "none", cursor: "pointer", fontFamily: font, padding: "4px 10px", minWidth: 48, transition: "background 0.15s" }}
               onClick={() => {
                 if (n.id === "timeline" && !activeId && profiles.length > 0) setActiveId(profiles[0].id);
                 if (n.id === "compare" && profiles.length > 0) { setCompareId(profiles[0].id); setCompareA(null); setCompareB(null); }
                 setExpandedEntry(null); setView(n.id);
               }}>
-              <span style={{ fontSize: 19, color: isActive ? n.color : T.textMuted, transition: "color 0.15s" }}>{n.icon}</span>
-              <span style={{ fontSize: 10, fontWeight: isActive ? 600 : 400, color: isActive ? n.color : T.textMuted, transition: "color 0.15s" }}>{n.label}</span>
+              <span style={{ fontSize: 24, color: isActive ? n.color : "#b6c4d0", transition: "color 0.15s", lineHeight: 1 }}>{n.icon}</span>
+              <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap" }}>{n.label}</span>
             </button>
           );
         })}
