@@ -14,6 +14,7 @@ import BrandConsistencyLayer from './BrandConsistencyLayer'
 import SettingsHubLayer from './SettingsHubLayer'
 import SettingsLauncherLayer from './SettingsLauncherLayer'
 import NotificationControlsLauncherLayer from './NotificationControlsLauncherLayer'
+import PWAExperienceLayer from './PWAExperienceLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -31,5 +32,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <SettingsHubLayer />
     <SettingsLauncherLayer />
     <NotificationControlsLauncherLayer />
+    <PWAExperienceLayer />
   </React.StrictMode>
 )
