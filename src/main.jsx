@@ -14,6 +14,7 @@ import TimelineScreen from './TimelineScreen'
 import ChildProfileCreator from './ChildProfileCreator'
 import ZommyIntro from './ZommyIntro'
 import ThemeLayer from './ThemeLayer'
+import ChapterScreen from './ChapterScreen'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -22,6 +23,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ZommyIntro />
     <TodayDashboardLayer />
     <TimelineScreen />
+    <ChapterScreen />
     <CompareScreen />
     <SettingsScreen />
     <ChildProfileCreator />
