@@ -15,6 +15,7 @@ import ChildProfileCreator from './ChildProfileCreator'
 import ZommyIntro from './ZommyIntro'
 import ThemeLayer from './ThemeLayer'
 import ChapterScreen from './ChapterScreen'
+import ChaptersLibrary from './ChaptersLibrary'
 import MemorySavedToast from './MemorySavedToast'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ZommyIntro />
     <HomeRitualScreen />
     <TimelineScreen />
+    <ChaptersLibrary />
     <ChapterScreen />
     <CompareScreen />
     <SettingsScreen />
