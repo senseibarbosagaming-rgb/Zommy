@@ -73,6 +73,12 @@ const openProfileTimeline = async (profile) => {
   }
 };
 
+const openMemoryComposer = (profile) => {
+  window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", {
+    detail: { profileId: profile?.id || "" },
+  }));
+};
+
 export default function NavExperienceLayer() {
   const [user, setUser] = useState(null);
   const [profiles, setProfiles] = useState([]);
@@ -100,7 +106,12 @@ export default function NavExperienceLayer() {
     }
 
     const [{ data: profileRows }, { count }] = await Promise.all([
-      supabase.from("profiles").select("id,name,emoji,color,created_at").eq("user_id", currentUser.id).order("created_at"),
+      supabase
+        .from("profiles")
+        .select("id,name,emoji,color,created_at,archived_at")
+        .eq("user_id", currentUser.id)
+        .is("archived_at", null)
+        .order("created_at"),
       supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", currentUser.id),
     ]);
 
@@ -118,11 +129,14 @@ export default function NavExperienceLayer() {
     });
 
     const onFocus = () => refreshData();
+    const onProfilesChanged = () => refreshData();
     window.addEventListener("focus", onFocus);
+    window.addEventListener("zommy:profiles-changed", onProfilesChanged);
 
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("zommy:profiles-changed", onProfilesChanged);
     };
   }, [refreshData]);
 
@@ -155,11 +169,10 @@ export default function NavExperienceLayer() {
     else showMessage(copy.addChildFirstHint);
   };
 
-  const beginMemoryFor = async (profile) => {
+  const beginMemoryFor = (profile) => {
     setChooserMode(null);
-    await openProfileTimeline(profile);
-    clickOriginalNav(2);
     setActiveTab("log");
+    openMemoryComposer(profile);
     refreshData();
   };
 
@@ -170,14 +183,12 @@ export default function NavExperienceLayer() {
     }
 
     if (activeProfile) {
-      clickOriginalNav(2);
-      setActiveTab("log");
-      refreshData();
+      beginMemoryFor(activeProfile);
       return;
     }
 
     if (profiles.length === 1) {
-      await beginMemoryFor(profiles[0]);
+      beginMemoryFor(profiles[0]);
       return;
     }
 
