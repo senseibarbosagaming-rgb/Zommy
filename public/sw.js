@@ -1,7 +1,5 @@
-const CACHE_NAME = "zommy-shell-v3";
+const CACHE_NAME = "zommy-shell-v4";
 const STATIC_ASSETS = [
-  "/",
-  "/index.html",
   "/offline.html",
   "/manifest.webmanifest",
   "/icons/icon.svg",
@@ -40,15 +38,9 @@ const cacheFirst = async (request) => {
 
 const networkFirstNavigation = async (request) => {
   try {
-    const response = await fetch(request, { cache: "no-store" });
-    if (response && response.status === 200) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put("/index.html", response.clone());
-    }
-    return response;
+    return await fetch(request, { cache: "no-store" });
   } catch (_error) {
-    const cachedShell = await caches.match("/index.html");
-    return cachedShell || caches.match("/offline.html");
+    return caches.match("/offline.html");
   }
 };
 
