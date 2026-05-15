@@ -1,84 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { clearDraft, getDraft, putDraft } from "./pwaStorage";
-import { queueMemoryDraft, uploadMemoryPayload } from "./pwaUploadQueue";
-import { supabase } from "./supabase";
-
-const COPY = {
-  en: {
-    title: (name) => `Add ${name} memory`,
-    chooseChild: "Who is this memory for?",
-    date: "Date",
-    photos: "Photos",
-    addPhotos: "Add photos",
-    note: "Note",
-    notePlaceholder: "What happened? Keep it short, imperfect, real.",
-    coverCrop: "Cover crop",
-    cropHint: "Choose where the tall timeline tile should focus.",
-    top: "Top",
-    center: "Center",
-    bottom: "Bottom",
-    save: "Save memory",
-    retry: "Retry upload",
-    cancel: "Cancel",
-    compressing: (index, total) => `Compressing ${index}/${total}`,
-    uploading: (index, total, pct) => `Uploading ${index}/${total} · ${pct}%`,
-    saving: "Saving memory…",
-    queued: "Saved offline. It will upload when connection returns.",
-    draftRestored: "Draft restored.",
-    done: "Memory saved.",
-    genericError: "Upload failed. Your photos and note are still here.",
-    photoError: "Add at least one photo.",
-    profileError: "Choose a child first.",
-  },
-  pt: {
-    title: (name) => `Adicionar memória de ${name}`,
-    chooseChild: "Para quem é esta memória?",
-    date: "Data",
-    photos: "Fotos",
-    addPhotos: "Adicionar fotos",
-    note: "Nota",
-    notePlaceholder: "O que aconteceu? Curto, imperfeito, real.",
-    coverCrop: "Corte da capa",
-    cropHint: "Escolhe onde a tile alta da timeline deve focar.",
-    top: "Topo",
-    center: "Centro",
-    bottom: "Fundo",
-    save: "Guardar memória",
-    retry: "Tentar de novo",
-    cancel: "Cancelar",
-    compressing: (index, total) => `A comprimir ${index}/${total}`,
-    uploading: (index, total, pct) => `A carregar ${index}/${total} · ${pct}%`,
-    saving: "A guardar memória…",
-    queued: "Guardada offline. Vai carregar quando a ligação voltar.",
-    draftRestored: "Rascunho recuperado.",
-    done: "Memória guardada.",
-    genericError: "O upload falhou. As fotos e a nota continuam aqui.",
-    photoError: "Adiciona pelo menos uma foto.",
-    profileError: "Escolhe primeiro uma criança.",
-  },
-};
-
-const today = () => {
-  const date = new Date();
-  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-  return date.toISOString().split("T")[0];
-};
-
-const getPrefs = () => {
-  try { return JSON.parse(localStorage.getItem("zommy_prefs") || "{}"); }
-  catch { return {}; }
-};
-
-const getCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
-
-const cropOptions = [
-  { id: "top", value: "50% 18%" },
-  { id: "center", value: "50% 50%" },
-  { id: "bottom", value: "50% 82%" },
-];
-
-const makePhotoId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-const photoFromFile = (file) => ({ id: makePhotoId(), file, preview: URL.createObjectURL(file) });
+import { clearDraft } from "./pwaStorage";
+import { uploadMemoryPayload } from "./pwaUploadQueue";
+import {
+  cropOptions,
+  getComposerCopy,
+  loadComposerContext,
+  persistComposerDraft,
+  photoFromFile,
+  photosFromDraft,
+  queueCurrentMemory,
+  revokePhotoPreviews,
+  statusTextForUpload,
+  today,
+  validateComposer,
+} from "./memoryComposerCore";
 
 export default function MemoryComposer() {
   const [open, setOpen] = useState(false);
@@ -95,61 +30,52 @@ export default function MemoryComposer() {
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const copy = useMemo(getCopy, []);
+  const copy = useMemo(getComposerCopy, []);
   const activeProfile = profiles.find((profile) => profile.id === profileId);
 
   useEffect(() => {
     const openComposer = async (event) => {
       const { profileId: requestedProfileId } = event.detail || {};
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUser = sessionData.session?.user || null;
-      setUser(currentUser);
+      const { user: nextUser, profiles: nextProfiles, draft } = await loadComposerContext();
+      setUser(nextUser);
+      if (!nextUser) return;
 
-      if (!currentUser) return;
-
-      const { data } = await supabase
-        .from("profiles")
-        .select("id,name,emoji,color,created_at")
-        .eq("user_id", currentUser.id)
-        .is("archived_at", null)
-        .order("created_at");
-
-      const nextProfiles = data || [];
-      const draft = await getDraft().catch(() => null);
+      revokePhotoPreviews(photos);
+      const nextPhotos = photosFromDraft(draft);
       setProfiles(nextProfiles);
       setProfileId(requestedProfileId || draft?.profileId || (nextProfiles.length === 1 ? nextProfiles[0].id : ""));
       setDate(draft?.date || today());
       setNote(draft?.note || "");
-      setPhotos((draft?.photos || []).map((photo) => photoFromFile(photo.file || photo.blob || photo)));
+      setPhotos(nextPhotos);
       setCoverIndex(draft?.coverIndex || 0);
       setCoverPosition(draft?.coverPosition || "50% 50%");
       setStatus(draft ? copy.draftRestored : "");
       setProgress(0);
       setFailed(false);
+      setSaving(false);
       setOpen(true);
     };
 
     window.addEventListener("zommy:open-memory-composer", openComposer);
     return () => window.removeEventListener("zommy:open-memory-composer", openComposer);
-  }, [copy.draftRestored]);
+  }, [copy.draftRestored, photos]);
 
   useEffect(() => {
-    if (!open || saving) return;
+    if (!open || saving) return undefined;
     const timeout = window.setTimeout(() => {
-      putDraft({ profileId, date, note, photos: photos.map((photo) => ({ file: photo.file })), coverIndex, coverPosition }).catch(() => null);
+      persistComposerDraft({ profileId, date, note, photos, coverIndex, coverPosition }).catch(() => null);
     }, 350);
     return () => window.clearTimeout(timeout);
   }, [coverIndex, coverPosition, date, note, open, photos, profileId, saving]);
 
-  useEffect(() => () => {
-    photos.forEach((photo) => URL.revokeObjectURL(photo.preview));
-  }, [photos]);
+  useEffect(() => () => revokePhotoPreviews(photos), [photos]);
 
   if (!open) return null;
 
   const close = () => {
     if (saving) return;
-    photos.forEach((photo) => URL.revokeObjectURL(photo.preview));
+    revokePhotoPreviews(photos);
+    setPhotos([]);
     setOpen(false);
   };
 
@@ -166,7 +92,7 @@ export default function MemoryComposer() {
   const removePhoto = (id) => {
     setPhotos((current) => {
       const removed = current.find((photo) => photo.id === id);
-      if (removed) URL.revokeObjectURL(removed.preview);
+      revokePhotoPreviews(removed ? [removed] : []);
       const next = current.filter((photo) => photo.id !== id);
       if (coverIndex >= next.length) setCoverIndex(Math.max(0, next.length - 1));
       return next;
@@ -174,21 +100,39 @@ export default function MemoryComposer() {
   };
 
   const queueOffline = async () => {
-    await queueMemoryDraft({ userId: user.id, profileId: activeProfile.id, date, note, photos: photos.map((photo) => ({ file: photo.file })), coverIndex, coverPosition });
-    await clearDraft().catch(() => null);
-    window.dispatchEvent(new CustomEvent("zommy:queue-updated"));
+    await queueCurrentMemory({ user, activeProfile, date, note, photos, coverIndex, coverPosition });
     setStatus(copy.queued);
     setProgress(100);
-    window.setTimeout(() => setOpen(false), 700);
+    window.setTimeout(() => {
+      revokePhotoPreviews(photos);
+      setPhotos([]);
+      setOpen(false);
+    }, 700);
+  };
+
+  const afterSaved = async () => {
+    await clearDraft().catch(() => null);
+    setStatus(copy.done);
+    setProgress(100);
+    window.dispatchEvent(new CustomEvent("zommy:memories-synced"));
+    window.dispatchEvent(new CustomEvent("zommy:show-today"));
+    window.setTimeout(() => {
+      revokePhotoPreviews(photos);
+      setPhotos([]);
+      setOpen(false);
+    }, 650);
   };
 
   const saveMemory = async () => {
     setFailed(false);
     setProgress(0);
 
-    if (!activeProfile) { setStatus(copy.profileError); setFailed(true); return; }
-    if (!photos.length) { setStatus(copy.photoError); setFailed(true); return; }
-    if (!user) { setStatus(copy.genericError); setFailed(true); return; }
+    const validationError = validateComposer({ user, activeProfile, photos, copy });
+    if (validationError) {
+      setStatus(validationError);
+      setFailed(true);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -207,17 +151,10 @@ export default function MemoryComposer() {
         coverIndex,
         coverPosition,
         onProgress: setProgress,
-        onStatus: ({ stage, index, total, pct }) => {
-          if (stage === "compressing") setStatus(copy.compressing(index, total));
-          if (stage === "uploading") setStatus(copy.uploading(index, total, pct));
-          if (stage === "saving") setStatus(copy.saving);
-        },
+        onStatus: (nextStatus) => setStatus(statusTextForUpload(copy, nextStatus)),
       });
 
-      await clearDraft().catch(() => null);
-      setStatus(copy.done);
-      setProgress(100);
-      window.setTimeout(() => window.location.reload(), 500);
+      await afterSaved();
     } catch (error) {
       console.error("Failed to save memory", error);
       if (!navigator.onLine) {
@@ -226,6 +163,7 @@ export default function MemoryComposer() {
         setStatus(copy.genericError);
         setFailed(true);
       }
+    } finally {
       setSaving(false);
     }
   };
@@ -251,19 +189,19 @@ export default function MemoryComposer() {
         )}
 
         <div style={{ display: "grid", gap: 15 }}>
-          <label style={{ display: "grid", gap: 7, color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.8px" }}>
+          <label style={labelStyle()}>
             {copy.date}
-            <input type="date" value={date} max={today()} disabled={saving} onChange={(event) => setDate(event.target.value)} style={{ width: "100%", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 13, padding: "12px 13px", font: "inherit", fontSize: 15 }} />
+            <input type="date" value={date} max={today()} disabled={saving} onChange={(event) => setDate(event.target.value)} style={fieldStyle()} />
           </label>
 
           <section style={{ display: "grid", gap: 8 }}>
-            <div style={{ color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.8px" }}>{copy.photos}</div>
+            <div style={labelTextStyle()}>{copy.photos}</div>
             {photos.length > 0 && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
                 {photos.map((photo, index) => (
                   <button key={photo.id} type="button" onClick={() => setCoverIndex(index)} disabled={saving} style={{ border: `2px solid ${coverIndex === index ? activeProfile?.color || "#17d86f" : "transparent"}`, background: "rgba(255,255,255,0.05)", borderRadius: 13, overflow: "hidden", padding: 0, position: "relative", aspectRatio: "9 / 13", cursor: saving ? "wait" : "pointer" }}>
                     <img src={photo.preview} alt="Selected memory preview" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: coverIndex === index ? coverPosition : "50% 50%", display: "block" }} />
-                    <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(0,0,0,0.55)", color: "#fff", borderRadius: 999, padding: "3px 7px", fontSize: 10, fontWeight: 900 }}>{index === coverIndex ? "Cover" : index + 1}</span>
+                    <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(0,0,0,0.55)", color: "#fff", borderRadius: 999, padding: "3px 7px", fontSize: 10, fontWeight: 900 }}>{index === coverIndex ? copy.cover : index + 1}</span>
                     {!saving && <span onClick={(event) => { event.stopPropagation(); removePhoto(photo.id); }} style={{ position: "absolute", right: 6, top: 6, background: "rgba(0,0,0,0.6)", color: "#fff", borderRadius: 999, width: 24, height: 24, display: "grid", placeItems: "center", fontSize: 14 }}>×</span>}
                   </button>
                 ))}
@@ -289,9 +227,9 @@ export default function MemoryComposer() {
             </section>
           )}
 
-          <label style={{ display: "grid", gap: 7, color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.8px" }}>
+          <label style={labelStyle()}>
             {copy.note}
-            <textarea value={note} disabled={saving} onChange={(event) => setNote(event.target.value)} placeholder={copy.notePlaceholder} rows={3} style={{ width: "100%", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 13, padding: "12px 13px", font: "inherit", fontSize: 15, resize: "none", lineHeight: 1.55 }} />
+            <textarea value={note} disabled={saving} onChange={(event) => setNote(event.target.value)} placeholder={copy.notePlaceholder} rows={3} style={{ ...fieldStyle(), resize: "none", lineHeight: 1.55 }} />
           </label>
 
           {(status || saving) && (
@@ -311,3 +249,7 @@ export default function MemoryComposer() {
     </div>
   );
 }
+
+const labelTextStyle = () => ({ color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.8px" });
+const labelStyle = () => ({ display: "grid", gap: 7, ...labelTextStyle() });
+const fieldStyle = () => ({ width: "100%", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 13, padding: "12px 13px", font: "inherit", fontSize: 15 });
