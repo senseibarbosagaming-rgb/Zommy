@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import NotificationSettingsPanel from "./NotificationSettingsPanel";
+import { loadNotificationPrefs, saveNotificationPrefs } from "./notificationCore";
 import { supabase } from "./supabase";
 
 const PALETTE = [
@@ -23,6 +24,7 @@ const COPY = {
     privacy: "Privacy",
     familySharing: "Family sharing",
     notificationSchedule: "Notification schedule",
+    notifications: "Notifications",
     language: "Language",
     theme: "Theme",
     comingSoon: "Coming soon",
@@ -59,10 +61,13 @@ const COPY = {
     light: "Light",
     memories: "memories",
     permanent: "Permanent",
-    openControls: "Open controls",
+    openControls: "Details",
     privateAccountData: "Private account data",
     back: "Back",
     profiles: "profiles",
+    enabled: "On",
+    disabled: "Off",
+    directExport: (entries, profiles) => `${entries} memories · ${profiles} profiles`,
   },
   pt: {
     title: "Definições",
@@ -73,6 +78,7 @@ const COPY = {
     privacy: "Privacidade",
     familySharing: "Partilha familiar",
     notificationSchedule: "Horário de notificações",
+    notifications: "Notificações",
     language: "Idioma",
     theme: "Tema",
     comingSoon: "Em breve",
@@ -109,10 +115,13 @@ const COPY = {
     light: "Claro",
     memories: "memórias",
     permanent: "Permanente",
-    openControls: "Abrir controlos",
+    openControls: "Detalhes",
     privateAccountData: "Dados privados da conta",
     back: "Voltar",
     profiles: "perfis",
+    enabled: "Ligado",
+    disabled: "Desligado",
+    directExport: (entries, profiles) => `${entries} memórias · ${profiles} perfis`,
   },
 };
 
@@ -160,6 +169,7 @@ export default function SettingsScreen() {
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
   const [prefs, setPrefs] = useState(getPrefs);
+  const [notificationPrefs, setNotificationPrefs] = useState(loadNotificationPrefs);
 
   const copy = useMemo(getCopy, [prefs.lang]);
   const entryCountByProfile = useMemo(() => entries.reduce((map, entry) => ({ ...map, [entry.profile_id]: (map[entry.profile_id] || 0) + 1 }), {}), [entries]);
@@ -181,6 +191,7 @@ export default function SettingsScreen() {
     ]);
     setProfiles(profileRows || []);
     setEntries(entryRows || []);
+    setNotificationPrefs(loadNotificationPrefs());
   };
 
   useEffect(() => {
@@ -202,6 +213,12 @@ export default function SettingsScreen() {
   const updatePrefs = (nextPrefs) => {
     setPrefs(nextPrefs);
     savePrefs(nextPrefs);
+    showToast(copy.saved);
+  };
+
+  const updateNotificationPrefs = (nextPrefs) => {
+    setNotificationPrefs(nextPrefs);
+    saveNotificationPrefs(nextPrefs);
     showToast(copy.saved);
   };
 
@@ -259,20 +276,10 @@ export default function SettingsScreen() {
     showToast(copy.saved);
   };
 
-  const menuItems = [
-    ["children", copy.manageChildren, `${profiles.filter((profile) => !profile.archived_at).length} ${copy.active.toLowerCase()}`],
-    ["export", copy.exportData, `${entries.length} ${copy.memories}`],
-    ["delete", copy.deleteAccountData, copy.permanent],
-    ["storage", copy.storageUsage, formatBytes(estimatedStorage)],
-    ["privacy", copy.privacy, copy.privateAccountData],
-    ["sharing", copy.familySharing, copy.comingSoon],
-    ["notifications", copy.notificationSchedule, copy.openControls],
-    ["language", copy.language, prefs.lang === "pt" ? copy.portuguese : copy.english],
-    ["theme", copy.theme, prefs.theme === "light" ? copy.light : copy.dark],
-  ];
-
   const activeProfiles = profiles.filter((profile) => !profile.archived_at);
   const archivedProfiles = profiles.filter((profile) => profile.archived_at);
+
+  const sectionTitle = section === "children" ? copy.manageChildren : section === "notifications" ? copy.notificationSchedule : section === "delete" ? copy.deleteAccountData : copy.title;
 
   const renderProfile = (profile) => (
     <article key={profile.id} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", borderRadius: 18, padding: 14, display: "grid", gap: 11, opacity: profile.archived_at ? 0.72 : 1 }}>
@@ -298,32 +305,54 @@ export default function SettingsScreen() {
     <main style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
       <div style={{ maxWidth: 480, minHeight: "100dvh", margin: "0 auto", padding: "20px 16px 112px" }}>
         <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
-          <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 34, lineHeight: 1.08, fontWeight: 650 }}>{section === "menu" ? copy.title : menuItems.find(([id]) => id === section)?.[1]}</h1>
+          <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 34, lineHeight: 1.08, fontWeight: 650 }}>{sectionTitle}</h1>
           {section !== "menu" && <button aria-label={copy.back} onClick={() => setSection("menu")} style={ghostButton()}>←</button>}
         </header>
 
         {toast && <div role="status" style={{ background: "#fff", color: "#111", borderRadius: 14, padding: "10px 12px", fontSize: 13, fontWeight: 800, marginBottom: 12 }}>{toast}</div>}
 
         {section === "menu" && (
-          <section style={{ display: "grid", gap: 9 }}>
-            {menuItems.map(([id, title, meta]) => (
-              <button key={id} onClick={() => setSection(id)} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", color: "#fff", borderRadius: 16, padding: "15px 14px", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", textAlign: "left", cursor: "pointer" }}>
-                <span style={{ fontSize: 15, fontWeight: 900 }}>{title}</span>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.52)", fontWeight: 750 }}>{meta}</span>
-              </button>
-            ))}
+          <section style={{ display: "grid", gap: 10 }}>
+            <SettingRow title={copy.manageChildren} meta={`${activeProfiles.length} ${copy.active.toLowerCase()}`} onClick={() => setSection("children")} />
+
+            <SettingRow title={copy.notifications} meta={notificationPrefs.enabled ? copy.enabled : copy.disabled}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <SwitchButton active={notificationPrefs.enabled} onClick={() => updateNotificationPrefs({ ...notificationPrefs, enabled: !notificationPrefs.enabled })} />
+                <button onClick={() => setSection("notifications")} style={inlineButton()}>{copy.openControls}</button>
+              </div>
+            </SettingRow>
+
+            <SettingRow title={copy.language} meta={prefs.lang === "pt" ? copy.portuguese : copy.english}>
+              <SegmentedControl
+                options={[["en", copy.english], ["pt", copy.portuguese]]}
+                value={prefs.lang === "pt" ? "pt" : "en"}
+                onChange={(lang) => updatePrefs({ ...prefs, lang })}
+              />
+            </SettingRow>
+
+            <SettingRow title={copy.theme} meta={prefs.theme === "light" ? copy.light : copy.dark}>
+              <SegmentedControl
+                options={[["dark", copy.dark], ["light", copy.light]]}
+                value={prefs.theme === "light" ? "light" : "dark"}
+                onChange={(theme) => updatePrefs({ ...prefs, theme })}
+              />
+            </SettingRow>
+
+            <SettingRow title={copy.exportData} meta={copy.directExport(entries.length, profiles.length)}>
+              <button onClick={exportData} style={inlineButton("#34D399")}>{copy.exportData}</button>
+            </SettingRow>
+
+            <InfoCard title={copy.storageUsage} meta={formatBytes(estimatedStorage)} body={copy.storageHint} />
+            <InfoCard title={copy.privacy} meta={copy.privateAccountData} body={copy.privacyText} />
+            <InfoCard title={copy.familySharing} meta={copy.comingSoon} body={copy.familySharingText} />
+
+            <SettingRow title={copy.deleteAccountData} meta={copy.permanent} danger onClick={() => setSection("delete")} />
           </section>
         )}
 
         {section === "children" && <section style={{ display: "grid", gap: 14 }}><p style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.55, fontSize: 13 }}>{copy.archiveHint}</p>{activeProfiles.length ? activeProfiles.map(renderProfile) : <p style={{ color: "rgba(255,255,255,0.48)", padding: 24, textAlign: "center" }}>{copy.noChildren}</p>}{archivedProfiles.length > 0 && <h2 style={{ color: "rgba(255,255,255,0.62)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 8 }}>{copy.archived}</h2>}{archivedProfiles.map(renderProfile)}</section>}
-        {section === "export" && <Panel><p>{entries.length} {copy.memories} · {profiles.length} {copy.profiles}</p><button onClick={exportData} style={primaryButton()}>{copy.exportData}</button></Panel>}
         {section === "delete" && <Panel><p>{copy.deleteAccountBody}</p><button onClick={() => { setConfirmAll(true); setConfirmText(""); }} style={dangerButton()}>{copy.deleteAccountData}</button></Panel>}
-        {section === "storage" && <Panel><p style={{ fontSize: 28, fontWeight: 900 }}>{formatBytes(estimatedStorage)}</p><p>{copy.storageHint}</p></Panel>}
-        {section === "privacy" && <Panel><p>{copy.privacyText}</p></Panel>}
-        {section === "sharing" && <Panel><p>{copy.familySharingText}</p></Panel>}
         {section === "notifications" && <NotificationSettingsPanel profiles={profiles} entries={entries} />}
-        {section === "language" && <Panel><button style={primaryButton(prefs.lang === "en")} onClick={() => updatePrefs({ ...prefs, lang: "en" })}>{copy.english}</button><button style={primaryButton(prefs.lang === "pt")} onClick={() => updatePrefs({ ...prefs, lang: "pt" })}>{copy.portuguese}</button></Panel>}
-        {section === "theme" && <Panel><button style={primaryButton(prefs.theme !== "light")} onClick={() => updatePrefs({ ...prefs, theme: "dark" })}>{copy.dark}</button><button style={primaryButton(prefs.theme === "light")} onClick={() => updatePrefs({ ...prefs, theme: "light" })}>{copy.light}</button></Panel>}
 
         {editing && <Dialog title={copy.manageChildren} onClose={() => setEditing(null)}><label style={labelStyle()}>{copy.name}<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} style={inputStyle()} /></label><label style={labelStyle()}>{copy.birthDate}<input type="date" value={editing.birthdate} max={today()} onChange={(e) => setEditing({ ...editing, birthdate: e.target.value })} style={inputStyle()} /></label><div style={labelStyle()}>{copy.emoji}<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{EMOJIS.map((emoji) => <button key={emoji} onClick={() => setEditing({ ...editing, emoji })} style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${editing.emoji === emoji ? "#fff" : "rgba(255,255,255,0.14)"}`, background: "rgba(255,255,255,0.05)", fontSize: 21 }}>{emoji}</button>)}</div></div><div style={labelStyle()}>{copy.color}<div style={{ display: "flex", gap: 12 }}>{PALETTE.map((item) => <button key={item.color} onClick={() => setEditing({ ...editing, color: item.color, bg: item.bg })} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: item.color, outline: editing.color === item.color ? `3px solid ${item.color}` : "none", outlineOffset: 4 }} />)}</div></div><button disabled={busy} onClick={saveProfile} style={primaryButton()}>{copy.save}</button></Dialog>}
         {confirmChild && <Dialog title={copy.deleteChildTitle(confirmChild.name)} onClose={() => setConfirmChild(null)}><p style={{ color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>{copy.deleteChildBody(confirmChild.name, entryCountByProfile[confirmChild.id] || 0)}</p><label style={labelStyle()}>{copy.typeName(confirmChild.name)}<input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle()} /></label><button disabled={busy || confirmText !== confirmChild.name} onClick={deleteProfile} style={dangerButton(confirmText === confirmChild.name)}>{copy.deleteChildConfirm}</button></Dialog>}
@@ -337,10 +366,62 @@ function Panel({ children }) {
   return <section style={{ display: "grid", gap: 13, border: "1px solid rgba(255,255,255,0.12)", borderRadius: 18, padding: 16, background: "rgba(255,255,255,0.045)", color: "rgba(255,255,255,0.72)", lineHeight: 1.6 }}>{children}</section>;
 }
 
+function SettingRow({ title, meta, children, danger = false, onClick }) {
+  const clickable = Boolean(onClick);
+  const content = (
+    <>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ color: danger ? "#fca5a5" : "#fff", fontSize: 15, fontWeight: 900 }}>{title}</div>
+        {meta && <div style={{ color: danger ? "rgba(252,165,165,0.62)" : "rgba(255,255,255,0.52)", fontSize: 12, marginTop: 3, fontWeight: 750 }}>{meta}</div>}
+      </div>
+      {children || <span style={{ color: danger ? "#fca5a5" : "rgba(255,255,255,0.42)", fontSize: 20 }}>›</span>}
+    </>
+  );
+
+  if (clickable) {
+    return <button onClick={onClick} style={{ ...rowStyle(), color: "#fff", textAlign: "left", cursor: "pointer" }}>{content}</button>;
+  }
+
+  return <div style={rowStyle()}>{content}</div>;
+}
+
+function InfoCard({ title, meta, body }) {
+  return (
+    <article style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.035)", borderRadius: 16, padding: 14, display: "grid", gap: 5 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
+        <h2 style={{ fontSize: 15, fontWeight: 900 }}>{title}</h2>
+        <span style={{ color: "rgba(255,255,255,0.52)", fontSize: 12, fontWeight: 850 }}>{meta}</span>
+      </div>
+      <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.5 }}>{body}</p>
+    </article>
+  );
+}
+
+function SegmentedControl({ options, value, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+      {options.map(([id, label]) => {
+        const active = value === id;
+        return <button key={id} onClick={() => onChange(id)} style={{ border: `1px solid ${active ? "#34D399" : "rgba(255,255,255,0.14)"}`, background: active ? "rgba(52,211,153,0.18)" : "rgba(255,255,255,0.04)", color: active ? "#34D399" : "rgba(255,255,255,0.68)", borderRadius: 999, padding: "9px 11px", fontSize: 12, fontWeight: 900, cursor: "pointer" }}>{label}</button>;
+      })}
+    </div>
+  );
+}
+
+function SwitchButton({ active, onClick }) {
+  return (
+    <button aria-pressed={active} onClick={onClick} style={{ width: 54, height: 32, border: `1px solid ${active ? "#34D399" : "rgba(255,255,255,0.18)"}`, borderRadius: 999, background: active ? "rgba(52,211,153,0.24)" : "rgba(255,255,255,0.06)", padding: 3, display: "flex", justifyContent: active ? "flex-end" : "flex-start", cursor: "pointer" }}>
+      <span style={{ width: 24, height: 24, borderRadius: "50%", background: active ? "#34D399" : "rgba(255,255,255,0.58)", display: "block" }} />
+    </button>
+  );
+}
+
 function Dialog({ title, children, onClose }) {
   return <div style={{ position: "fixed", inset: 0, zIndex: 1700, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }}><section role="dialog" aria-modal="true" style={{ width: "100%", maxWidth: 452, background: "#111820", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: 18, display: "grid", gap: 14, boxShadow: "0 24px 90px rgba(0,0,0,0.45)" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}><h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 23, lineHeight: 1.15 }}>{title}</h2><button onClick={onClose} style={ghostButton()}>×</button></div>{children}</section></div>;
 }
 
+const rowStyle = () => ({ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", borderRadius: 16, padding: "14px", minHeight: 70, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" });
+const inlineButton = (color = "#fff") => ({ border: `1px solid ${color === "#fff" ? "rgba(255,255,255,0.14)" : color + "66"}`, background: color === "#fff" ? "rgba(255,255,255,0.055)" : color + "22", color: color === "#fff" ? "rgba(255,255,255,0.78)" : color, borderRadius: 999, padding: "9px 11px", fontSize: 12, fontWeight: 900, whiteSpace: "nowrap", cursor: "pointer" });
 const labelStyle = () => ({ display: "grid", gap: 7, color: "rgba(255,255,255,0.64)", fontSize: 11, fontWeight: 850, textTransform: "uppercase", letterSpacing: "0.7px" });
 const inputStyle = () => ({ width: "100%", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 13, padding: "12px 13px", font: "inherit", fontSize: 15 });
 const ghostButton = () => ({ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.72)", borderRadius: 999, minWidth: 44, minHeight: 44, padding: "8px 12px", fontSize: 14, cursor: "pointer" });
