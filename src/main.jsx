@@ -5,6 +5,7 @@ import FirstRunExperience from './FirstRunExperience'
 import NavExperienceLayer from './NavExperienceLayer'
 import MemoryComposer from './MemoryComposer'
 import ComposerLauncherLayer from './ComposerLauncherLayer'
+import CropPositionLayer from './CropPositionLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -13,5 +14,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <NavExperienceLayer />
     <MemoryComposer />
     <ComposerLauncherLayer />
+    <CropPositionLayer />
   </React.StrictMode>
 )
