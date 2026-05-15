@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "./supabase";
+import MemoryDetailModal from "./MemoryDetailModal";
 import { useZommyData } from "./useZommyData";
 
 const TAGS = [
@@ -25,10 +25,6 @@ const COPY = {
     noResults: "No memories match this view yet.",
     memories: (count) => `${count} ${count === 1 ? "memory" : "memories"}`,
     addMemory: "Add memory",
-    close: "Close",
-    favorite: "Favorite",
-    removeFavorite: "Remove favorite",
-    noteEmpty: "No note",
   },
   pt: {
     title: "Timeline",
@@ -42,10 +38,6 @@ const COPY = {
     noResults: "Ainda não há memórias com estes filtros.",
     memories: (count) => `${count} ${count === 1 ? "memória" : "memórias"}`,
     addMemory: "Adicionar memória",
-    close: "Fechar",
-    favorite: "Favorita",
-    removeFavorite: "Remover favorita",
-    noteEmpty: "Sem nota",
   },
 };
 
@@ -155,13 +147,6 @@ export default function TimelineScreen() {
     window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: targetProfile?.id || "" } }));
   };
 
-  const toggleFavorite = async (entry) => {
-    const nextFavorite = !entry.favorite;
-    setSelectedEntry((current) => current?.id === entry.id ? { ...current, favorite: nextFavorite } : current);
-    await supabase.from("entries").update({ favorite: nextFavorite }).eq("id", entry.id).eq("user_id", user.id);
-    refresh();
-  };
-
   return (
     <main style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
       <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100dvh", padding: "20px 16px 112px", display: "grid", gap: 14 }}>
@@ -242,33 +227,19 @@ export default function TimelineScreen() {
       </div>
 
       {selectedEntry && (
-        <MemoryDetail entry={selectedEntry} profile={profileById[selectedEntry.profile_id]} copy={copy} lang={lang} onClose={() => setSelectedEntry(null)} onToggleFavorite={() => toggleFavorite(selectedEntry)} />
+        <MemoryDetailModal
+          entry={selectedEntry}
+          profile={profileById[selectedEntry.profile_id]}
+          user={user}
+          lang={lang}
+          onClose={() => setSelectedEntry(null)}
+          onChanged={async () => {
+            await refresh();
+            setSelectedEntry(null);
+          }}
+        />
       )}
     </main>
-  );
-}
-
-function MemoryDetail({ entry, profile, copy, lang, onClose, onToggleFavorite }) {
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1800, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }} onClick={onClose}>
-      <article role="dialog" aria-modal="true" style={{ width: "100%", maxWidth: 452, maxHeight: "92dvh", overflowY: "auto", background: "#111820", color: "#fff", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 24, boxShadow: "0 24px 90px rgba(0,0,0,0.55)" }} onClick={(event) => event.stopPropagation()}>
-        {entry.photoUrl && <img src={entry.photoUrl} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", maxHeight: 430, objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} />}
-        <div style={{ padding: 16, display: "grid", gap: 11 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-            <div>
-              <div style={{ color: profile?.color || "#34D399", fontSize: 12, fontWeight: 950, textTransform: "uppercase", letterSpacing: "0.7px" }}>{profile?.emoji || "👶"} {profile?.name || "Memory"}</div>
-              <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 24, lineHeight: 1.15, marginTop: 4 }}>{formatDate(entry.date, lang)}</h2>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 }}>{ageAtMemory(profile, entry.date, lang)}</p>
-            </div>
-            <button onClick={onClose} aria-label={copy.close} style={{ border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "#fff", borderRadius: 999, minWidth: 42, minHeight: 42, cursor: "pointer" }}>×</button>
-          </div>
-          <p style={{ color: entry.note ? "rgba(255,255,255,0.76)" : "rgba(255,255,255,0.42)", lineHeight: 1.6, fontSize: 15 }}>{entry.note || copy.noteEmpty}</p>
-          <button onClick={onToggleFavorite} style={{ border: `1px solid ${entry.favorite ? "#FBBF24" : "rgba(255,255,255,0.14)"}`, background: entry.favorite ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.05)", color: entry.favorite ? "#FBBF24" : "#fff", borderRadius: 15, minHeight: 48, fontSize: 14, fontWeight: 950, cursor: "pointer" }}>
-            {entry.favorite ? "★ " + copy.removeFavorite : "☆ " + copy.favorite}
-          </button>
-        </div>
-      </article>
-    </div>
   );
 }
 
