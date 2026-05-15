@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAppShell } from "./AppShellContext";
 import { useZommyData } from "./useZommyData";
 
 const COPY = {
@@ -35,58 +36,31 @@ const getPrefs = () => {
 
 const getCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
 
-const showToday = () => window.dispatchEvent(new CustomEvent("zommy:show-today"));
-const hideToday = () => window.dispatchEvent(new CustomEvent("zommy:hide-today"));
-const showTimeline = (profile) => window.dispatchEvent(new CustomEvent("zommy:show-timeline", { detail: { profileId: profile?.id || "" } }));
-const hideTimeline = () => window.dispatchEvent(new CustomEvent("zommy:hide-timeline"));
-const showCompare = () => window.dispatchEvent(new CustomEvent("zommy:show-compare"));
-const hideCompare = () => window.dispatchEvent(new CustomEvent("zommy:hide-compare"));
-const showSettings = () => window.dispatchEvent(new CustomEvent("zommy:show-settings"));
-const hideSettings = () => window.dispatchEvent(new CustomEvent("zommy:hide-settings"));
 const openProfileCreator = () => window.dispatchEvent(new CustomEvent("zommy:open-profile-creator"));
 const openComposer = (profile) => window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: profile?.id || "" } }));
 
 export default function NavExperienceLayer() {
   const { user, profiles, memoryCount, refresh } = useZommyData({ includeEntries: false, includeLocal: false });
-  const [activeProfileId, setActiveProfileId] = useState("");
-  const [activeTab, setActiveTab] = useState("today");
+  const { activeProfileId, activeScreen, openPrimaryScreen, setActiveProfileId } = useAppShell();
   const [chooserMode, setChooserMode] = useState(null);
 
   const copy = useMemo(getCopy, []);
   const showLabels = memoryCount < 4;
+  const activeTab = activeScreen || "today";
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || (profiles.length === 1 ? profiles[0] : null);
 
   useEffect(() => {
-    if (!user) {
-      setActiveProfileId("");
-      return undefined;
-    }
-
-    const updatePrimaryScreen = (event) => {
-      if (event.detail?.screen) setActiveTab(event.detail.screen);
-      if (event.detail?.profileId) setActiveProfileId(event.detail.profileId);
-    };
-
-    window.addEventListener("zommy:primary-screen-changed", updatePrimaryScreen);
-    return () => window.removeEventListener("zommy:primary-screen-changed", updatePrimaryScreen);
-  }, [user]);
+    if (!user) setActiveProfileId("");
+  }, [setActiveProfileId, user]);
 
   useEffect(() => {
     if (activeProfileId && !profiles.some((profile) => profile.id === activeProfileId)) setActiveProfileId("");
-  }, [activeProfileId, profiles]);
+  }, [activeProfileId, profiles, setActiveProfileId]);
 
   if (!user) return null;
 
-  const hidePrimaryScreens = () => {
-    hideToday();
-    hideTimeline();
-    hideCompare();
-    hideSettings();
-  };
-
   const beginMemoryFor = (profile) => {
     setChooserMode(null);
-    setActiveTab("today");
     if (profile?.id) setActiveProfileId(profile.id);
     openComposer(profile);
     refresh();
@@ -94,9 +68,6 @@ export default function NavExperienceLayer() {
 
   const handlePlus = () => {
     if (!profiles.length) {
-      setActiveTab("today");
-      hidePrimaryScreens();
-      showToday();
       openProfileCreator();
       return;
     }
@@ -110,36 +81,33 @@ export default function NavExperienceLayer() {
   };
 
   const handleTab = (tab) => {
-    setActiveTab(tab);
-
     if (tab === "timeline" && !activeProfile && profiles.length > 1) {
       setChooserMode("timeline");
       return;
     }
 
-    hidePrimaryScreens();
-
     if (tab === "today") {
-      if (!activeProfileId && profiles.length === 1) setActiveProfileId(profiles[0].id);
-      showToday();
+      const profileId = activeProfileId || (profiles.length === 1 ? profiles[0].id : "");
+      if (profileId) setActiveProfileId(profileId);
+      openPrimaryScreen("today", { profileId });
       refresh();
       return;
     }
 
     if (tab === "timeline") {
-      showTimeline(activeProfile);
+      openPrimaryScreen("timeline", { profileId: activeProfile?.id || "" });
       refresh();
       return;
     }
 
     if (tab === "compare") {
-      showCompare();
+      openPrimaryScreen("compare", { profileId: activeProfile?.id || activeProfileId || "" });
       refresh();
       return;
     }
 
     if (tab === "settings") {
-      showSettings();
+      openPrimaryScreen("settings", { profileId: activeProfile?.id || activeProfileId || "" });
       refresh();
     }
   };
@@ -180,10 +148,8 @@ export default function NavExperienceLayer() {
                 <button key={profile.id} className="b" onClick={() => {
                   if (chooserMode === "timeline") {
                     setChooserMode(null);
-                    setActiveTab("timeline");
                     setActiveProfileId(profile.id);
-                    hidePrimaryScreens();
-                    showTimeline(profile);
+                    openPrimaryScreen("timeline", { profileId: profile.id });
                     refresh();
                   } else {
                     beginMemoryFor(profile);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { useAppShell } from "./AppShellContext";
 
 const DEFAULT_PREFS = { lang: "en", theme: "dream" };
 const COPY = {
@@ -38,7 +39,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
-  const [hasPrimaryScreen, setHasPrimaryScreen] = useState(false);
+  const { ensureDefaultPrimaryScreen, hasPrimaryScreen } = useAppShell();
 
   const copy = COPY[prefs.lang === "pt" ? "pt" : "en"] || COPY.en;
   const user = session?.user || null;
@@ -75,16 +76,8 @@ export default function App() {
 
 
   useEffect(() => {
-    if (!user) {
-      setHasPrimaryScreen(false);
-      return undefined;
-    }
-
-    const updatePrimaryScreen = (event) => setHasPrimaryScreen(Boolean(event.detail?.screen));
-    window.addEventListener("zommy:primary-screen-changed", updatePrimaryScreen);
-    window.dispatchEvent(new CustomEvent("zommy:ensure-primary-screen"));
-    return () => window.removeEventListener("zommy:primary-screen-changed", updatePrimaryScreen);
-  }, [user]);
+    if (user) ensureDefaultPrimaryScreen();
+  }, [ensureDefaultPrimaryScreen, user]);
 
   const signIn = async () => {
     setSaving(true);
