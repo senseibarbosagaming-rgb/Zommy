@@ -14,10 +14,12 @@ import SettingsHubLayer from './SettingsHubLayer'
 import SettingsLauncherLayer from './SettingsLauncherLayer'
 import NotificationControlsLauncherLayer from './NotificationControlsLauncherLayer'
 import PWAExperienceLayer from './PWAExperienceLayer'
+import TodayDashboardLayer from './TodayDashboardLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
+    <TodayDashboardLayer />
     <FirstRunExperience />
     <NavExperienceLayer />
     <MemoryComposer />
