@@ -27,6 +27,9 @@ const COPY = {
     notifications: "Notifications",
     language: "Language",
     theme: "Theme",
+    signOut: "Log out",
+    signedOut: "Logged out.",
+    account: "Account",
     comingSoon: "Coming soon",
     storageHint: "Estimated from saved memory metadata and storage objects available to the app.",
     privacyText: "Memories are private to your signed-in account. Child profiles and memories use per-user database rules.",
@@ -81,6 +84,9 @@ const COPY = {
     notifications: "Notificações",
     language: "Idioma",
     theme: "Tema",
+    signOut: "Terminar sessão",
+    signedOut: "Sessão terminada.",
+    account: "Conta",
     comingSoon: "Em breve",
     storageHint: "Estimativa com base nas memórias e objetos de armazenamento acessíveis pela app.",
     privacyText: "As memórias são privadas da tua conta. Perfis e memórias usam regras por utilizador.",
@@ -213,6 +219,7 @@ export default function SettingsScreen() {
   const updatePrefs = (nextPrefs) => {
     setPrefs(nextPrefs);
     savePrefs(nextPrefs);
+    window.dispatchEvent(new CustomEvent("zommy:prefs-changed", { detail: nextPrefs }));
     showToast(copy.saved);
   };
 
@@ -220,6 +227,16 @@ export default function SettingsScreen() {
     setNotificationPrefs(nextPrefs);
     saveNotificationPrefs(nextPrefs);
     showToast(copy.saved);
+  };
+
+  const signOut = async () => {
+    setBusy(true);
+    await supabase.auth.signOut();
+    setBusy(false);
+    setOpen(false);
+    window.dispatchEvent(new CustomEvent("zommy:hide-today"));
+    window.dispatchEvent(new CustomEvent("zommy:hide-timeline"));
+    window.dispatchEvent(new CustomEvent("zommy:hide-settings"));
   };
 
   const exportData = () => {
@@ -323,19 +340,11 @@ export default function SettingsScreen() {
             </SettingRow>
 
             <SettingRow title={copy.language} meta={prefs.lang === "pt" ? copy.portuguese : copy.english}>
-              <SegmentedControl
-                options={[["en", copy.english], ["pt", copy.portuguese]]}
-                value={prefs.lang === "pt" ? "pt" : "en"}
-                onChange={(lang) => updatePrefs({ ...prefs, lang })}
-              />
+              <SegmentedControl options={[["en", copy.english], ["pt", copy.portuguese]]} value={prefs.lang === "pt" ? "pt" : "en"} onChange={(lang) => updatePrefs({ ...prefs, lang })} />
             </SettingRow>
 
             <SettingRow title={copy.theme} meta={prefs.theme === "light" ? copy.light : copy.dark}>
-              <SegmentedControl
-                options={[["dark", copy.dark], ["light", copy.light]]}
-                value={prefs.theme === "light" ? "light" : "dark"}
-                onChange={(theme) => updatePrefs({ ...prefs, theme })}
-              />
+              <SegmentedControl options={[["dark", copy.dark], ["light", copy.light]]} value={prefs.theme === "light" ? "light" : "dark"} onChange={(theme) => updatePrefs({ ...prefs, theme })} />
             </SettingRow>
 
             <SettingRow title={copy.exportData} meta={copy.directExport(entries.length, profiles.length)}>
@@ -345,7 +354,9 @@ export default function SettingsScreen() {
             <InfoCard title={copy.storageUsage} meta={formatBytes(estimatedStorage)} body={copy.storageHint} />
             <InfoCard title={copy.privacy} meta={copy.privateAccountData} body={copy.privacyText} />
             <InfoCard title={copy.familySharing} meta={copy.comingSoon} body={copy.familySharingText} />
-
+            <SettingRow title={copy.account} meta={user.email || ""}>
+              <button disabled={busy} onClick={signOut} style={inlineButton("#FBBF24")}>{copy.signOut}</button>
+            </SettingRow>
             <SettingRow title={copy.deleteAccountData} meta={copy.permanent} danger onClick={() => setSection("delete")} />
           </section>
         )}
@@ -368,52 +379,21 @@ function Panel({ children }) {
 
 function SettingRow({ title, meta, children, danger = false, onClick }) {
   const clickable = Boolean(onClick);
-  const content = (
-    <>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ color: danger ? "#fca5a5" : "#fff", fontSize: 15, fontWeight: 900 }}>{title}</div>
-        {meta && <div style={{ color: danger ? "rgba(252,165,165,0.62)" : "rgba(255,255,255,0.52)", fontSize: 12, marginTop: 3, fontWeight: 750 }}>{meta}</div>}
-      </div>
-      {children || <span style={{ color: danger ? "#fca5a5" : "rgba(255,255,255,0.42)", fontSize: 20 }}>›</span>}
-    </>
-  );
-
-  if (clickable) {
-    return <button onClick={onClick} style={{ ...rowStyle(), color: "#fff", textAlign: "left", cursor: "pointer" }}>{content}</button>;
-  }
-
+  const content = <><div style={{ minWidth: 0 }}><div style={{ color: danger ? "#fca5a5" : "#fff", fontSize: 15, fontWeight: 900 }}>{title}</div>{meta && <div style={{ color: danger ? "rgba(252,165,165,0.62)" : "rgba(255,255,255,0.52)", fontSize: 12, marginTop: 3, fontWeight: 750, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 225 }}>{meta}</div>}</div>{children || <span style={{ color: danger ? "#fca5a5" : "rgba(255,255,255,0.42)", fontSize: 20 }}>›</span>}</>;
+  if (clickable) return <button onClick={onClick} style={{ ...rowStyle(), color: "#fff", textAlign: "left", cursor: "pointer" }}>{content}</button>;
   return <div style={rowStyle()}>{content}</div>;
 }
 
 function InfoCard({ title, meta, body }) {
-  return (
-    <article style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.035)", borderRadius: 16, padding: 14, display: "grid", gap: 5 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
-        <h2 style={{ fontSize: 15, fontWeight: 900 }}>{title}</h2>
-        <span style={{ color: "rgba(255,255,255,0.52)", fontSize: 12, fontWeight: 850 }}>{meta}</span>
-      </div>
-      <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.5 }}>{body}</p>
-    </article>
-  );
+  return <article style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.035)", borderRadius: 16, padding: 14, display: "grid", gap: 5 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}><h2 style={{ fontSize: 15, fontWeight: 900 }}>{title}</h2><span style={{ color: "rgba(255,255,255,0.52)", fontSize: 12, fontWeight: 850 }}>{meta}</span></div><p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.5 }}>{body}</p></article>;
 }
 
 function SegmentedControl({ options, value, onChange }) {
-  return (
-    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-      {options.map(([id, label]) => {
-        const active = value === id;
-        return <button key={id} onClick={() => onChange(id)} style={{ border: `1px solid ${active ? "#34D399" : "rgba(255,255,255,0.14)"}`, background: active ? "rgba(52,211,153,0.18)" : "rgba(255,255,255,0.04)", color: active ? "#34D399" : "rgba(255,255,255,0.68)", borderRadius: 999, padding: "9px 11px", fontSize: 12, fontWeight: 900, cursor: "pointer" }}>{label}</button>;
-      })}
-    </div>
-  );
+  return <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>{options.map(([id, label]) => { const active = value === id; return <button key={id} onClick={() => onChange(id)} style={{ border: `1px solid ${active ? "#34D399" : "rgba(255,255,255,0.14)"}`, background: active ? "rgba(52,211,153,0.18)" : "rgba(255,255,255,0.04)", color: active ? "#34D399" : "rgba(255,255,255,0.68)", borderRadius: 999, padding: "9px 11px", fontSize: 12, fontWeight: 900, cursor: "pointer" }}>{label}</button>; })}</div>;
 }
 
 function SwitchButton({ active, onClick }) {
-  return (
-    <button aria-pressed={active} onClick={onClick} style={{ width: 54, height: 32, border: `1px solid ${active ? "#34D399" : "rgba(255,255,255,0.18)"}`, borderRadius: 999, background: active ? "rgba(52,211,153,0.24)" : "rgba(255,255,255,0.06)", padding: 3, display: "flex", justifyContent: active ? "flex-end" : "flex-start", cursor: "pointer" }}>
-      <span style={{ width: 24, height: 24, borderRadius: "50%", background: active ? "#34D399" : "rgba(255,255,255,0.58)", display: "block" }} />
-    </button>
-  );
+  return <button aria-pressed={active} onClick={onClick} style={{ width: 44, height: 26, minHeight: 26, border: `1px solid ${active ? "#34D399" : "rgba(255,255,255,0.18)"}`, borderRadius: 999, background: active ? "rgba(52,211,153,0.24)" : "rgba(255,255,255,0.06)", padding: 3, display: "flex", justifyContent: active ? "flex-end" : "flex-start", cursor: "pointer" }}><span style={{ width: 18, height: 18, borderRadius: "50%", background: active ? "#34D399" : "rgba(255,255,255,0.58)", display: "block" }} /></button>;
 }
 
 function Dialog({ title, children, onClose }) {
