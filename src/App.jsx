@@ -72,6 +72,7 @@ const LANGS = {
     signOut: "Sign out",
     signOutConfirm: "Sign out of Zommy",
     authError: "Could not sign in",
+    googleProviderDisabled: "Google login is not enabled in Supabase yet.",
   },
   pt: {
     tagline: "Um registo tranquilo do crescimento deles.",
@@ -141,6 +142,7 @@ const LANGS = {
     signOut: "Terminar sessão",
     signOutConfirm: "Terminar sessão no Zommy",
     authError: "Não foi possível iniciar sessão",
+    googleProviderDisabled: "O login com Google ainda não está ativo no Supabase.",
   },
 };
 
@@ -239,6 +241,16 @@ const getPrivatePhotoUrl = async (pathOrUrl) => {
   const { data, error } = await supabase.storage.from("photos").createSignedUrl(pathOrUrl, 60 * 60);
   if (error) throw error;
   return data.signedUrl;
+};
+
+const getAuthErrorMessage = (error, t) => {
+  const message = `${error?.message || ""} ${error?.error_code || ""}`.toLowerCase();
+
+  if (message.includes("unsupported provider") || message.includes("provider is not enabled")) {
+    return t.googleProviderDisabled;
+  }
+
+  return t.authError;
 };
 
 const isSameMonthDay = (date, targetDate) => date.slice(5, 10) === targetDate.slice(5, 10);
@@ -407,7 +419,7 @@ export default function Zommy() {
     });
 
     if (error) {
-      showToast(t.authError);
+      showToast(getAuthErrorMessage(error, t));
       setAuthSaving(false);
     }
   };
@@ -672,7 +684,7 @@ export default function Zommy() {
         <style>{css}</style>
 
         {toast && (
-          <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: prefs.theme === "dark" ? "#ffffff" : "#111111", color: prefs.theme === "dark" ? "#111" : "#fff", padding: "10px 20px", borderRadius: 100, fontSize: 13, fontWeight: 500, zIndex: 300, whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
+          <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: prefs.theme === "dark" ? "#ffffff" : "#111111", color: prefs.theme === "dark" ? "#111" : "#fff", padding: "10px 20px", borderRadius: 18, fontSize: 13, fontWeight: 500, zIndex: 300, maxWidth: "min(90vw, 420px)", textAlign: "center", lineHeight: 1.4, boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
             {toast}
           </div>
         )}
@@ -721,7 +733,7 @@ export default function Zommy() {
 
       {/* TOAST */}
       {toast && (
-        <div style={{ position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", background: prefs.theme === "dark" ? "#ffffff" : "#111111", color: prefs.theme === "dark" ? "#111" : "#fff", padding: "10px 20px", borderRadius: 100, fontSize: 13, fontWeight: 500, zIndex: 300, whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
+        <div style={{ position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", background: prefs.theme === "dark" ? "#ffffff" : "#111111", color: prefs.theme === "dark" ? "#111" : "#fff", padding: "10px 20px", borderRadius: 18, fontSize: 13, fontWeight: 500, zIndex: 300, maxWidth: "min(90vw, 420px)", textAlign: "center", lineHeight: 1.4, boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
           {toast}
         </div>
       )}
