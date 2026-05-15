@@ -129,6 +129,7 @@ export default function MemoryComposer() {
     setStatus(copy.done);
     setProgress(100);
     window.dispatchEvent(new CustomEvent("zommy:memories-synced"));
+    window.dispatchEvent(new CustomEvent("zommy:memory-saved", { detail: { profileId: activeProfile?.id, date } }));
     window.dispatchEvent(new CustomEvent("zommy:show-today"));
     finishAndClose(650);
   };
