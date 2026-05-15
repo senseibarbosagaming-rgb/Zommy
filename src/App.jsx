@@ -73,8 +73,6 @@ const LANGS = {
     signOutConfirm: "Sign out of Zommy",
     authError: "Could not sign in",
     googleProviderDisabled: "Google login is not enabled in Supabase yet.",
-    schemaNotReadyTitle: "Supabase setup needed",
-    schemaNotReadyBody: "The private-login database migration has not run yet. Open supabase/migrations/20260515000000_private_google_auth.sql, copy its SQL contents into the Supabase SQL editor, run them, then refresh.",
   },
   pt: {
     tagline: "Um registo tranquilo do crescimento deles.",
@@ -145,8 +143,6 @@ const LANGS = {
     signOutConfirm: "Terminar sessão no Zommy",
     authError: "Não foi possível iniciar sessão",
     googleProviderDisabled: "O login com Google ainda não está ativo no Supabase.",
-    schemaNotReadyTitle: "Configuração do Supabase necessária",
-    schemaNotReadyBody: "A migração da base de dados para login privado ainda não foi executada. Abre supabase/migrations/20260515000000_private_google_auth.sql, copia o conteúdo SQL para o editor SQL do Supabase, executa-o e atualiza a página.",
   },
 };
 
@@ -266,8 +262,6 @@ const isSchemaMigrationError = (error) => {
     || message.includes("schema cache");
 };
 
-const getDataErrorMessage = (error, t) => isSchemaMigrationError(error) ? t.schemaNotReadyBody : t.error;
-
 const isSameMonthDay = (date, targetDate) => date.slice(5, 10) === targetDate.slice(5, 10);
 
 const getAnniversaryYears = (date, targetDate) => {
@@ -334,7 +328,7 @@ export default function Zommy() {
   const [view, setView] = useState("home");
   const [activeId, setActiveId] = useState(null);
   const [toast, setToast] = useState(null);
-  const [setupError, setSetupError] = useState(null);
+  const [dataMode, setDataMode] = useState("private");
   const [saving, setSaving] = useState(false);
 
   const [logDate, setLogDate] = useState(today());
@@ -445,7 +439,7 @@ export default function Zommy() {
     await supabase.auth.signOut();
     setProfiles([]);
     setEntries({});
-    setSetupError(null);
+    setDataMode("private");
     setActiveId(null);
     setCompareId(null);
     setCompareA(null);
@@ -455,48 +449,75 @@ export default function Zommy() {
     setAuthSaving(false);
   };
 
+  const applyLoadedData = useCallback((loadedProfiles, loadedEntries) => {
+    setProfiles(loadedProfiles || []);
+    const grouped = {};
+    for (const p of (loadedProfiles || [])) grouped[p.id] = [];
+    for (const e of (loadedEntries || [])) { if (!grouped[e.profile_id]) grouped[e.profile_id] = []; grouped[e.profile_id].push(e); }
+    setEntries(grouped);
+  }, []);
+
+  const loadPrivateData = useCallback(async () => {
+    const [{ data: pd, error: profileError }, { data: ed, error: entryError }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("user_id", user.id).order("created_at"),
+      supabase.from("entries").select("*").eq("user_id", user.id).order("date", { ascending: false }),
+    ]);
+
+    if (profileError) throw profileError;
+    if (entryError) throw entryError;
+
+    const signedEntries = await Promise.all((ed || []).map(async (entry) => {
+      const photoPath = entry.photo_path || entry.photo;
+      return {
+        ...entry,
+        photo_path: photoPath,
+        photo: await getPrivatePhotoUrl(photoPath),
+      };
+    }));
+
+    return { profiles: pd || [], entries: signedEntries, mode: "private" };
+  }, [user]);
+
+  const loadLegacyData = useCallback(async () => {
+    const [{ data: pd, error: profileError }, { data: ed, error: entryError }] = await Promise.all([
+      supabase.from("profiles").select("*").order("created_at"),
+      supabase.from("entries").select("*").order("date", { ascending: false }),
+    ]);
+
+    if (profileError) throw profileError;
+    if (entryError) throw entryError;
+
+    return { profiles: pd || [], entries: ed || [], mode: "legacy" };
+  }, []);
+
   const loadData = useCallback(async () => {
     if (!user) {
       setProfiles([]);
       setEntries({});
-      setSetupError(null);
+      setDataMode("private");
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      const [{ data: pd, error: profileError }, { data: ed, error: entryError }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", user.id).order("created_at"),
-        supabase.from("entries").select("*").eq("user_id", user.id).order("date", { ascending: false }),
-      ]);
+      let loaded;
+      try {
+        loaded = await loadPrivateData();
+      } catch (error) {
+        if (!isSchemaMigrationError(error)) throw error;
+        console.warn("Private Supabase schema is unavailable; loading the existing Zommy data shape instead.", error);
+        loaded = await loadLegacyData();
+      }
 
-      if (profileError) throw profileError;
-      if (entryError) throw entryError;
-
-      const signedEntries = await Promise.all((ed || []).map(async (entry) => {
-        const photoPath = entry.photo_path || entry.photo;
-        return {
-          ...entry,
-          photo_path: photoPath,
-          photo: await getPrivatePhotoUrl(photoPath),
-        };
-      }));
-
-      setProfiles(pd || []);
-      const grouped = {};
-      for (const p of (pd || [])) grouped[p.id] = [];
-      for (const e of signedEntries) { if (!grouped[e.profile_id]) grouped[e.profile_id] = []; grouped[e.profile_id].push(e); }
-      setEntries(grouped);
-      setSetupError(null);
+      applyLoadedData(loaded.profiles, loaded.entries);
+      setDataMode(loaded.mode);
     } catch (error) {
       console.error("Failed to load Zommy data", error);
-      const message = getDataErrorMessage(error, t);
-      if (isSchemaMigrationError(error)) setSetupError(message);
-      showToast(message);
+      showToast(t.error);
     }
     setLoading(false);
-  }, [t.error, user]);
+  }, [applyLoadedData, loadLegacyData, loadPrivateData, t.error, user]);
 
   useEffect(() => {
     let mounted = true;
@@ -586,27 +607,36 @@ export default function Zommy() {
 
     const base64 = dataUrl.split(",")[1];
     const byteArr = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-    const filename = `${user.id}/${Date.now()}.jpg`;
+    const filename = dataMode === "private" ? `${user.id}/${Date.now()}.jpg` : `${Date.now()}.jpg`;
     const { data, error } = await supabase.storage.from("photos").upload(filename, byteArr, { contentType: "image/jpeg" });
     if (error) throw error;
-    return data.path;
+    return dataMode === "private" ? data.path : supabase.storage.from("photos").getPublicUrl(data.path).data.publicUrl;
   };
 
   const saveEntry = async () => {
     if (!logPhoto) { showToast("Add a photo first 📷"); return; }
     setSaving(true);
     try {
-      const photoPath = logPhoto.startsWith("data:") ? await uploadPhoto(logPhoto) : (entries[activeId] || []).find((entry) => entry.id === editingId)?.photo_path || logPhoto;
-      if (editingId) {
-        await supabase.from("entries").update({ date: logDate, photo_path: photoPath, note: logNote }).eq("id", editingId).eq("user_id", user.id);
+      const existingEntry = (entries[activeId] || []).find((entry) => entry.id === editingId);
+      const savedPhoto = logPhoto.startsWith("data:") ? await uploadPhoto(logPhoto) : existingEntry?.photo_path || logPhoto;
+      let result;
+      if (dataMode === "private") {
+        if (editingId) {
+          result = await supabase.from("entries").update({ date: logDate, photo_path: savedPhoto, note: logNote }).eq("id", editingId).eq("user_id", user.id);
+        } else {
+          result = await supabase.from("entries").insert({ id: Date.now(), user_id: user.id, profile_id: activeId, date: logDate, photo_path: savedPhoto, note: logNote });
+        }
+      } else if (editingId) {
+        result = await supabase.from("entries").update({ date: logDate, photo: savedPhoto, note: logNote }).eq("id", editingId);
       } else {
-        await supabase.from("entries").insert({ id: Date.now(), user_id: user.id, profile_id: activeId, date: logDate, photo_path: photoPath, note: logNote });
+        result = await supabase.from("entries").insert({ id: Date.now(), profile_id: activeId, date: logDate, photo: savedPhoto, note: logNote });
       }
+      if (result?.error) throw result.error;
       await loadData();
       setLogPhoto(null); setLogPreview(null); setLogNote(""); setLogDate(today()); setEditingId(null);
       showToast(editingId ? "Updated ✓" : "Saved ✓");
       setView("timeline");
-    } catch { showToast(t.error); }
+    } catch (error) { console.error("Failed to save memory", error); showToast(t.error); }
     setSaving(false);
   };
 
@@ -617,7 +647,9 @@ export default function Zommy() {
 
   const deleteEntry = async (entryId) => {
     try {
-      await supabase.from("entries").delete().eq("id", entryId).eq("user_id", user.id);
+      const query = supabase.from("entries").delete().eq("id", entryId);
+      const { error } = dataMode === "private" ? await query.eq("user_id", user.id) : await query;
+      if (error) throw error;
       setEntries((prev) => { const u = { ...prev }; if (activeId) u[activeId] = (u[activeId] || []).filter((e) => e.id !== entryId); return u; });
       setExpandedEntry(null);
       showToast("Deleted");
@@ -645,7 +677,9 @@ export default function Zommy() {
     try {
       const id = `child_${Date.now()}`;
       const pal = PALETTE[newPalette];
-      await supabase.from("profiles").insert({ id, user_id: user.id, name: newName.trim(), birthdate: newBirth, emoji: newEmoji, color: pal.color, bg: pal.bg });
+      const profile = { id, name: newName.trim(), birthdate: newBirth, emoji: newEmoji, color: pal.color, bg: pal.bg };
+      const { error } = await supabase.from("profiles").insert(dataMode === "private" ? { ...profile, user_id: user.id } : profile);
+      if (error) throw error;
       await loadData();
       setNewName(""); setNewBirth(""); setNewEmoji("👶"); setNewPalette(0); setShowForm(false);
       showToast(`${newName.trim()} added 🎉`);
@@ -835,18 +869,6 @@ export default function Zommy() {
           </div>
         ) : (
           <>
-            {setupError && (
-              <div className="f" style={{ padding: "28px 20px 0" }}>
-                <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ fontFamily: fontSerif, fontSize: 20, color: T.text, fontWeight: 600 }}>⚙️ {t.schemaNotReadyTitle}</div>
-                  <p style={{ color: T.textSub, fontSize: 14, lineHeight: 1.7 }}>{setupError}</p>
-                  <code style={{ display: "block", padding: 12, borderRadius: 10, background: T.bg, color: T.textSub, fontSize: 12, lineHeight: 1.5, overflowX: "auto" }}>
-                    supabase/migrations/20260515000000_private_google_auth.sql
-                  </code>
-                </div>
-              </div>
-            )}
-
             {/* ── HOME ── */}
             {view === "home" && (
               <div className="f" style={{ padding: "28px 20px 20px" }}>
