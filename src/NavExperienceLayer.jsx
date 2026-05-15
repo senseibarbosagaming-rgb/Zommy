@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 const COPY = {
   en: {
-    home: "Home",
+    home: "Today",
     timeline: "Timeline",
     memory: "Memory",
     compare: "Compare",
@@ -17,7 +17,7 @@ const COPY = {
     cancel: "Cancel",
   },
   pt: {
-    home: "Início",
+    home: "Hoje",
     timeline: "Timeline",
     memory: "Memória",
     compare: "Comparar",
@@ -161,6 +161,7 @@ export default function NavExperienceLayer() {
   const openAddChild = async () => {
     setActiveTab("home");
     clickOriginalNav(0);
+    window.dispatchEvent(new CustomEvent("zommy:hide-today"));
     await new Promise((resolve) => window.setTimeout(resolve, 80));
 
     const addButton = Array.from(document.querySelectorAll("button"))
@@ -198,6 +199,15 @@ export default function NavExperienceLayer() {
   const handleTab = async (tab) => {
     setActiveTab(tab);
 
+    if (tab === "home") {
+      clickOriginalNav(0);
+      window.dispatchEvent(new CustomEvent("zommy:show-today"));
+      refreshData();
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent("zommy:hide-today"));
+
     if (tab === "compare") {
       window.dispatchEvent(new CustomEvent("zommy:open-compare-modes"));
       refreshData();
@@ -215,7 +225,7 @@ export default function NavExperienceLayer() {
       return;
     }
 
-    const indexes = { home: 0, timeline: 1, settings: 4 };
+    const indexes = { timeline: 1, settings: 4 };
     clickOriginalNav(indexes[tab]);
     refreshData();
   };
@@ -256,6 +266,7 @@ export default function NavExperienceLayer() {
                 <button key={profile.id} className="b" onClick={async () => {
                   if (chooserMode === "timeline") {
                     setChooserMode(null);
+                    window.dispatchEvent(new CustomEvent("zommy:hide-today"));
                     await openProfileTimeline(profile);
                     setActiveTab("timeline");
                     refreshData();
