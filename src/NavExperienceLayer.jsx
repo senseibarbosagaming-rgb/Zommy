@@ -3,27 +3,27 @@ import { useZommyData } from "./useZommyData";
 
 const COPY = {
   en: {
-    today: "Today",
-    timeline: "Timeline",
-    compare: "Compare",
+    today: "Home",
+    timeline: "Story",
+    compare: "Then & now",
     settings: "Settings",
-    addMemory: "Add memory",
-    addChildFirst: "Add child first",
-    addNamedMemory: (name) => `Add ${name} memory`,
+    addMemory: "Save memory",
+    addChildFirst: "Add child",
+    addNamedMemory: (name) => `Save ${name}`,
     chooseChild: "Who is this memory for?",
-    chooseTimeline: "Whose timeline do you want to open?",
+    chooseTimeline: "Whose story do you want to open?",
     cancel: "Cancel",
   },
   pt: {
-    today: "Hoje",
-    timeline: "Timeline",
-    compare: "Comparar",
+    today: "Início",
+    timeline: "História",
+    compare: "Antes e agora",
     settings: "Definições",
-    addMemory: "Adicionar memória",
+    addMemory: "Guardar memória",
     addChildFirst: "Adicionar criança",
-    addNamedMemory: (name) => `Adicionar memória de ${name}`,
+    addNamedMemory: (name) => `Guardar ${name}`,
     chooseChild: "Para quem é esta memória?",
-    chooseTimeline: "Que timeline queres abrir?",
+    chooseTimeline: "Que história queres abrir?",
     cancel: "Cancelar",
   },
 };
@@ -137,16 +137,16 @@ export default function NavExperienceLayer() {
       : copy.addMemory;
 
   const navItems = [
-    { id: "today", icon: "⌂", label: copy.today, color: "#60A5FA" },
-    { id: "timeline", icon: "▦", label: copy.timeline, color: "#34D399" },
-    { id: "compare", icon: "⇄", label: copy.compare, color: "#FBBF24" },
-    { id: "settings", icon: "◎", label: copy.settings, color: "#A78BFA" },
+    { id: "today", icon: "⌂", label: copy.today, color: "#D9826B" },
+    { id: "timeline", icon: "♡", label: copy.timeline, color: "#8FB9A8" },
+    { id: "compare", icon: "◐", label: copy.compare, color: "#F2C879" },
+    { id: "settings", icon: "☼", label: copy.settings, color: "#BCA8D7" },
   ];
 
   const renderNavButton = (item) => {
     const isActive = activeTab === item.id;
     return (
-      <button key={item.id} aria-label={item.label} onClick={() => handleTab(item.id)} className="b" style={{ minWidth: 0, height: showLabels ? 54 : 42, border: "none", borderRadius: 18, background: isActive ? "#3a5163" : "transparent", color: isActive ? item.color : "#d5dee6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: showLabels ? 3 : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer" }}>
+      <button key={item.id} aria-label={item.label} onClick={() => handleTab(item.id)} className="b" style={{ minWidth: 0, height: showLabels ? 54 : 42, border: "none", borderRadius: 18, background: isActive ? "rgba(255,253,247,0.72)" : "transparent", color: isActive ? item.color : "#80695B", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: showLabels ? 3 : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer" }}>
         <span style={{ fontSize: 22, lineHeight: 1 }}>{item.icon}</span>
         {showLabels && <span style={{ fontSize: 10, lineHeight: 1, fontWeight: 800, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>}
       </button>
@@ -156,8 +156,8 @@ export default function NavExperienceLayer() {
   return (
     <>
       {chooserMode && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "rgba(0,0,0,0.58)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }} onClick={() => setChooserMode(null)}>
-          <div style={{ width: "100%", maxWidth: 452, background: "#111820", color: "#fff", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: 18, boxShadow: "0 24px 90px rgba(0,0,0,0.45)" }} onClick={(event) => event.stopPropagation()}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "rgba(58,42,34,0.42)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }} onClick={() => setChooserMode(null)}>
+          <div style={{ width: "100%", maxWidth: 452, background: "#FFFDF7", color: "#3A2A22", border: "1px solid rgba(122,77,57,0.16)", borderRadius: 26, padding: 18, boxShadow: "0 24px 90px rgba(122,77,57,0.22)" }} onClick={(event) => event.stopPropagation()}>
             <div style={{ fontFamily: "Lora, Georgia, serif", fontSize: 22, fontWeight: 650, marginBottom: 14 }}>
               {chooserMode === "timeline" ? copy.chooseTimeline : copy.chooseChild}
             </div>
@@ -173,23 +173,23 @@ export default function NavExperienceLayer() {
                   } else {
                     beginMemoryFor(profile);
                   }
-                }} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 16, padding: "14px 15px", fontSize: 16, fontWeight: 700, textAlign: "left", display: "flex", alignItems: "center", gap: 11, cursor: "pointer" }}>
-                  <span style={{ width: 9, height: 9, borderRadius: "50%", background: profile.color || "#34D399", flexShrink: 0 }} />
+                }} style={{ border: "1px solid rgba(122,77,57,0.14)", background: "#F8E9DC", color: "#3A2A22", borderRadius: 18, padding: "14px 15px", fontSize: 16, fontWeight: 800, textAlign: "left", display: "flex", alignItems: "center", gap: 11, cursor: "pointer" }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: profile.color || "#D9826B", flexShrink: 0 }} />
                   <span>{profile.emoji || "👶"} {profile.name}</span>
                 </button>
               ))}
             </div>
-            <button onClick={() => setChooserMode(null)} style={{ width: "100%", marginTop: 12, border: "none", background: "transparent", color: "rgba(255,255,255,0.58)", padding: 12, fontSize: 14, fontWeight: 650, cursor: "pointer" }}>
+            <button onClick={() => setChooserMode(null)} style={{ width: "100%", marginTop: 12, border: "none", background: "transparent", color: "#80695B", padding: 12, fontSize: 14, fontWeight: 750, cursor: "pointer" }}>
               {copy.cancel}
             </button>
           </div>
         </div>
       )}
 
-      <nav aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 1100, background: "#43596a", boxShadow: "0 -1px 0 rgba(255,255,255,0.04), 0 -10px 30px rgba(0,0,0,0.12)", padding: showLabels ? "9px 10px calc(13px + env(safe-area-inset-bottom, 0px))" : "10px 12px calc(14px + env(safe-area-inset-bottom, 0px))", display: "grid", gridTemplateColumns: "1fr 1fr minmax(78px, 1.26fr) 1fr 1fr", alignItems: "center", gap: 4 }}>
+      <nav aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 1100, background: "#F2DDCC", boxShadow: "0 -1px 0 rgba(122,77,57,0.12), 0 -14px 34px rgba(122,77,57,0.12)", padding: showLabels ? "9px 10px calc(13px + env(safe-area-inset-bottom, 0px))" : "10px 12px calc(14px + env(safe-area-inset-bottom, 0px))", display: "grid", gridTemplateColumns: "1fr 1fr minmax(78px, 1.26fr) 1fr 1fr", alignItems: "center", gap: 4 }}>
         {navItems.slice(0, 2).map(renderNavButton)}
-        <button aria-label={plusLabel} onClick={handlePlus} className="b" style={{ minWidth: 0, minHeight: showLabels ? 58 : 44, borderRadius: showLabels ? 20 : 999, border: "2px solid #17d86f", background: "rgba(23,216,111,0.08)", color: "#17d86f", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2, padding: showLabels ? "6px 8px" : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer", boxShadow: "0 0 0 1px rgba(23,216,111,0.18), 0 8px 20px rgba(0,0,0,0.16)" }}>
-          <span style={{ fontSize: showLabels ? 23 : 28, fontWeight: 600, lineHeight: 1, marginTop: showLabels ? -1 : -3 }}>+</span>
+        <button aria-label={plusLabel} onClick={handlePlus} className="b" style={{ minWidth: 0, minHeight: showLabels ? 58 : 44, borderRadius: showLabels ? 22 : 999, border: "2px solid #D9826B", background: "#FFFDF7", color: "#D9826B", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2, padding: showLabels ? "6px 8px" : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer", boxShadow: "0 10px 24px rgba(217,130,107,0.2)" }}>
+          <span style={{ fontSize: showLabels ? 23 : 28, fontWeight: 800, lineHeight: 1, marginTop: showLabels ? -1 : -3 }}>+</span>
           {showLabels && <span style={{ fontSize: 10, lineHeight: 1.05, fontWeight: 900, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{plusLabel}</span>}
         </button>
         {navItems.slice(2).map(renderNavButton)}
