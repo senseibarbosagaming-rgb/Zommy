@@ -11,7 +11,6 @@ import NotificationControlsLayer from './NotificationControlsLayer'
 import AccessibilitySafetyLayer from './AccessibilitySafetyLayer'
 import BrandConsistencyLayer from './BrandConsistencyLayer'
 import SettingsScreen from './SettingsScreen'
-import NotificationControlsLauncherLayer from './NotificationControlsLauncherLayer'
 import PWAExperienceLayer from './PWAExperienceLayer'
 import TodayDashboardLayer from './TodayDashboardLayer'
 import TimelineScreen from './TimelineScreen'
@@ -31,7 +30,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <NotificationControlsLayer />
     <AccessibilitySafetyLayer />
     <BrandConsistencyLayer />
-    <NotificationControlsLauncherLayer />
     <PWAExperienceLayer />
   </React.StrictMode>
 )
