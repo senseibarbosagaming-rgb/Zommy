@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import NotificationSettingsPanel from "./NotificationSettingsPanel";
 import { supabase } from "./supabase";
 
 const PALETTE = [
@@ -36,7 +37,6 @@ const COPY = {
     restore: "Restore",
     delete: "Delete",
     save: "Save changes",
-    cancel: "Cancel",
     name: "Name",
     birthDate: "Birth date",
     emoji: "Emoji",
@@ -62,6 +62,7 @@ const COPY = {
     openControls: "Open controls",
     privateAccountData: "Private account data",
     back: "Back",
+    profiles: "profiles",
   },
   pt: {
     title: "Definições",
@@ -86,7 +87,6 @@ const COPY = {
     restore: "Restaurar",
     delete: "Eliminar",
     save: "Guardar alterações",
-    cancel: "Cancelar",
     name: "Nome",
     birthDate: "Data de nascimento",
     emoji: "Emoji",
@@ -112,6 +112,7 @@ const COPY = {
     openControls: "Abrir controlos",
     privateAccountData: "Dados privados da conta",
     back: "Voltar",
+    profiles: "perfis",
   },
 };
 
@@ -123,17 +124,17 @@ const getPrefs = () => {
 const savePrefs = (prefs) => localStorage.setItem("zommy_prefs", JSON.stringify(prefs));
 const getCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
 
+const today = () => {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().split("T")[0];
+};
+
 const formatBytes = (bytes) => {
   if (!bytes) return "0 MB";
   const mb = bytes / 1024 / 1024;
   if (mb < 1024) return `${mb.toFixed(mb < 10 ? 1 : 0)} MB`;
   return `${(mb / 1024).toFixed(1)} GB`;
-};
-
-const today = () => {
-  const date = new Date();
-  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-  return date.toISOString().split("T")[0];
 };
 
 const downloadJson = (filename, data) => {
@@ -174,30 +175,21 @@ export default function SettingsScreen() {
     const currentUser = sessionData.session?.user || null;
     setUser(currentUser);
     if (!currentUser) return;
-
     const [{ data: profileRows }, { data: entryRows }] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", currentUser.id).order("created_at"),
       supabase.from("entries").select("*").eq("user_id", currentUser.id).order("date", { ascending: false }),
     ]);
-
     setProfiles(profileRows || []);
     setEntries(entryRows || []);
   };
 
   useEffect(() => {
     loadData();
-
-    const showSettings = () => {
-      setOpen(true);
-      setSection("menu");
-      loadData();
-    };
+    const showSettings = () => { setOpen(true); setSection("menu"); loadData(); };
     const hideSettings = () => setOpen(false);
-
     window.addEventListener("zommy:show-settings", showSettings);
     window.addEventListener("zommy:hide-settings", hideSettings);
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => loadData());
-
     return () => {
       window.removeEventListener("zommy:show-settings", showSettings);
       window.removeEventListener("zommy:hide-settings", hideSettings);
@@ -214,23 +206,14 @@ export default function SettingsScreen() {
   };
 
   const exportData = () => {
-    downloadJson(`zommy-export-${today()}.json`, {
-      exported_at: new Date().toISOString(),
-      user: { id: user.id, email: user.email },
-      profiles,
-      entries,
-    });
+    downloadJson(`zommy-export-${today()}.json`, { exported_at: new Date().toISOString(), user: { id: user.id, email: user.email }, profiles, entries });
     showToast(copy.exportReady);
   };
 
   const saveProfile = async () => {
     if (!editing?.name?.trim() || !editing?.birthdate) return;
     setBusy(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ name: editing.name.trim(), birthdate: editing.birthdate, emoji: editing.emoji, color: editing.color, bg: editing.bg })
-      .eq("id", editing.id)
-      .eq("user_id", user.id);
+    const { error } = await supabase.from("profiles").update({ name: editing.name.trim(), birthdate: editing.birthdate, emoji: editing.emoji, color: editing.color, bg: editing.bg }).eq("id", editing.id).eq("user_id", user.id);
     setBusy(false);
     if (error) { showToast(copy.error); return; }
     setEditing(null);
@@ -241,11 +224,7 @@ export default function SettingsScreen() {
 
   const archiveProfile = async (profile, archived) => {
     setBusy(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ archived_at: archived ? new Date().toISOString() : null })
-      .eq("id", profile.id)
-      .eq("user_id", user.id);
+    const { error } = await supabase.from("profiles").update({ archived_at: archived ? new Date().toISOString() : null }).eq("id", profile.id).eq("user_id", user.id);
     setBusy(false);
     if (error) { showToast(copy.error); return; }
     await loadData();
@@ -292,6 +271,9 @@ export default function SettingsScreen() {
     ["theme", copy.theme, prefs.theme === "light" ? copy.light : copy.dark],
   ];
 
+  const activeProfiles = profiles.filter((profile) => !profile.archived_at);
+  const archivedProfiles = profiles.filter((profile) => profile.archived_at);
+
   const renderProfile = (profile) => (
     <article key={profile.id} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", borderRadius: 18, padding: 14, display: "grid", gap: 11, opacity: profile.archived_at ? 0.72 : 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
@@ -312,9 +294,6 @@ export default function SettingsScreen() {
     </article>
   );
 
-  const activeProfiles = profiles.filter((profile) => !profile.archived_at);
-  const archivedProfiles = profiles.filter((profile) => profile.archived_at);
-
   return (
     <main style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
       <div style={{ maxWidth: 480, minHeight: "100dvh", margin: "0 auto", padding: "20px 16px 112px" }}>
@@ -328,7 +307,7 @@ export default function SettingsScreen() {
         {section === "menu" && (
           <section style={{ display: "grid", gap: 9 }}>
             {menuItems.map(([id, title, meta]) => (
-              <button key={id} onClick={() => id === "notifications" ? window.dispatchEvent(new CustomEvent("zommy:open-notification-controls")) : setSection(id)} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", color: "#fff", borderRadius: 16, padding: "15px 14px", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", textAlign: "left", cursor: "pointer" }}>
+              <button key={id} onClick={() => setSection(id)} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", color: "#fff", borderRadius: 16, padding: "15px 14px", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", textAlign: "left", cursor: "pointer" }}>
                 <span style={{ fontSize: 15, fontWeight: 900 }}>{title}</span>
                 <span style={{ fontSize: 12, color: "rgba(255,255,255,0.52)", fontWeight: 750 }}>{meta}</span>
               </button>
@@ -336,48 +315,19 @@ export default function SettingsScreen() {
           </section>
         )}
 
-        {section === "children" && (
-          <section style={{ display: "grid", gap: 14 }}>
-            <p style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.55, fontSize: 13 }}>{copy.archiveHint}</p>
-            {activeProfiles.length ? activeProfiles.map(renderProfile) : <p style={{ color: "rgba(255,255,255,0.48)", padding: 24, textAlign: "center" }}>{copy.noChildren}</p>}
-            {archivedProfiles.length > 0 && <h2 style={{ color: "rgba(255,255,255,0.62)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 8 }}>{copy.archived}</h2>}
-            {archivedProfiles.map(renderProfile)}
-          </section>
-        )}
-
-        {section === "export" && <Panel><p>{entries.length} {copy.memories} · {profiles.length} profiles</p><button onClick={exportData} style={primaryButton()}>{copy.exportData}</button></Panel>}
+        {section === "children" && <section style={{ display: "grid", gap: 14 }}><p style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.55, fontSize: 13 }}>{copy.archiveHint}</p>{activeProfiles.length ? activeProfiles.map(renderProfile) : <p style={{ color: "rgba(255,255,255,0.48)", padding: 24, textAlign: "center" }}>{copy.noChildren}</p>}{archivedProfiles.length > 0 && <h2 style={{ color: "rgba(255,255,255,0.62)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 8 }}>{copy.archived}</h2>}{archivedProfiles.map(renderProfile)}</section>}
+        {section === "export" && <Panel><p>{entries.length} {copy.memories} · {profiles.length} {copy.profiles}</p><button onClick={exportData} style={primaryButton()}>{copy.exportData}</button></Panel>}
         {section === "delete" && <Panel><p>{copy.deleteAccountBody}</p><button onClick={() => { setConfirmAll(true); setConfirmText(""); }} style={dangerButton()}>{copy.deleteAccountData}</button></Panel>}
         {section === "storage" && <Panel><p style={{ fontSize: 28, fontWeight: 900 }}>{formatBytes(estimatedStorage)}</p><p>{copy.storageHint}</p></Panel>}
         {section === "privacy" && <Panel><p>{copy.privacyText}</p></Panel>}
         {section === "sharing" && <Panel><p>{copy.familySharingText}</p></Panel>}
+        {section === "notifications" && <NotificationSettingsPanel profiles={profiles} entries={entries} />}
         {section === "language" && <Panel><button style={primaryButton(prefs.lang === "en")} onClick={() => updatePrefs({ ...prefs, lang: "en" })}>{copy.english}</button><button style={primaryButton(prefs.lang === "pt")} onClick={() => updatePrefs({ ...prefs, lang: "pt" })}>{copy.portuguese}</button></Panel>}
-        {section === "theme" && <Panel><button style={primaryButton(prefs.theme !== "light")} onClick={() => updatePrefs({ ...prefs, theme: "dark" })}>{copy.dark}</button><button style={primaryButton(prefs.theme === "light" )} onClick={() => updatePrefs({ ...prefs, theme: "light" })}>{copy.light}</button></Panel>}
+        {section === "theme" && <Panel><button style={primaryButton(prefs.theme !== "light")} onClick={() => updatePrefs({ ...prefs, theme: "dark" })}>{copy.dark}</button><button style={primaryButton(prefs.theme === "light")} onClick={() => updatePrefs({ ...prefs, theme: "light" })}>{copy.light}</button></Panel>}
 
-        {editing && (
-          <Dialog title={copy.manageChildren} onClose={() => setEditing(null)}>
-            <label style={labelStyle()}>{copy.name}<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} style={inputStyle()} /></label>
-            <label style={labelStyle()}>{copy.birthDate}<input type="date" value={editing.birthdate} max={today()} onChange={(e) => setEditing({ ...editing, birthdate: e.target.value })} style={inputStyle()} /></label>
-            <div style={labelStyle()}>{copy.emoji}<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{EMOJIS.map((emoji) => <button key={emoji} onClick={() => setEditing({ ...editing, emoji })} style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${editing.emoji === emoji ? "#fff" : "rgba(255,255,255,0.14)"}`, background: "rgba(255,255,255,0.05)", fontSize: 21 }}>{emoji}</button>)}</div></div>
-            <div style={labelStyle()}>{copy.color}<div style={{ display: "flex", gap: 12 }}>{PALETTE.map((item) => <button key={item.color} onClick={() => setEditing({ ...editing, color: item.color, bg: item.bg })} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: item.color, outline: editing.color === item.color ? `3px solid ${item.color}` : "none", outlineOffset: 4 }} />)}</div></div>
-            <button disabled={busy} onClick={saveProfile} style={primaryButton()}>{copy.save}</button>
-          </Dialog>
-        )}
-
-        {confirmChild && (
-          <Dialog title={copy.deleteChildTitle(confirmChild.name)} onClose={() => setConfirmChild(null)}>
-            <p style={{ color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>{copy.deleteChildBody(confirmChild.name, entryCountByProfile[confirmChild.id] || 0)}</p>
-            <label style={labelStyle()}>{copy.typeName(confirmChild.name)}<input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle()} /></label>
-            <button disabled={busy || confirmText !== confirmChild.name} onClick={deleteProfile} style={dangerButton(confirmText === confirmChild.name)}>{copy.deleteChildConfirm}</button>
-          </Dialog>
-        )}
-
-        {confirmAll && (
-          <Dialog title={copy.deleteAccountTitle} onClose={() => setConfirmAll(false)}>
-            <p style={{ color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>{copy.deleteAccountBody}</p>
-            <label style={labelStyle()}>{copy.typeDelete}<input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle()} /></label>
-            <button disabled={busy || confirmText !== "DELETE"} onClick={deleteAllData} style={dangerButton(confirmText === "DELETE")}>{copy.deleteAll}</button>
-          </Dialog>
-        )}
+        {editing && <Dialog title={copy.manageChildren} onClose={() => setEditing(null)}><label style={labelStyle()}>{copy.name}<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} style={inputStyle()} /></label><label style={labelStyle()}>{copy.birthDate}<input type="date" value={editing.birthdate} max={today()} onChange={(e) => setEditing({ ...editing, birthdate: e.target.value })} style={inputStyle()} /></label><div style={labelStyle()}>{copy.emoji}<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{EMOJIS.map((emoji) => <button key={emoji} onClick={() => setEditing({ ...editing, emoji })} style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${editing.emoji === emoji ? "#fff" : "rgba(255,255,255,0.14)"}`, background: "rgba(255,255,255,0.05)", fontSize: 21 }}>{emoji}</button>)}</div></div><div style={labelStyle()}>{copy.color}<div style={{ display: "flex", gap: 12 }}>{PALETTE.map((item) => <button key={item.color} onClick={() => setEditing({ ...editing, color: item.color, bg: item.bg })} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: item.color, outline: editing.color === item.color ? `3px solid ${item.color}` : "none", outlineOffset: 4 }} />)}</div></div><button disabled={busy} onClick={saveProfile} style={primaryButton()}>{copy.save}</button></Dialog>}
+        {confirmChild && <Dialog title={copy.deleteChildTitle(confirmChild.name)} onClose={() => setConfirmChild(null)}><p style={{ color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>{copy.deleteChildBody(confirmChild.name, entryCountByProfile[confirmChild.id] || 0)}</p><label style={labelStyle()}>{copy.typeName(confirmChild.name)}<input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle()} /></label><button disabled={busy || confirmText !== confirmChild.name} onClick={deleteProfile} style={dangerButton(confirmText === confirmChild.name)}>{copy.deleteChildConfirm}</button></Dialog>}
+        {confirmAll && <Dialog title={copy.deleteAccountTitle} onClose={() => setConfirmAll(false)}><p style={{ color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>{copy.deleteAccountBody}</p><label style={labelStyle()}>{copy.typeDelete}<input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle()} /></label><button disabled={busy || confirmText !== "DELETE"} onClick={deleteAllData} style={dangerButton(confirmText === "DELETE")}>{copy.deleteAll}</button></Dialog>}
       </div>
     </main>
   );
@@ -388,14 +338,7 @@ function Panel({ children }) {
 }
 
 function Dialog({ title, children, onClose }) {
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1700, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }}>
-      <section role="dialog" aria-modal="true" style={{ width: "100%", maxWidth: 452, background: "#111820", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: 18, display: "grid", gap: 14, boxShadow: "0 24px 90px rgba(0,0,0,0.45)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}><h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 23, lineHeight: 1.15 }}>{title}</h2><button onClick={onClose} style={ghostButton()}>×</button></div>
-        {children}
-      </section>
-    </div>
-  );
+  return <div style={{ position: "fixed", inset: 0, zIndex: 1700, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }}><section role="dialog" aria-modal="true" style={{ width: "100%", maxWidth: 452, background: "#111820", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: 18, display: "grid", gap: 14, boxShadow: "0 24px 90px rgba(0,0,0,0.45)" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}><h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 23, lineHeight: 1.15 }}>{title}</h2><button onClick={onClose} style={ghostButton()}>×</button></div>{children}</section></div>;
 }
 
 const labelStyle = () => ({ display: "grid", gap: 7, color: "rgba(255,255,255,0.64)", fontSize: 11, fontWeight: 850, textTransform: "uppercase", letterSpacing: "0.7px" });
