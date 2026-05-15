@@ -8,11 +8,7 @@ const dispatchResume = async () => {
   if (!data?.session?.user) return;
 
   window.dispatchEvent(new CustomEvent("zommy:app-resume"));
-
-  window.setTimeout(() => {
-    window.dispatchEvent(new CustomEvent("zommy:show-today"));
-    window.dispatchEvent(new CustomEvent("zommy:profiles-changed"));
-  }, 80);
+  window.dispatchEvent(new CustomEvent("zommy:profiles-changed"));
 };
 
 export default function ResumeRecoveryLayer() {
@@ -27,10 +23,7 @@ export default function ResumeRecoveryLayer() {
     window.addEventListener("online", onResume);
     document.addEventListener("visibilitychange", onVisibility);
 
-    const initial = window.setTimeout(dispatchResume, 300);
-
     return () => {
-      window.clearTimeout(initial);
       window.removeEventListener("focus", onResume);
       window.removeEventListener("pageshow", onResume);
       window.removeEventListener("online", onResume);
