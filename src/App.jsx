@@ -64,6 +64,15 @@ const LANGS = {
     saving: "Saving…",
     error: "Something went wrong",
     whoFor: "Who is this memory for?",
+    signInTitle: "Keep every memory private.",
+    signInBody: "Sign in with Google to save your family timeline securely.",
+    signInWithGoogle: "Continue with Google",
+    signingIn: "Opening Google…",
+    signedInAs: "Signed in as",
+    signOut: "Sign out",
+    signOutConfirm: "Sign out of Zommy",
+    authError: "Could not sign in",
+    googleProviderDisabled: "Google login is not enabled in Supabase yet.",
   },
   pt: {
     tagline: "Um registo tranquilo do crescimento deles.",
@@ -125,6 +134,15 @@ const LANGS = {
     saving: "A guardar…",
     error: "Algo correu mal",
     whoFor: "Para quem é esta memória?",
+    signInTitle: "Mantém cada memória privada.",
+    signInBody: "Inicia sessão com o Google para guardar a timeline da família em segurança.",
+    signInWithGoogle: "Continuar com Google",
+    signingIn: "A abrir o Google…",
+    signedInAs: "Sessão iniciada como",
+    signOut: "Terminar sessão",
+    signOutConfirm: "Terminar sessão no Zommy",
+    authError: "Não foi possível iniciar sessão",
+    googleProviderDisabled: "O login com Google ainda não está ativo no Supabase.",
   },
 };
 
@@ -215,6 +233,26 @@ const saveNotifiedKeys = (keys) => {
   try { localStorage.setItem("zommy_notified_anniversaries", JSON.stringify(keys)); } catch {}
 };
 
+const isExternalPhotoUrl = (value) => /^https?:\/\//i.test(value || "") || /^data:/i.test(value || "");
+
+const getPrivatePhotoUrl = async (pathOrUrl) => {
+  if (!pathOrUrl || isExternalPhotoUrl(pathOrUrl)) return pathOrUrl;
+
+  const { data, error } = await supabase.storage.from("photos").createSignedUrl(pathOrUrl, 60 * 60);
+  if (error) throw error;
+  return data.signedUrl;
+};
+
+const getAuthErrorMessage = (error, t) => {
+  const message = `${error?.message || ""} ${error?.error_code || ""}`.toLowerCase();
+
+  if (message.includes("unsupported provider") || message.includes("provider is not enabled")) {
+    return t.googleProviderDisabled;
+  }
+
+  return t.authError;
+};
+
 const isSameMonthDay = (date, targetDate) => date.slice(5, 10) === targetDate.slice(5, 10);
 
 const getAnniversaryYears = (date, targetDate) => {
@@ -274,7 +312,10 @@ export default function Zommy() {
   const [profiles, setProfiles] = useState([]);
   const [entries, setEntries] = useState({});
   const [prefs, setPrefs] = useState(loadPrefs);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authSaving, setAuthSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [view, setView] = useState("home");
   const [activeId, setActiveId] = useState(null);
   const [toast, setToast] = useState(null);
@@ -304,6 +345,9 @@ export default function Zommy() {
 
   const t = LANGS[prefs.lang] || LANGS.en;
   const T = THEMES[prefs.theme] || THEMES.dark;
+  const user = session?.user || null;
+  const userName = user?.user_metadata?.full_name || user?.email || "";
+  const userAvatar = user?.user_metadata?.avatar_url;
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
   const updatePrefs = (p) => { setPrefs(p); savePrefs(p); };
@@ -364,32 +408,104 @@ export default function Zommy() {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setAuthSaving(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: { prompt: "select_account" },
+      },
+    });
+
+    if (error) {
+      showToast(getAuthErrorMessage(error, t));
+      setAuthSaving(false);
+    }
+  };
+
+  const signOut = async () => {
+    setAuthSaving(true);
+    await supabase.auth.signOut();
+    setProfiles([]);
+    setEntries({});
+    setActiveId(null);
+    setCompareId(null);
+    setCompareA(null);
+    setCompareB(null);
+    setExpandedEntry(null);
+    setView("home");
+    setAuthSaving(false);
+  };
+
   const loadData = useCallback(async () => {
+    if (!user) {
+      setProfiles([]);
+      setEntries({});
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const [{ data: pd }, { data: ed }] = await Promise.all([
-        supabase.from("profiles").select("*").order("created_at"),
-        supabase.from("entries").select("*").order("date", { ascending: false }),
+      const [{ data: pd, error: profileError }, { data: ed, error: entryError }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", user.id).order("created_at"),
+        supabase.from("entries").select("*").eq("user_id", user.id).order("date", { ascending: false }),
       ]);
+
+      if (profileError) throw profileError;
+      if (entryError) throw entryError;
+
+      const signedEntries = await Promise.all((ed || []).map(async (entry) => {
+        const photoPath = entry.photo_path || entry.photo;
+        return {
+          ...entry,
+          photo_path: photoPath,
+          photo: await getPrivatePhotoUrl(photoPath),
+        };
+      }));
+
       setProfiles(pd || []);
       const grouped = {};
       for (const p of (pd || [])) grouped[p.id] = [];
-      for (const e of (ed || [])) { if (!grouped[e.profile_id]) grouped[e.profile_id] = []; grouped[e.profile_id].push(e); }
+      for (const e of signedEntries) { if (!grouped[e.profile_id]) grouped[e.profile_id] = []; grouped[e.profile_id].push(e); }
       setEntries(grouped);
     } catch { showToast(t.error); }
     setLoading(false);
+  }, [t.error, user]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setSession(data.session);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setAuthLoading(false);
+      setAuthSaving(false);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { if (!authLoading) loadData(); }, [authLoading, loadData]);
 
   useEffect(() => { setNotificationStatus(notificationPermission()); }, []);
 
-  useEffect(() => { sendDueMemoryNotifications(); }, [sendDueMemoryNotifications]);
+  useEffect(() => { if (user) sendDueMemoryNotifications(); }, [sendDueMemoryNotifications, user]);
 
   useEffect(() => {
+    if (!user) return undefined;
     const interval = window.setInterval(sendDueMemoryNotifications, 60 * 60 * 1000);
     return () => window.clearInterval(interval);
-  }, [sendDueMemoryNotifications]);
+  }, [sendDueMemoryNotifications, user]);
 
   const active = profiles.find((p) => p.id === activeId);
   const activeEntries = activeId ? (entries[activeId] || []) : [];
@@ -442,23 +558,25 @@ export default function Zommy() {
   };
 
   const uploadPhoto = async (dataUrl) => {
+    if (!user) throw new Error("Not signed in");
+
     const base64 = dataUrl.split(",")[1];
     const byteArr = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-    const filename = `${Date.now()}.jpg`;
+    const filename = `${user.id}/${Date.now()}.jpg`;
     const { data, error } = await supabase.storage.from("photos").upload(filename, byteArr, { contentType: "image/jpeg" });
     if (error) throw error;
-    return supabase.storage.from("photos").getPublicUrl(data.path).data.publicUrl;
+    return data.path;
   };
 
   const saveEntry = async () => {
     if (!logPhoto) { showToast("Add a photo first 📷"); return; }
     setSaving(true);
     try {
-      let photoUrl = logPhoto.startsWith("data:") ? await uploadPhoto(logPhoto) : logPhoto;
+      const photoPath = logPhoto.startsWith("data:") ? await uploadPhoto(logPhoto) : (entries[activeId] || []).find((entry) => entry.id === editingId)?.photo_path || logPhoto;
       if (editingId) {
-        await supabase.from("entries").update({ date: logDate, photo: photoUrl, note: logNote }).eq("id", editingId);
+        await supabase.from("entries").update({ date: logDate, photo_path: photoPath, note: logNote }).eq("id", editingId).eq("user_id", user.id);
       } else {
-        await supabase.from("entries").insert({ id: Date.now(), profile_id: activeId, date: logDate, photo: photoUrl, note: logNote });
+        await supabase.from("entries").insert({ id: Date.now(), user_id: user.id, profile_id: activeId, date: logDate, photo_path: photoPath, note: logNote });
       }
       await loadData();
       setLogPhoto(null); setLogPreview(null); setLogNote(""); setLogDate(today()); setEditingId(null);
@@ -475,7 +593,7 @@ export default function Zommy() {
 
   const deleteEntry = async (entryId) => {
     try {
-      await supabase.from("entries").delete().eq("id", entryId);
+      await supabase.from("entries").delete().eq("id", entryId).eq("user_id", user.id);
       setEntries((prev) => { const u = { ...prev }; if (activeId) u[activeId] = (u[activeId] || []).filter((e) => e.id !== entryId); return u; });
       setExpandedEntry(null);
       showToast("Deleted");
@@ -503,7 +621,7 @@ export default function Zommy() {
     try {
       const id = `child_${Date.now()}`;
       const pal = PALETTE[newPalette];
-      await supabase.from("profiles").insert({ id, name: newName.trim(), birthdate: newBirth, emoji: newEmoji, color: pal.color, bg: pal.bg });
+      await supabase.from("profiles").insert({ id, user_id: user.id, name: newName.trim(), birthdate: newBirth, emoji: newEmoji, color: pal.color, bg: pal.bg });
       await loadData();
       setNewName(""); setNewBirth(""); setNewEmoji("👶"); setNewPalette(0); setShowForm(false);
       showToast(`${newName.trim()} added 🎉`);
@@ -560,13 +678,62 @@ export default function Zommy() {
   const footerBg = "#43596a";
   const activeFooterPill = "#3a5163";
 
+  if (authLoading || !user) {
+    return (
+      <div style={{ fontFamily: font, background: T.bg, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+        <style>{css}</style>
+
+        {toast && (
+          <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", background: prefs.theme === "dark" ? "#ffffff" : "#111111", color: prefs.theme === "dark" ? "#111" : "#fff", padding: "10px 20px", borderRadius: 18, fontSize: 13, fontWeight: 500, zIndex: 300, maxWidth: "min(90vw, 420px)", textAlign: "center", lineHeight: 1.4, boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
+            {toast}
+          </div>
+        )}
+
+        <header style={{ background: T.navBg, borderBottom: `1px solid ${T.navBorder}`, padding: "18px 20px 16px", minHeight: 78, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div aria-label="ZOOMY" style={{ color: T.text, fontFamily: font, fontSize: 26, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.8px", textAlign: "center" }}>
+            ZOOMY
+          </div>
+        </header>
+
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "32px 24px" }}>
+          {authLoading ? (
+            <div style={{ color: T.textMuted, textAlign: "center", fontFamily: fontSerif, fontStyle: "italic" }}>{t.loading}</div>
+          ) : (
+            <div className="f" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, textAlign: "center" }}>
+              <div style={{ width: 92, height: 92, borderRadius: 28, background: "linear-gradient(135deg, #60A5FA, #34D399)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.24)" }}>
+                <span style={{ fontSize: 44 }}>🔒</span>
+              </div>
+              <div>
+                <h1 style={{ fontFamily: fontSerif, fontSize: 30, lineHeight: 1.15, color: T.text, fontWeight: 600, marginBottom: 10 }}>{t.signInTitle}</h1>
+                <p style={{ color: T.textSub, fontSize: 15, lineHeight: 1.7, maxWidth: 340 }}>{t.signInBody}</p>
+              </div>
+              <button className="b" disabled={authSaving} onClick={signInWithGoogle}
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, padding: "15px 18px", borderRadius: 14, border: `1px solid ${T.border}`, background: T.text, color: T.bg, fontFamily: font, fontSize: 15, fontWeight: 700, cursor: authSaving ? "wait" : "pointer", opacity: authSaving ? 0.7 : 1 }}>
+                <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: "50%", background: "#fff", color: "#4285F4", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>G</span>
+                {authSaving ? t.signingIn : t.signInWithGoogle}
+              </button>
+              <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                {["en", "pt"].map((l) => (
+                  <button key={l} className="b" onClick={() => updatePrefs({ ...prefs, lang: l })}
+                    style={{ padding: "9px 13px", borderRadius: 100, border: `1px solid ${prefs.lang === l ? T.text : T.border}`, background: prefs.lang === l ? T.text + "10" : "transparent", color: prefs.lang === l ? T.text : T.textSub, fontSize: 13, fontWeight: prefs.lang === l ? 600 : 400, cursor: "pointer", fontFamily: font }}>
+                    {l === "en" ? "🇬🇧 English" : "🇵🇹 Português"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div style={{ fontFamily: font, background: T.bg, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
       <style>{css}</style>
 
       {/* TOAST */}
       {toast && (
-        <div style={{ position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", background: prefs.theme === "dark" ? "#ffffff" : "#111111", color: prefs.theme === "dark" ? "#111" : "#fff", padding: "10px 20px", borderRadius: 100, fontSize: 13, fontWeight: 500, zIndex: 300, whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
+        <div style={{ position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", background: prefs.theme === "dark" ? "#ffffff" : "#111111", color: prefs.theme === "dark" ? "#111" : "#fff", padding: "10px 20px", borderRadius: 18, fontSize: 13, fontWeight: 500, zIndex: 300, maxWidth: "min(90vw, 420px)", textAlign: "center", lineHeight: 1.4, boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
           {toast}
         </div>
       )}
@@ -940,6 +1107,28 @@ export default function Zommy() {
                 <h2 style={{ fontFamily: fontSerif, fontSize: 22, color: T.text, fontWeight: 600, marginBottom: 28 }}>{t.settingsTitle}</h2>
 
                 {[
+                  {
+                    title: t.signedInAs,
+                    content: (
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, border: `1px solid ${T.border}`, borderRadius: 14, background: T.card }}>
+                        {userAvatar ? (
+                          <img src={userAvatar} alt="" referrerPolicy="no-referrer" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }} />
+                        ) : (
+                          <div style={{ width: 44, height: 44, borderRadius: "50%", background: T.text + "12", color: T.text, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
+                            {(userName || user.email || "Z").slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                          <div style={{ color: T.text, fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
+                          <div style={{ color: T.textMuted, fontSize: 12, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
+                        </div>
+                        <button className="b" disabled={authSaving} onClick={signOut}
+                          style={{ padding: "9px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: "transparent", color: T.textSub, fontSize: 13, fontWeight: 600, cursor: authSaving ? "wait" : "pointer", fontFamily: font }}>
+                          {t.signOut}
+                        </button>
+                      </div>
+                    ),
+                  },
                   {
                     title: t.language,
                     content: (
