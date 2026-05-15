@@ -48,9 +48,10 @@ const showToday = () => window.dispatchEvent(new CustomEvent("zommy:show-today")
 const hideToday = () => window.dispatchEvent(new CustomEvent("zommy:hide-today"));
 const showTimeline = (profile) => window.dispatchEvent(new CustomEvent("zommy:show-timeline", { detail: { profileId: profile?.id || "" } }));
 const hideTimeline = () => window.dispatchEvent(new CustomEvent("zommy:hide-timeline"));
+const showCompare = () => window.dispatchEvent(new CustomEvent("zommy:show-compare"));
+const hideCompare = () => window.dispatchEvent(new CustomEvent("zommy:hide-compare"));
 const showSettings = () => window.dispatchEvent(new CustomEvent("zommy:show-settings"));
 const hideSettings = () => window.dispatchEvent(new CustomEvent("zommy:hide-settings"));
-const openCompare = () => window.dispatchEvent(new CustomEvent("zommy:open-compare-modes"));
 const openComposer = (profile) => window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: profile?.id || "" } }));
 
 export default function NavExperienceLayer() {
@@ -79,11 +80,16 @@ export default function NavExperienceLayer() {
     window.setTimeout(() => setMessage(""), 2400);
   };
 
-  const openAddChild = async () => {
-    setActiveTab("today");
+  const hidePrimaryScreens = () => {
     hideToday();
     hideTimeline();
+    hideCompare();
     hideSettings();
+  };
+
+  const openAddChild = async () => {
+    setActiveTab("today");
+    hidePrimaryScreens();
     clickLegacyNav(0);
     await new Promise((resolve) => window.setTimeout(resolve, 80));
 
@@ -116,30 +122,23 @@ export default function NavExperienceLayer() {
 
   const handleTab = async (tab) => {
     setActiveTab(tab);
+    hidePrimaryScreens();
 
     if (tab === "today") {
-      hideTimeline();
-      hideSettings();
       clickLegacyNav(0);
       showToday();
       refresh();
       return;
     }
 
-    hideToday();
-
     if (tab === "timeline") {
-      hideSettings();
       showTimeline(activeProfile);
       refresh();
       return;
     }
 
-    hideTimeline();
-
     if (tab === "compare") {
-      hideSettings();
-      openCompare();
+      showCompare();
       refresh();
       return;
     }
@@ -147,7 +146,6 @@ export default function NavExperienceLayer() {
     if (tab === "settings") {
       showSettings();
       refresh();
-      return;
     }
   };
 
@@ -196,8 +194,7 @@ export default function NavExperienceLayer() {
                   if (chooserMode === "timeline") {
                     setChooserMode(null);
                     setActiveTab("timeline");
-                    hideToday();
-                    hideSettings();
+                    hidePrimaryScreens();
                     showTimeline(profile);
                     refresh();
                   } else {
