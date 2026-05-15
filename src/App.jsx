@@ -38,6 +38,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
+  const [hasPrimaryScreen, setHasPrimaryScreen] = useState(false);
 
   const copy = COPY[prefs.lang === "pt" ? "pt" : "en"] || COPY.en;
   const user = session?.user || null;
@@ -71,6 +72,19 @@ export default function App() {
     });
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
+
+
+  useEffect(() => {
+    if (!user) {
+      setHasPrimaryScreen(false);
+      return undefined;
+    }
+
+    const updatePrimaryScreen = (event) => setHasPrimaryScreen(Boolean(event.detail?.screen));
+    window.addEventListener("zommy:primary-screen-changed", updatePrimaryScreen);
+    window.dispatchEvent(new CustomEvent("zommy:ensure-primary-screen"));
+    return () => window.removeEventListener("zommy:primary-screen-changed", updatePrimaryScreen);
+  }, [user]);
 
   const signIn = async () => {
     setSaving(true);
@@ -123,7 +137,9 @@ export default function App() {
           <button className="b" disabled={saving} onClick={signOut} style={{ border: `1px solid ${border}`, background: dark ? "rgba(255,244,232,.07)" : "rgba(255,255,255,.58)", color: sub, borderRadius: 999, padding: "8px 10px", fontSize: 12, fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>{copy.signOut}</button>
         </div>
       </header>
-      <main style={{ minHeight: "100dvh", paddingTop: 68, paddingBottom: 100 }} />
+      <main style={{ minHeight: "100dvh", paddingTop: 68, paddingBottom: 100 }}>
+        {!hasPrimaryScreen && <div style={{ minHeight: "calc(100dvh - 168px)", display: "grid", placeItems: "center", padding: "24px", color: sub, textAlign: "center", lineHeight: 1.55 }}>Choose a tab below or add a child to begin.</div>}
+      </main>
     </div>
   );
 }
