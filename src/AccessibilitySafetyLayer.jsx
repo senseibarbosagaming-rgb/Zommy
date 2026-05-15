@@ -1,66 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 const COPY = {
   en: {
-    deleteTitle: "Delete this memory?",
-    deleteBody: (name, date) => `This will permanently delete ${name ? `${name}'s ` : "this "}memory${date ? ` from ${date}` : ""}. This cannot be undone.`,
-    cancel: "Cancel",
-    delete: "Delete memory",
     fallbackPhoto: "Family memory photo",
-    close: "Close",
   },
   pt: {
-    deleteTitle: "Eliminar esta memória?",
-    deleteBody: (name, date) => `Isto vai eliminar permanentemente ${name ? `a memória de ${name}` : "esta memória"}${date ? ` de ${date}` : ""}. Não é possível desfazer.`,
-    cancel: "Cancelar",
-    delete: "Eliminar memória",
     fallbackPhoto: "Foto de uma memória familiar",
-    close: "Fechar",
   },
 };
 
 const getPrefs = () => {
-  try {
-    return JSON.parse(localStorage.getItem("zommy_prefs") || "{}");
-  } catch {
-    return {};
-  }
+  try { return JSON.parse(localStorage.getItem("zommy_prefs") || "{}"); }
+  catch { return {}; }
 };
 
 const getCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
-
-const actionWords = new Set(["share", "edit", "delete", "partilhar", "editar", "eliminar", "cancel", "cancelar"]);
-const dateLike = /\b\d{4}\b|\b(january|february|march|april|may|june|july|august|september|october|november|december|janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/i;
-
-const isDeleteButton = (button) => {
-  const text = (button.innerText || button.textContent || "").trim().toLowerCase();
-  return text === "delete" || text === "eliminar";
-};
-
-const findOverlay = (node) => {
-  let current = node;
-  while (current && current !== document.body) {
-    const style = window.getComputedStyle(current);
-    if (style.position === "fixed" && Number(style.zIndex || 0) >= 90) return current;
-    current = current.parentElement;
-  }
-  return null;
-};
-
-const getDeleteContext = (overlay) => {
-  const lines = (overlay?.innerText || "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  const name = lines.find((line) => {
-    const lower = line.toLowerCase();
-    return !dateLike.test(line) && !actionWords.has(lower) && line.length <= 36 && !line.includes("×");
-  }) || "";
-  const date = lines.find((line) => dateLike.test(line)) || "";
-
-  return { name, date };
-};
 
 const hasVisibleText = (button) => {
   const text = (button.innerText || button.textContent || "").trim();
@@ -86,7 +40,7 @@ const addNavLabels = () => {
       const span = document.createElement("span");
       span.dataset.zommyNavLabel = "true";
       span.textContent = label;
-      span.style.fontSize = index === 2 ? "10px" : "10px";
+      span.style.fontSize = "10px";
       span.style.lineHeight = "1.05";
       span.style.fontWeight = index === 2 ? "900" : "800";
       span.style.maxWidth = "100%";
@@ -135,7 +89,6 @@ const improveButtonLabels = () => {
 
 export default function AccessibilitySafetyLayer() {
   const copy = useMemo(getCopy, []);
-  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -178,70 +131,5 @@ export default function AccessibilitySafetyLayer() {
     };
   }, [copy]);
 
-  useEffect(() => {
-    let bypassButton = null;
-
-    const interceptDelete = (event) => {
-      const button = event.target?.closest?.("button");
-      if (!button || !isDeleteButton(button)) return;
-      if (button === bypassButton) {
-        bypassButton = null;
-        return;
-      }
-
-      const overlay = findOverlay(button);
-      if (!overlay) return;
-      const overlayText = overlay.innerText || "";
-      if (!/(share|edit|partilhar|editar)/i.test(overlayText)) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation?.();
-
-      setPendingDelete({ button, ...getDeleteContext(overlay) });
-    };
-
-    const confirmFromKeyboard = (event) => {
-      if (event.key === "Escape") setPendingDelete(null);
-    };
-
-    document.addEventListener("click", interceptDelete, true);
-    document.addEventListener("keydown", confirmFromKeyboard);
-
-    window.__zommyConfirmDelete = (button) => {
-      bypassButton = button;
-      button?.click?.();
-    };
-
-    return () => {
-      document.removeEventListener("click", interceptDelete, true);
-      document.removeEventListener("keydown", confirmFromKeyboard);
-      delete window.__zommyConfirmDelete;
-    };
-  }, []);
-
-  const confirmDelete = () => {
-    const button = pendingDelete?.button;
-    setPendingDelete(null);
-    window.setTimeout(() => window.__zommyConfirmDelete?.(button), 0);
-  };
-
-  if (!pendingDelete) return null;
-
-  return (
-    <div role="presentation" style={{ position: "fixed", inset: 0, zIndex: 2200, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18, fontFamily: "Inter, system-ui, sans-serif" }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="zommy-delete-title" style={{ width: "100%", maxWidth: 420, background: "#111820", color: "#fff", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 24, padding: 20, boxShadow: "0 24px 90px rgba(0,0,0,0.55)" }}>
-        <h2 id="zommy-delete-title" style={{ fontFamily: "Lora, Georgia, serif", fontSize: 25, lineHeight: 1.15, fontWeight: 650, marginBottom: 10 }}>{copy.deleteTitle}</h2>
-        <p style={{ color: "rgba(255,255,255,0.72)", fontSize: 14, lineHeight: 1.6, marginBottom: 18 }}>{copy.deleteBody(pendingDelete.name, pendingDelete.date)}</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <button type="button" onClick={() => setPendingDelete(null)} style={{ minHeight: 50, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 15, fontSize: 15, fontWeight: 850, cursor: "pointer" }}>
-            {copy.cancel}
-          </button>
-          <button type="button" onClick={confirmDelete} style={{ minHeight: 50, border: "1px solid rgba(248,113,113,0.45)", background: "rgba(248,113,113,0.18)", color: "#fca5a5", borderRadius: 15, fontSize: 15, fontWeight: 900, cursor: "pointer" }}>
-            {copy.delete}
-          </button>
-        </div>
-      </section>
-    </div>
-  );
+  return null;
 }
