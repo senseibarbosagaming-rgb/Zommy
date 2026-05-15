@@ -13,6 +13,7 @@ import AccessibilitySafetyLayer from './AccessibilitySafetyLayer'
 import BrandConsistencyLayer from './BrandConsistencyLayer'
 import SettingsHubLayer from './SettingsHubLayer'
 import SettingsLauncherLayer from './SettingsLauncherLayer'
+import NotificationControlsLauncherLayer from './NotificationControlsLauncherLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -29,5 +30,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrandConsistencyLayer />
     <SettingsHubLayer />
     <SettingsLauncherLayer />
+    <NotificationControlsLauncherLayer />
   </React.StrictMode>
 )
