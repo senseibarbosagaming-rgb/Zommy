@@ -5,35 +5,35 @@ const DEFAULT_PREFS = { lang: "en", theme: "dream" };
 const THEMES = {
   dream: {
     mode: "light",
-    bg: "#FFF7ED",
-    page: "#FFFDF8",
+    bg: "#FFF4E8",
+    page: "#FFFDF7",
     panel: "#FFFFFF",
-    soft: "#F7EBDD",
-    text: "#35281F",
-    muted: "#7A6756",
-    faint: "#A89482",
-    border: "rgba(94, 72, 52, 0.16)",
-    accent: "#8DB7A5",
-    accent2: "#E9AFA3",
-    accent3: "#EBCB8B",
-    nav: "#EADFD2",
-    overlay: "rgba(255, 253, 248, 0.92)",
+    soft: "#F8E9DC",
+    text: "#3A2A22",
+    muted: "#80695B",
+    faint: "#A69082",
+    border: "rgba(122, 77, 57, 0.18)",
+    accent: "#D9826B",
+    accent2: "#8FB9A8",
+    accent3: "#F2C879",
+    nav: "#F2DDCC",
+    overlay: "rgba(255, 253, 247, 0.93)",
   },
   night: {
     mode: "dark",
-    bg: "#101418",
-    page: "#101418",
-    panel: "#151D25",
-    soft: "rgba(255,255,255,0.045)",
-    text: "#F8FAFC",
-    muted: "rgba(255,255,255,0.66)",
-    faint: "rgba(255,255,255,0.44)",
-    border: "rgba(255,255,255,0.13)",
-    accent: "#34D399",
-    accent2: "#A78BFA",
-    accent3: "#FBBF24",
-    nav: "#43596A",
-    overlay: "rgba(16,20,24,0.9)",
+    bg: "#18120F",
+    page: "#18120F",
+    panel: "#241A16",
+    soft: "rgba(255,244,232,0.07)",
+    text: "#FFF7EF",
+    muted: "rgba(255,247,239,0.68)",
+    faint: "rgba(255,247,239,0.46)",
+    border: "rgba(255,244,232,0.14)",
+    accent: "#E59A83",
+    accent2: "#9FC8B8",
+    accent3: "#F2C879",
+    nav: "#3A2A22",
+    overlay: "rgba(24,18,15,0.91)",
   },
 };
 
@@ -77,6 +77,8 @@ const applyTheme = (prefs = loadPrefs()) => {
   setVar("--z-accent-3", theme.accent3);
   setVar("--z-nav", theme.nav);
   setVar("--z-overlay", theme.overlay);
+  setVar("--z-radius-card", "26px");
+  setVar("--z-radius-button", "18px");
 
   document.body.style.background = theme.bg;
   document.body.style.color = theme.text;
@@ -119,6 +121,25 @@ export default function ThemeLayer() {
         transition: background-color 180ms ease, color 180ms ease;
       }
 
+      .zommy-brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 16px;
+        background: linear-gradient(145deg, #FFFDF7, #FFE2D1);
+        border: 1px solid rgba(122,77,57,0.14);
+        display: inline-grid;
+        place-items: center;
+        box-shadow: 0 12px 30px rgba(122,77,57,0.16);
+      }
+
+      .zommy-brand-mark::before {
+        content: "♡";
+        color: var(--z-accent);
+        font-size: 24px;
+        line-height: 1;
+        transform: translateY(-1px);
+      }
+
       html[data-zommy-mode="light"] main,
       html[data-zommy-mode="light"] [style*="background: #101418"],
       html[data-zommy-mode="light"] [style*="background:#101418"],
@@ -126,7 +147,7 @@ export default function ThemeLayer() {
       html[data-zommy-mode="light"] [style*="background-color: rgb(16, 20, 24)"],
       html[data-zommy-mode="light"] [style*="background: #0d0d0d"],
       html[data-zommy-mode="light"] [style*="background: rgb(13, 13, 13)"] {
-        background: var(--z-page) !important;
+        background: radial-gradient(circle at top left, #FFF1E5 0, var(--z-page) 42%, #FFF8EE 100%) !important;
         color: var(--z-text) !important;
       }
 
