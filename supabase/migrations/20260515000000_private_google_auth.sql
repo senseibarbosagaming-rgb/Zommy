@@ -1,31 +1,71 @@
 -- Zommy private Google-auth setup.
--- Run this in the Supabase SQL editor after Google Auth is enabled.
--- User chose a clean reset, so this migration removes existing app rows.
+-- This migration upgrades the original public-data model to per-user private data.
+-- It is intentionally non-destructive: existing profiles/entries are preserved and
+-- assigned to the single existing authenticated owner when possible.
 
 begin;
-
--- Clean app data for the new private-per-user model.
-truncate table public.entries restart identity cascade;
-truncate table public.profiles restart identity cascade;
 
 -- Profiles belong to exactly one authenticated user.
 alter table public.profiles
   add column if not exists user_id uuid references auth.users(id) on delete cascade;
-
-alter table public.profiles
-  alter column user_id set not null;
 
 -- Entries belong to exactly one authenticated user and store a private Storage path.
 alter table public.entries
   add column if not exists user_id uuid references auth.users(id) on delete cascade,
   add column if not exists photo_path text;
 
-alter table public.entries
-  alter column user_id set not null,
-  alter column photo_path set not null;
+-- Backfill legacy rows when the project has exactly one authenticated user.
+-- This keeps the existing memories instead of truncating them.
+with single_owner as (
+  select id
+  from auth.users
+  order by created_at asc
+  limit 1
+), owner_count as (
+  select count(*) as total
+  from auth.users
+)
+update public.profiles
+set user_id = (select id from single_owner)
+where user_id is null
+  and (select total from owner_count) = 1;
 
--- The React app now reads photo_path and creates signed URLs, so the legacy public
--- photo URL column is no longer needed for new rows. Leave it nullable if it exists.
+update public.entries e
+set user_id = p.user_id
+from public.profiles p
+where e.profile_id = p.id
+  and e.user_id is null
+  and p.user_id is not null;
+
+with single_owner as (
+  select id
+  from auth.users
+  order by created_at asc
+  limit 1
+), owner_count as (
+  select count(*) as total
+  from auth.users
+)
+update public.entries
+set user_id = (select id from single_owner)
+where user_id is null
+  and (select total from owner_count) = 1;
+
+-- Preserve legacy public photo URLs as photo_path fallbacks.
+-- New private uploads store storage object paths under <auth.uid()>/...
+update public.entries
+set photo_path = photo
+where photo_path is null
+  and photo is not null;
+
+-- The app writes photo_path for new private rows. Existing legacy rows may still
+-- have public URLs in photo_path, so keep photo_path nullable for safer upgrades.
+alter table public.profiles
+  alter column user_id set not null;
+
+alter table public.entries
+  alter column user_id set not null;
+
 alter table public.entries
   alter column photo drop not null;
 
