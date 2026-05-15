@@ -10,6 +10,7 @@ import MemoryDiscovery from './MemoryDiscovery'
 import CompareModesLayer from './CompareModesLayer'
 import NotificationControlsLayer from './NotificationControlsLayer'
 import AccessibilitySafetyLayer from './AccessibilitySafetyLayer'
+import BrandConsistencyLayer from './BrandConsistencyLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -23,5 +24,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <CompareModesLayer />
     <NotificationControlsLayer />
     <AccessibilitySafetyLayer />
+    <BrandConsistencyLayer />
   </React.StrictMode>
 )
