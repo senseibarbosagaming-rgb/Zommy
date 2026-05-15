@@ -13,6 +13,7 @@ const PALETTE = [
 ];
 
 const EMOJIS = ["👶", "👦", "👧", "🧒", "🐣", "⭐"];
+const normalizeTheme = (theme) => theme === "light" ? "dream" : theme === "dark" ? "night" : theme || "dream";
 
 const COPY = {
   en: {
@@ -60,8 +61,8 @@ const COPY = {
     error: "Something went wrong.",
     english: "English",
     portuguese: "Português",
-    dark: "Dark",
-    light: "Light",
+    night: "Night",
+    dream: "Dream",
     memories: "memories",
     permanent: "Permanent",
     openControls: "Details",
@@ -117,8 +118,8 @@ const COPY = {
     error: "Algo correu mal.",
     english: "English",
     portuguese: "Português",
-    dark: "Escuro",
-    light: "Claro",
+    night: "Noite",
+    dream: "Sonho",
     memories: "memórias",
     permanent: "Permanente",
     openControls: "Detalhes",
@@ -132,11 +133,14 @@ const COPY = {
 };
 
 const getPrefs = () => {
-  try { return JSON.parse(localStorage.getItem("zommy_prefs") || "{}"); }
-  catch { return {}; }
+  try {
+    const prefs = JSON.parse(localStorage.getItem("zommy_prefs") || "{}");
+    return { ...prefs, theme: normalizeTheme(prefs.theme) };
+  }
+  catch { return { theme: "dream" }; }
 };
 
-const savePrefs = (prefs) => localStorage.setItem("zommy_prefs", JSON.stringify(prefs));
+const savePrefs = (prefs) => localStorage.setItem("zommy_prefs", JSON.stringify({ ...prefs, theme: normalizeTheme(prefs.theme) }));
 const getCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
 
 const today = () => {
@@ -217,9 +221,10 @@ export default function SettingsScreen() {
   if (!open || !user) return null;
 
   const updatePrefs = (nextPrefs) => {
-    setPrefs(nextPrefs);
-    savePrefs(nextPrefs);
-    window.dispatchEvent(new CustomEvent("zommy:prefs-changed", { detail: nextPrefs }));
+    const normalizedPrefs = { ...nextPrefs, theme: normalizeTheme(nextPrefs.theme) };
+    setPrefs(normalizedPrefs);
+    savePrefs(normalizedPrefs);
+    window.dispatchEvent(new CustomEvent("zommy:prefs-changed", { detail: normalizedPrefs }));
     showToast(copy.saved);
   };
 
@@ -295,6 +300,7 @@ export default function SettingsScreen() {
 
   const activeProfiles = profiles.filter((profile) => !profile.archived_at);
   const archivedProfiles = profiles.filter((profile) => profile.archived_at);
+  const activeTheme = normalizeTheme(prefs.theme);
 
   const sectionTitle = section === "children" ? copy.manageChildren : section === "notifications" ? copy.notificationSchedule : section === "delete" ? copy.deleteAccountData : copy.title;
 
@@ -343,8 +349,8 @@ export default function SettingsScreen() {
               <SegmentedControl options={[["en", copy.english], ["pt", copy.portuguese]]} value={prefs.lang === "pt" ? "pt" : "en"} onChange={(lang) => updatePrefs({ ...prefs, lang })} />
             </SettingRow>
 
-            <SettingRow title={copy.theme} meta={prefs.theme === "light" ? copy.light : copy.dark}>
-              <SegmentedControl options={[["dark", copy.dark], ["light", copy.light]]} value={prefs.theme === "light" ? "light" : "dark"} onChange={(theme) => updatePrefs({ ...prefs, theme })} />
+            <SettingRow title={copy.theme} meta={activeTheme === "dream" ? copy.dream : copy.night}>
+              <SegmentedControl options={[["night", copy.night], ["dream", copy.dream]]} value={activeTheme} onChange={(theme) => updatePrefs({ ...prefs, theme })} />
             </SettingRow>
 
             <SettingRow title={copy.exportData} meta={copy.directExport(entries.length, profiles.length)}>
