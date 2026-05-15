@@ -187,6 +187,12 @@ export default function NavExperienceLayer() {
   const handleTab = async (tab) => {
     setActiveTab(tab);
 
+    if (tab === "compare") {
+      window.dispatchEvent(new CustomEvent("zommy:open-compare-modes"));
+      refreshData();
+      return;
+    }
+
     if (tab === "timeline" && profiles.length > 1 && !activeProfile) {
       setChooserMode("timeline");
       return;
@@ -198,7 +204,7 @@ export default function NavExperienceLayer() {
       return;
     }
 
-    const indexes = { home: 0, timeline: 1, compare: 3, settings: 4 };
+    const indexes = { home: 0, timeline: 1, settings: 4 };
     clickOriginalNav(indexes[tab]);
     refreshData();
   };
