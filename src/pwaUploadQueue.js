@@ -3,6 +3,8 @@ import { deleteQueuedMemory, getQueuedMemories, putQueuedMemory } from "./pwaSto
 
 const IMAGE_READ_TIMEOUT_MS = 9000;
 const IMAGE_COMPRESS_TIMEOUT_MS = 9000;
+const UPLOAD_TIMEOUT_MS = 45000;
+const UPLOAD_STALL_TIMEOUT_MS = 15000;
 
 const withTimeout = (promise, ms, message) => new Promise((resolve, reject) => {
   const timeout = window.setTimeout(() => reject(new Error(message)), ms);
@@ -79,32 +81,90 @@ const getSessionToken = async () => {
   return data.session?.access_token || SUPABASE_ANON_KEY;
 };
 
+const uploadWithSupabaseClient = async ({ file, path, onProgress = () => {} }) => {
+  onProgress(3);
+  const { error } = await withTimeout(
+    supabase.storage.from("photos").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type || "image/jpeg",
+    }),
+    UPLOAD_TIMEOUT_MS,
+    "Supabase upload timed out",
+  );
+  if (error) throw error;
+  onProgress(100);
+  return path;
+};
+
 export const uploadWithProgress = async ({ file, path, onProgress = () => {} }) => {
   const token = await getSessionToken();
   const endpoint = `${SUPABASE_URL}/storage/v1/object/photos/${encodeURIComponent(path).replace(/%2F/g, "/")}`;
 
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", endpoint);
-    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-    xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY);
-    xhr.setRequestHeader("Content-Type", file.type || "image/jpeg");
-    xhr.setRequestHeader("x-upsert", "false");
-    xhr.timeout = 45000;
+  try {
+    return await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      let settled = false;
+      let lastProgressAt = Date.now();
 
-    xhr.upload.onprogress = (event) => {
-      if (!event.lengthComputable) return;
-      onProgress(Math.round((event.loaded / event.total) * 100));
-    };
+      const finish = (callback, value) => {
+        if (settled) return;
+        settled = true;
+        window.clearInterval(stallWatchdog);
+        window.clearTimeout(totalWatchdog);
+        callback(value);
+      };
 
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve(path);
-      else reject(new Error(xhr.responseText || `Upload failed with ${xhr.status}`));
-    };
-    xhr.onerror = () => reject(new Error("Network upload failed"));
-    xhr.ontimeout = () => reject(new Error("Upload timed out"));
-    xhr.send(file);
-  });
+      const totalWatchdog = window.setTimeout(() => {
+        try { xhr.abort(); } catch {}
+        finish(reject, new Error("Upload timed out"));
+      }, UPLOAD_TIMEOUT_MS);
+
+      const stallWatchdog = window.setInterval(() => {
+        if (settled) return;
+        if (Date.now() - lastProgressAt > UPLOAD_STALL_TIMEOUT_MS) {
+          try { xhr.abort(); } catch {}
+          finish(reject, new Error("Upload stalled"));
+        }
+      }, 1000);
+
+      xhr.open("POST", endpoint);
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY);
+      xhr.setRequestHeader("Content-Type", file.type || "image/jpeg");
+      xhr.setRequestHeader("x-upsert", "false");
+      xhr.timeout = UPLOAD_TIMEOUT_MS;
+
+      xhr.upload.onloadstart = () => {
+        lastProgressAt = Date.now();
+        onProgress(1);
+      };
+      xhr.upload.onprogress = (event) => {
+        lastProgressAt = Date.now();
+        if (!event.lengthComputable) {
+          onProgress(5);
+          return;
+        }
+        onProgress(Math.max(1, Math.round((event.loaded / event.total) * 100)));
+      };
+      xhr.upload.onload = () => {
+        lastProgressAt = Date.now();
+        onProgress(98);
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) finish(resolve, path);
+        else finish(reject, new Error(xhr.responseText || `Upload failed with ${xhr.status}`));
+      };
+      xhr.onerror = () => finish(reject, new Error("Network upload failed"));
+      xhr.ontimeout = () => finish(reject, new Error("Upload timed out"));
+      xhr.onabort = () => finish(reject, new Error("Upload aborted"));
+      xhr.send(file);
+    });
+  } catch (error) {
+    console.warn("XHR upload failed, retrying with Supabase client", error);
+    return uploadWithSupabaseClient({ file, path, onProgress });
+  }
 };
 
 export const queueMemoryDraft = async ({ userId, profileId, date, note, photos, coverIndex, coverPosition }) => {
