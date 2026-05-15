@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { getDraft, getQueuedCount } from "./pwaStorage";
-import { supabase } from "./supabase";
+import { useEffect, useMemo, useState } from "react";
+import { useZommyData } from "./useZommyData";
 
 const COPY = {
   en: {
@@ -23,6 +22,7 @@ const COPY = {
     queuedTitle: "Waiting to upload",
     queuedBody: (count) => `${count} offline ${count === 1 ? "memory" : "memories"} will upload when the connection is back.`,
     emptyLatest: "No memories yet. Start with one photo from today.",
+    totalMemories: "total memories",
   },
   pt: {
     today: "Hoje",
@@ -44,6 +44,7 @@ const COPY = {
     queuedTitle: "À espera de upload",
     queuedBody: (count) => `${count} ${count === 1 ? "memória offline" : "memórias offline"} vai carregar quando a ligação voltar.`,
     emptyLatest: "Ainda não há memórias. Começa com uma foto de hoje.",
+    totalMemories: "memórias no total",
   },
 };
 
@@ -91,15 +92,6 @@ const childAge = (birthdate, lang) => {
 const sameMonthDay = (a, b) => a?.slice(5, 10) === b?.slice(5, 10);
 const yearsBetween = (from, to) => parseInt(to.slice(0, 4), 10) - parseInt(from.slice(0, 4), 10);
 
-const coverPath = (entry) => entry?.cover_photo_path || entry?.photo_path || entry?.photo || entry?.photos?.[0]?.path || "";
-const isExternal = (value) => /^https?:\/\//i.test(value || "") || /^data:/i.test(value || "");
-
-const signedPhoto = async (pathOrUrl) => {
-  if (!pathOrUrl || isExternal(pathOrUrl)) return pathOrUrl || "";
-  const { data, error } = await supabase.storage.from("photos").createSignedUrl(pathOrUrl, 60 * 60);
-  return error ? "" : data.signedUrl;
-};
-
 const startOfWeek = () => {
   const date = new Date();
   const day = date.getDay() || 7;
@@ -110,74 +102,24 @@ const startOfWeek = () => {
 
 export default function TodayDashboardLayer() {
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [profiles, setProfiles] = useState([]);
-  const [entries, setEntries] = useState([]);
-  const [draft, setDraft] = useState(null);
-  const [queuedCount, setQueuedCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-
+  const { user, profiles, entries, draft, queuedCount, loading, refresh } = useZommyData({ includeEntries: true, includeLocal: true, entryLimit: 80 });
   const copy = useMemo(getCopy, []);
   const lang = getPrefs().lang === "pt" ? "pt" : "en";
   const activeProfile = profiles[0];
   const today = todayIso();
   const weekStart = startOfWeek();
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const currentUser = sessionData.session?.user || null;
-    setUser(currentUser);
-
-    if (!currentUser) {
-      setProfiles([]);
-      setEntries([]);
-      setLoading(false);
-      return;
-    }
-
-    const [{ data: profileRows }, { data: entryRows }, savedDraft, queueCount] = await Promise.all([
-      supabase.from("profiles").select("*").eq("user_id", currentUser.id).is("archived_at", null).order("created_at"),
-      supabase.from("entries").select("*").eq("user_id", currentUser.id).order("date", { ascending: false }).limit(80),
-      getDraft().catch(() => null),
-      getQueuedCount().catch(() => 0),
-    ]);
-
-    const signedEntries = await Promise.all((entryRows || []).map(async (entry) => ({
-      ...entry,
-      photoUrl: await signedPhoto(coverPath(entry)),
-    })));
-
-    setProfiles(profileRows || []);
-    setEntries(signedEntries);
-    setDraft(savedDraft || null);
-    setQueuedCount(queueCount || 0);
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    const show = () => { setOpen(true); load(); };
+    const show = () => { setOpen(true); refresh(); };
     const hide = () => setOpen(false);
-    const refresh = () => load();
-
     window.addEventListener("zommy:show-today", show);
     window.addEventListener("zommy:hide-today", hide);
-    window.addEventListener("zommy:queue-updated", refresh);
-    window.addEventListener("zommy:memories-synced", refresh);
-    window.addEventListener("zommy:profiles-changed", refresh);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => load());
-    load().then(() => setOpen(true));
-
+    setOpen(true);
     return () => {
       window.removeEventListener("zommy:show-today", show);
       window.removeEventListener("zommy:hide-today", hide);
-      window.removeEventListener("zommy:queue-updated", refresh);
-      window.removeEventListener("zommy:memories-synced", refresh);
-      window.removeEventListener("zommy:profiles-changed", refresh);
-      subscription.unsubscribe();
     };
-  }, [load]);
+  }, [refresh]);
 
   if (!open || !user || !activeProfile) return null;
 
@@ -248,7 +190,7 @@ export default function TodayDashboardLayer() {
         <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <div style={metricCard()}>
             <div style={{ fontSize: 24, fontWeight: 950 }}>{childEntries.length}</div>
-            <div style={{ color: "rgba(255,255,255,0.54)", fontSize: 12 }}>total memories</div>
+            <div style={{ color: "rgba(255,255,255,0.54)", fontSize: 12 }}>{copy.totalMemories}</div>
           </div>
           <div style={metricCard()}>
             <div style={{ fontSize: 24, fontWeight: 950 }}>{weeklyCount}</div>
