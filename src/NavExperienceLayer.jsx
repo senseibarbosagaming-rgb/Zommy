@@ -35,11 +35,6 @@ const getPrefs = () => {
 
 const getCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
 
-const visibleProfileName = (profiles) => {
-  const headerText = document.querySelector("header")?.innerText || "";
-  return profiles.find((profile) => headerText.includes(profile.name))?.name || "";
-};
-
 const showToday = () => window.dispatchEvent(new CustomEvent("zommy:show-today"));
 const hideToday = () => window.dispatchEvent(new CustomEvent("zommy:hide-today"));
 const showTimeline = (profile) => window.dispatchEvent(new CustomEvent("zommy:show-timeline", { detail: { profileId: profile?.id || "" } }));
@@ -53,21 +48,32 @@ const openComposer = (profile) => window.dispatchEvent(new CustomEvent("zommy:op
 
 export default function NavExperienceLayer() {
   const { user, profiles, memoryCount, refresh } = useZommyData({ includeEntries: false, includeLocal: false });
-  const [activeName, setActiveName] = useState("");
+  const [activeProfileId, setActiveProfileId] = useState("");
   const [activeTab, setActiveTab] = useState("today");
   const [chooserMode, setChooserMode] = useState(null);
 
   const copy = useMemo(getCopy, []);
   const showLabels = memoryCount < 4;
-  const activeProfile = profiles.find((profile) => profile.name === activeName) || (profiles.length === 1 ? profiles[0] : null);
+  const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || (profiles.length === 1 ? profiles[0] : null);
 
   useEffect(() => {
-    if (!user) return undefined;
-    const observer = new MutationObserver(() => setActiveName(visibleProfileName(profiles)));
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    setActiveName(visibleProfileName(profiles));
-    return () => observer.disconnect();
-  }, [profiles, user]);
+    if (!user) {
+      setActiveProfileId("");
+      return undefined;
+    }
+
+    const updatePrimaryScreen = (event) => {
+      if (event.detail?.screen) setActiveTab(event.detail.screen);
+      if (event.detail?.profileId) setActiveProfileId(event.detail.profileId);
+    };
+
+    window.addEventListener("zommy:primary-screen-changed", updatePrimaryScreen);
+    return () => window.removeEventListener("zommy:primary-screen-changed", updatePrimaryScreen);
+  }, [user]);
+
+  useEffect(() => {
+    if (activeProfileId && !profiles.some((profile) => profile.id === activeProfileId)) setActiveProfileId("");
+  }, [activeProfileId, profiles]);
 
   if (!user) return null;
 
@@ -81,6 +87,7 @@ export default function NavExperienceLayer() {
   const beginMemoryFor = (profile) => {
     setChooserMode(null);
     setActiveTab("today");
+    if (profile?.id) setActiveProfileId(profile.id);
     openComposer(profile);
     refresh();
   };
@@ -104,9 +111,16 @@ export default function NavExperienceLayer() {
 
   const handleTab = (tab) => {
     setActiveTab(tab);
+
+    if (tab === "timeline" && !activeProfile && profiles.length > 1) {
+      setChooserMode("timeline");
+      return;
+    }
+
     hidePrimaryScreens();
 
     if (tab === "today") {
+      if (!activeProfileId && profiles.length === 1) setActiveProfileId(profiles[0].id);
       showToday();
       refresh();
       return;
@@ -167,6 +181,7 @@ export default function NavExperienceLayer() {
                   if (chooserMode === "timeline") {
                     setChooserMode(null);
                     setActiveTab("timeline");
+                    setActiveProfileId(profile.id);
                     hidePrimaryScreens();
                     showTimeline(profile);
                     refresh();

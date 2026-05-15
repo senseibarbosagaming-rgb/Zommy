@@ -22,12 +22,14 @@ import InviteAcceptanceLayer from './InviteAcceptanceLayer'
 import FamilySharingEntryLayer from './FamilySharingEntryLayer'
 import FamilyCircleHomeLayer from './FamilyCircleHomeLayer'
 import BottomSafeAreaLayer from './BottomSafeAreaLayer'
+import AppScreenCoordinator from './AppScreenCoordinator'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeLayer />
     <BottomSafeAreaLayer />
     <InviteAcceptanceLayer />
+    <AppScreenCoordinator />
     <App />
     <ZommyIntro />
     <HomeRitualScreen />
