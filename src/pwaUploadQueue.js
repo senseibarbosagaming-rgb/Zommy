@@ -1,15 +1,33 @@
 import { SUPABASE_ANON_KEY, SUPABASE_URL, supabase } from "./supabase";
 import { deleteQueuedMemory, getQueuedMemories, putQueuedMemory } from "./pwaStorage";
 
+const IMAGE_READ_TIMEOUT_MS = 9000;
+const IMAGE_COMPRESS_TIMEOUT_MS = 9000;
+
+const withTimeout = (promise, ms, message) => new Promise((resolve, reject) => {
+  const timeout = window.setTimeout(() => reject(new Error(message)), ms);
+  promise
+    .then((value) => {
+      window.clearTimeout(timeout);
+      resolve(value);
+    })
+    .catch((error) => {
+      window.clearTimeout(timeout);
+      reject(error);
+    });
+});
+
 const readFileAsImage = (file) => new Promise((resolve, reject) => {
   const url = URL.createObjectURL(file);
   const image = new Image();
+
+  const cleanup = () => URL.revokeObjectURL(url);
   image.onload = () => {
-    URL.revokeObjectURL(url);
+    cleanup();
     resolve(image);
   };
   image.onerror = () => {
-    URL.revokeObjectURL(url);
+    cleanup();
     reject(new Error("Could not read image"));
   };
   image.src = url;
@@ -22,21 +40,38 @@ const canvasToBlob = (canvas, quality) => new Promise((resolve, reject) => {
   }, "image/jpeg", quality);
 });
 
-export const compressImageForUpload = async (file) => {
-  const image = await readFileAsImage(file);
-  const maxSide = 1800;
-  const ratio = Math.min(1, maxSide / Math.max(image.width, image.height));
-  const width = Math.max(1, Math.round(image.width * ratio));
-  const height = Math.max(1, Math.round(image.height * ratio));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-  context.drawImage(image, 0, 0, width, height);
-  const blob = await canvasToBlob(canvas, 0.78);
+const shouldSkipCompression = (file) => {
+  const type = (file.type || "").toLowerCase();
+  if (!type.startsWith("image/")) return true;
+  if (type.includes("heic") || type.includes("heif")) return true;
+  if (type.includes("gif")) return true;
+  return false;
+};
 
-  if (blob.size >= file.size && file.size < 2_000_000) return file;
-  return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "photo"}.jpg`, { type: "image/jpeg" });
+export const compressImageForUpload = async (file) => {
+  if (shouldSkipCompression(file)) return file;
+
+  try {
+    const image = await withTimeout(readFileAsImage(file), IMAGE_READ_TIMEOUT_MS, "Image decode timed out");
+    const maxSide = 1800;
+    const ratio = Math.min(1, maxSide / Math.max(image.width || 1, image.height || 1));
+    const width = Math.max(1, Math.round((image.width || 1) * ratio));
+    const height = Math.max(1, Math.round((image.height || 1) * ratio));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+
+    context.drawImage(image, 0, 0, width, height);
+    const blob = await withTimeout(canvasToBlob(canvas, 0.78), IMAGE_COMPRESS_TIMEOUT_MS, "Image compression timed out");
+
+    if (blob.size >= file.size && file.size < 2_000_000) return file;
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "photo"}.jpg`, { type: "image/jpeg" });
+  } catch (error) {
+    console.warn("Image compression skipped", error);
+    return file;
+  }
 };
 
 const getSessionToken = async () => {
@@ -55,6 +90,7 @@ export const uploadWithProgress = async ({ file, path, onProgress = () => {} }) 
     xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY);
     xhr.setRequestHeader("Content-Type", file.type || "image/jpeg");
     xhr.setRequestHeader("x-upsert", "false");
+    xhr.timeout = 45000;
 
     xhr.upload.onprogress = (event) => {
       if (!event.lengthComputable) return;
@@ -66,6 +102,7 @@ export const uploadWithProgress = async ({ file, path, onProgress = () => {} }) 
       else reject(new Error(xhr.responseText || `Upload failed with ${xhr.status}`));
     };
     xhr.onerror = () => reject(new Error("Network upload failed"));
+    xhr.ontimeout = () => reject(new Error("Upload timed out"));
     xhr.send(file);
   });
 };
@@ -84,7 +121,9 @@ export const uploadMemoryPayload = async ({ userId, profileId, date, note, photo
     const file = photo.file || photo.blob || photo;
     onStatus({ stage: "compressing", index: i + 1, total: photos.length, pct: 0 });
     const compressed = await compressImageForUpload(file);
-    const path = `${userId}/${Date.now()}-${i}.jpg`;
+    const extension = (compressed.type || "").includes("png") ? "png" : (compressed.name || "").split(".").pop()?.toLowerCase() || "jpg";
+    const safeExtension = ["jpg", "jpeg", "png", "webp", "heic", "heif"].includes(extension) ? extension : "jpg";
+    const path = `${userId}/${Date.now()}-${i}.${safeExtension}`;
     onStatus({ stage: "uploading", index: i + 1, total: photos.length, pct: 0 });
     await uploadWithProgress({
       file: compressed,
