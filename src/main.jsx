@@ -7,6 +7,7 @@ import MemoryComposer from './MemoryComposer'
 import ComposerLauncherLayer from './ComposerLauncherLayer'
 import CropPositionLayer from './CropPositionLayer'
 import MemoryDiscovery from './MemoryDiscovery'
+import CompareModesLayer from './CompareModesLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -17,5 +18,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ComposerLauncherLayer />
     <CropPositionLayer />
     <MemoryDiscovery />
+    <CompareModesLayer />
   </React.StrictMode>
 )
