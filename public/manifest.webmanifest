@@ -1,0 +1,35 @@
+{
+  "name": "Zommy",
+  "short_name": "Zommy",
+  "description": "Save family memories quickly from your phone.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#101418",
+  "theme_color": "#43596a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add memory",
+      "short_name": "Add",
+      "description": "Open Zommy directly to the memory composer.",
+      "url": "/?action=add-memory",
+      "icons": [
+        {
+          "src": "/icons/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}
