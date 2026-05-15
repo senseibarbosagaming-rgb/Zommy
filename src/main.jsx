@@ -22,11 +22,13 @@ import InviteAcceptanceLayer from './InviteAcceptanceLayer'
 import FamilySharingEntryLayer from './FamilySharingEntryLayer'
 import FamilyCircleHomeLayer from './FamilyCircleHomeLayer'
 import BottomSafeAreaLayer from './BottomSafeAreaLayer'
+import ResumeRecoveryLayer from './ResumeRecoveryLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeLayer />
     <BottomSafeAreaLayer />
+    <ResumeRecoveryLayer />
     <InviteAcceptanceLayer />
     <App />
     <ZommyIntro />
