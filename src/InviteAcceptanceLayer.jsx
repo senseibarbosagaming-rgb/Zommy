@@ -3,17 +3,21 @@ import { supabase } from "./supabase";
 
 const COPY = {
   en: {
-    joining: "Joining shared child…",
-    success: "Shared child added to Zommy.",
-    login: "Sign in to accept this family invite.",
-    mismatch: "This invite must be opened with the invited Google account.",
+    joining: "Joining this family circle…",
+    success: "You’re now part of this child’s family circle.",
+    login: "Sign in to join this child’s family circle. Use the email the invite was sent to.",
+    mismatch: "This invite was sent to another email. Ask for a new invite or sign in with the invited Google account.",
+    expired: "This invite is no longer active. Ask the owner to send a new one.",
+    alreadyMember: "You’re already part of this child’s family circle.",
     error: "Could not accept this invite.",
   },
   pt: {
-    joining: "A juntar criança partilhada…",
-    success: "Criança partilhada adicionada ao Zommy.",
-    login: "Inicia sessão para aceitar este convite familiar.",
-    mismatch: "Este convite tem de ser aberto com a conta Google convidada.",
+    joining: "A juntar ao círculo familiar…",
+    success: "Já fazes parte do círculo familiar desta criança.",
+    login: "Inicia sessão para entrar no círculo familiar desta criança. Usa o email para onde o convite foi enviado.",
+    mismatch: "Este convite foi enviado para outro email. Pede um novo convite ou entra com a conta Google convidada.",
+    expired: "Este convite já não está ativo. Pede ao owner para enviar um novo.",
+    alreadyMember: "Já fazes parte do círculo familiar desta criança.",
     error: "Não foi possível aceitar este convite.",
   },
 };
@@ -31,6 +35,14 @@ const cleanInviteTokenFromUrl = () => {
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 };
 
+const inviteErrorMessage = (error, copy) => {
+  const text = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
+  if (text.includes("email")) return copy.mismatch;
+  if (text.includes("expired") || text.includes("cancelled") || text.includes("invalid") || text.includes("not active")) return copy.expired;
+  if (text.includes("already") || text.includes("duplicate")) return copy.alreadyMember;
+  return copy.error;
+};
+
 export default function InviteAcceptanceLayer() {
   const [message, setMessage] = useState("");
   const [visible, setVisible] = useState(false);
@@ -38,6 +50,27 @@ export default function InviteAcceptanceLayer() {
 
   useEffect(() => {
     let timeout;
+
+    const acceptToken = async (token, shouldCleanUrl = false) => {
+      if (!token) return;
+      setVisible(true);
+      setMessage(copy.joining);
+
+      const { error } = await supabase.rpc("accept_profile_invite", { invite_token: token });
+      if (error) {
+        console.error("Invite acceptance failed", error);
+        setMessage(inviteErrorMessage(error, copy));
+        timeout = window.setTimeout(() => setVisible(false), 6200);
+        return;
+      }
+
+      localStorage.removeItem("zommy_pending_invite");
+      if (shouldCleanUrl) cleanInviteTokenFromUrl();
+      setMessage(copy.success);
+      window.dispatchEvent(new CustomEvent("zommy:sharing-changed"));
+      window.dispatchEvent(new CustomEvent("zommy:profiles-changed"));
+      timeout = window.setTimeout(() => setVisible(false), 4400);
+    };
 
     const acceptInvite = async () => {
       const token = readInviteToken();
@@ -50,27 +83,11 @@ export default function InviteAcceptanceLayer() {
         localStorage.setItem("zommy_pending_invite", token);
         setVisible(true);
         setMessage(copy.login);
-        timeout = window.setTimeout(() => setVisible(false), 4200);
+        timeout = window.setTimeout(() => setVisible(false), 6200);
         return;
       }
 
-      setVisible(true);
-      setMessage(copy.joining);
-
-      const { error } = await supabase.rpc("accept_profile_invite", { invite_token: token });
-      if (error) {
-        console.error("Invite acceptance failed", error);
-        setMessage((error.message || "").toLowerCase().includes("email") ? copy.mismatch : copy.error);
-        timeout = window.setTimeout(() => setVisible(false), 5200);
-        return;
-      }
-
-      localStorage.removeItem("zommy_pending_invite");
-      cleanInviteTokenFromUrl();
-      setMessage(copy.success);
-      window.dispatchEvent(new CustomEvent("zommy:sharing-changed"));
-      window.dispatchEvent(new CustomEvent("zommy:profiles-changed"));
-      timeout = window.setTimeout(() => setVisible(false), 4200);
+      await acceptToken(token, true);
     };
 
     const acceptPendingAfterLogin = async () => {
@@ -78,22 +95,7 @@ export default function InviteAcceptanceLayer() {
       if (!pending) return;
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session?.user) return;
-
-      setVisible(true);
-      setMessage(copy.joining);
-      const { error } = await supabase.rpc("accept_profile_invite", { invite_token: pending });
-      if (error) {
-        console.error("Pending invite acceptance failed", error);
-        setMessage((error.message || "").toLowerCase().includes("email") ? copy.mismatch : copy.error);
-        timeout = window.setTimeout(() => setVisible(false), 5200);
-        return;
-      }
-
-      localStorage.removeItem("zommy_pending_invite");
-      setMessage(copy.success);
-      window.dispatchEvent(new CustomEvent("zommy:sharing-changed"));
-      window.dispatchEvent(new CustomEvent("zommy:profiles-changed"));
-      timeout = window.setTimeout(() => setVisible(false), 4200);
+      await acceptToken(pending, false);
     };
 
     acceptInvite();
