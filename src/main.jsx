@@ -11,6 +11,8 @@ import CompareModesLayer from './CompareModesLayer'
 import NotificationControlsLayer from './NotificationControlsLayer'
 import AccessibilitySafetyLayer from './AccessibilitySafetyLayer'
 import BrandConsistencyLayer from './BrandConsistencyLayer'
+import SettingsHubLayer from './SettingsHubLayer'
+import SettingsLauncherLayer from './SettingsLauncherLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -25,5 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <NotificationControlsLayer />
     <AccessibilitySafetyLayer />
     <BrandConsistencyLayer />
+    <SettingsHubLayer />
+    <SettingsLauncherLayer />
   </React.StrictMode>
 )
