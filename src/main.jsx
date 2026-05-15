@@ -6,6 +6,7 @@ import NavExperienceLayer from './NavExperienceLayer'
 import MemoryComposer from './MemoryComposer'
 import ComposerLauncherLayer from './ComposerLauncherLayer'
 import CropPositionLayer from './CropPositionLayer'
+import MemoryDiscovery from './MemoryDiscovery'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -15,5 +16,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <MemoryComposer />
     <ComposerLauncherLayer />
     <CropPositionLayer />
+    <MemoryDiscovery />
   </React.StrictMode>
 )
