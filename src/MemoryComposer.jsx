@@ -168,6 +168,9 @@ export default function MemoryComposer() {
     }
   };
 
+  const uploadButtonStyle = { border: "1px dashed rgba(255,255,255,0.22)", background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.72)", borderRadius: 15, padding: "14px 15px", textAlign: "center", fontWeight: 800, cursor: saving ? "wait" : "pointer" };
+  const cameraButtonStyle = { border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.035)", color: "rgba(255,255,255,0.64)", borderRadius: 14, padding: "12px 14px", textAlign: "center", fontWeight: 800, fontSize: 13, cursor: saving ? "wait" : "pointer" };
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1300, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
       <div style={{ width: "100%", maxWidth: 480, maxHeight: "92dvh", overflowY: "auto", background: "#101418", color: "#fff", borderRadius: "26px 26px 0 0", padding: "20px 18px calc(22px + env(safe-area-inset-bottom, 0px))", fontFamily: "Inter, system-ui, sans-serif", boxShadow: "0 -26px 100px rgba(0,0,0,0.5)" }}>
@@ -207,9 +210,13 @@ export default function MemoryComposer() {
                 ))}
               </div>
             )}
-            <label style={{ border: "1px dashed rgba(255,255,255,0.22)", background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.72)", borderRadius: 15, padding: "14px 15px", textAlign: "center", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>
-              📷 {copy.addPhotos}
-              <input type="file" accept="image/*" multiple capture="environment" disabled={saving} onChange={onChooseFiles} style={{ display: "none" }} />
+            <label style={uploadButtonStyle}>
+              🖼️ {copy.addPhotos}
+              <input type="file" accept="image/*" multiple disabled={saving} onChange={onChooseFiles} style={{ display: "none" }} />
+            </label>
+            <label style={cameraButtonStyle}>
+              📷 {copy.takePhoto}
+              <input type="file" accept="image/*" capture="environment" disabled={saving} onChange={onChooseFiles} style={{ display: "none" }} />
             </label>
           </section>
 
