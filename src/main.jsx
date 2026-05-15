@@ -20,6 +20,7 @@ import MemorySavedToast from './MemorySavedToast'
 import FamilySharingScreen from './FamilySharingScreen'
 import InviteAcceptanceLayer from './InviteAcceptanceLayer'
 import FamilySharingEntryLayer from './FamilySharingEntryLayer'
+import FamilyCircleHomeLayer from './FamilyCircleHomeLayer'
 import BottomSafeAreaLayer from './BottomSafeAreaLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
     <ZommyIntro />
     <HomeRitualScreen />
+    <FamilyCircleHomeLayer />
     <TimelineScreen />
     <ChaptersLibrary />
     <ChapterScreen />
