@@ -10,7 +10,7 @@ import CompareModesLayer from './CompareModesLayer'
 import NotificationControlsLayer from './NotificationControlsLayer'
 import AccessibilitySafetyLayer from './AccessibilitySafetyLayer'
 import BrandConsistencyLayer from './BrandConsistencyLayer'
-import SettingsHubLayer from './SettingsHubLayer'
+import SettingsScreen from './SettingsScreen'
 import NotificationControlsLauncherLayer from './NotificationControlsLauncherLayer'
 import PWAExperienceLayer from './PWAExperienceLayer'
 import TodayDashboardLayer from './TodayDashboardLayer'
@@ -21,6 +21,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
     <TodayDashboardLayer />
     <TimelineScreen />
+    <SettingsScreen />
     <FirstRunExperience />
     <NavExperienceLayer />
     <MemoryComposer />
@@ -30,7 +31,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <NotificationControlsLayer />
     <AccessibilitySafetyLayer />
     <BrandConsistencyLayer />
-    <SettingsHubLayer />
     <NotificationControlsLauncherLayer />
     <PWAExperienceLayer />
   </React.StrictMode>
