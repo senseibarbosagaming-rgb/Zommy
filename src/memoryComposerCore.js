@@ -8,7 +8,8 @@ export const COPY = {
     chooseChild: "Who is this memory for?",
     date: "Date",
     photos: "Photos",
-    addPhotos: "Add photos",
+    addPhotos: "Upload photos",
+    takePhoto: "Take photo",
     note: "Note",
     notePlaceholder: "What happened? Keep it short, imperfect, real.",
     coverCrop: "Cover crop",
@@ -20,7 +21,7 @@ export const COPY = {
     save: "Save memory",
     retry: "Retry upload",
     cancel: "Cancel",
-    compressing: (index, total) => `Compressing ${index}/${total}`,
+    compressing: (index, total) => `Preparing ${index}/${total}`,
     uploading: (index, total, pct) => `Uploading ${index}/${total} · ${pct}%`,
     saving: "Saving memory…",
     queued: "Saved offline. It will upload when connection returns.",
@@ -35,7 +36,8 @@ export const COPY = {
     chooseChild: "Para quem é esta memória?",
     date: "Data",
     photos: "Fotos",
-    addPhotos: "Adicionar fotos",
+    addPhotos: "Carregar fotos",
+    takePhoto: "Tirar foto",
     note: "Nota",
     notePlaceholder: "O que aconteceu? Curto, imperfeito, real.",
     coverCrop: "Corte da capa",
@@ -47,7 +49,7 @@ export const COPY = {
     save: "Guardar memória",
     retry: "Tentar de novo",
     cancel: "Cancelar",
-    compressing: (index, total) => `A comprimir ${index}/${total}`,
+    compressing: (index, total) => `A preparar ${index}/${total}`,
     uploading: (index, total, pct) => `A carregar ${index}/${total} · ${pct}%`,
     saving: "A guardar memória…",
     queued: "Guardada offline. Vai carregar quando a ligação voltar.",
@@ -77,18 +79,11 @@ export const getPrefs = () => {
 };
 
 export const getComposerCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
-
 export const makePhotoId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
 export const photoFromFile = (file) => ({ id: makePhotoId(), file, preview: URL.createObjectURL(file) });
-
 export const photosFromDraft = (draft) => (draft?.photos || []).map((photo) => photoFromFile(photo.file || photo.blob || photo));
-
 export const serializePhotos = (photos) => photos.map((photo) => ({ file: photo.file }));
-
-export const revokePhotoPreviews = (photos) => photos.forEach((photo) => {
-  if (photo.preview) URL.revokeObjectURL(photo.preview);
-});
+export const revokePhotoPreviews = (photos) => photos.forEach((photo) => { if (photo.preview) URL.revokeObjectURL(photo.preview); });
 
 export const loadComposerContext = async () => {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -96,37 +91,17 @@ export const loadComposerContext = async () => {
   if (!user) return { user: null, profiles: [], draft: null };
 
   const [{ data: profiles }, draft] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id,name,emoji,color,created_at")
-      .eq("user_id", user.id)
-      .is("archived_at", null)
-      .order("created_at"),
+    supabase.from("profiles").select("id,name,emoji,color,created_at").eq("user_id", user.id).is("archived_at", null).order("created_at"),
     getDraft().catch(() => null),
   ]);
 
   return { user, profiles: profiles || [], draft };
 };
 
-export const persistComposerDraft = ({ profileId, date, note, photos, coverIndex, coverPosition }) => putDraft({
-  profileId,
-  date,
-  note,
-  photos: serializePhotos(photos),
-  coverIndex,
-  coverPosition,
-});
+export const persistComposerDraft = ({ profileId, date, note, photos, coverIndex, coverPosition }) => putDraft({ profileId, date, note, photos: serializePhotos(photos), coverIndex, coverPosition });
 
 export const queueCurrentMemory = async ({ user, activeProfile, date, note, photos, coverIndex, coverPosition }) => {
-  await queueMemoryDraft({
-    userId: user.id,
-    profileId: activeProfile.id,
-    date,
-    note,
-    photos: serializePhotos(photos),
-    coverIndex,
-    coverPosition,
-  });
+  await queueMemoryDraft({ userId: user.id, profileId: activeProfile.id, date, note, photos: serializePhotos(photos), coverIndex, coverPosition });
   await clearDraft().catch(() => null);
   window.dispatchEvent(new CustomEvent("zommy:queue-updated"));
 };
