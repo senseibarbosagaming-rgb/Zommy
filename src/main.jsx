@@ -4,12 +4,9 @@ import App from './App'
 import FirstRunExperience from './FirstRunExperience'
 import NavExperienceLayer from './NavExperienceLayer'
 import MemoryComposer from './MemoryComposer'
-import CropPositionLayer from './CropPositionLayer'
-import MemoryDiscovery from './MemoryDiscovery'
 import CompareScreen from './CompareScreen'
 import NotificationControlsLayer from './NotificationControlsLayer'
 import AccessibilitySafetyLayer from './AccessibilitySafetyLayer'
-import BrandConsistencyLayer from './BrandConsistencyLayer'
 import SettingsScreen from './SettingsScreen'
 import PWAExperienceLayer from './PWAExperienceLayer'
 import TodayDashboardLayer from './TodayDashboardLayer'
@@ -27,11 +24,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <FirstRunExperience />
     <NavExperienceLayer />
     <MemoryComposer />
-    <CropPositionLayer />
-    <MemoryDiscovery />
     <NotificationControlsLayer />
     <AccessibilitySafetyLayer />
-    <BrandConsistencyLayer />
     <PWAExperienceLayer />
   </React.StrictMode>
 )
