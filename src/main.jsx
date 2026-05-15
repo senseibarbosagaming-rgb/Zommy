@@ -20,10 +20,12 @@ import MemorySavedToast from './MemorySavedToast'
 import FamilySharingScreen from './FamilySharingScreen'
 import InviteAcceptanceLayer from './InviteAcceptanceLayer'
 import FamilySharingEntryLayer from './FamilySharingEntryLayer'
+import BottomSafeAreaLayer from './BottomSafeAreaLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeLayer />
+    <BottomSafeAreaLayer />
     <InviteAcceptanceLayer />
     <App />
     <ZommyIntro />
