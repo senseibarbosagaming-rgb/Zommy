@@ -48,6 +48,10 @@ export const loadZommyData = async ({ includeEntries = true, includeLocal = fals
   const draft = includeLocal ? results[includeEntries ? 3 : 2] : null;
   const queuedCount = includeLocal ? results[includeEntries ? 4 : 3] || 0 : 0;
 
+  if (profileResult.error) throw profileResult.error;
+  if (countResult.error) throw countResult.error;
+  if (includeEntries && entryResult.error) throw entryResult.error;
+
   const entries = includeEntries
     ? await Promise.all((entryResult.data || []).map(async (entry) => ({
       ...entry,
@@ -94,12 +98,26 @@ export function useZommyData(options = {}) {
     refresh();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(refresh);
 
-    const events = ["focus", "zommy:profiles-changed", "zommy:queue-updated", "zommy:memories-synced", "zommy:sharing-changed"];
-    events.forEach((eventName) => window.addEventListener(eventName, refresh));
+    const refreshWhenVisible = () => {
+      if (document.visibilityState !== "hidden") refresh();
+    };
+
+    const events = [
+      [window, "focus", refresh],
+      [window, "pageshow", refreshWhenVisible],
+      [window, "online", refreshWhenVisible],
+      [window, "zommy:app-resume", refreshWhenVisible],
+      [window, "zommy:profiles-changed", refresh],
+      [window, "zommy:queue-updated", refresh],
+      [window, "zommy:memories-synced", refresh],
+      [window, "zommy:sharing-changed", refresh],
+      [document, "visibilitychange", refreshWhenVisible],
+    ];
+    events.forEach(([target, eventName, handler]) => target.addEventListener(eventName, handler));
 
     return () => {
       subscription.unsubscribe();
-      events.forEach((eventName) => window.removeEventListener(eventName, refresh));
+      events.forEach(([target, eventName, handler]) => target.removeEventListener(eventName, handler));
     };
   }, [refresh]);
 
