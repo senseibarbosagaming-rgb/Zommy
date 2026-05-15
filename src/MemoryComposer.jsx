@@ -29,6 +29,7 @@ export default function MemoryComposer() {
   const [progress, setProgress] = useState(0);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [draftSuppressed, setDraftSuppressed] = useState(false);
 
   const copy = useMemo(getComposerCopy, []);
   const activeProfile = profiles.find((profile) => profile.id === profileId);
@@ -53,6 +54,7 @@ export default function MemoryComposer() {
       setProgress(0);
       setFailed(false);
       setSaving(false);
+      setDraftSuppressed(false);
       setOpen(true);
     };
 
@@ -61,12 +63,12 @@ export default function MemoryComposer() {
   }, [copy.draftRestored, photos]);
 
   useEffect(() => {
-    if (!open || saving) return undefined;
+    if (!open || saving || draftSuppressed) return undefined;
     const timeout = window.setTimeout(() => {
       persistComposerDraft({ profileId, date, note, photos, coverIndex, coverPosition }).catch(() => null);
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [coverIndex, coverPosition, date, note, open, photos, profileId, saving]);
+  }, [coverIndex, coverPosition, date, draftSuppressed, note, open, photos, profileId, saving]);
 
   useEffect(() => () => revokePhotoPreviews(photos), [photos]);
 
@@ -83,6 +85,7 @@ export default function MemoryComposer() {
     const files = Array.from(event.target.files || []).filter((file) => file.type.startsWith("image/"));
     if (!files.length) return;
 
+    setDraftSuppressed(false);
     setPhotos((current) => [...current, ...files.map(photoFromFile)]);
     setFailed(false);
     setStatus("");
@@ -90,6 +93,7 @@ export default function MemoryComposer() {
   };
 
   const removePhoto = (id) => {
+    setDraftSuppressed(false);
     setPhotos((current) => {
       const removed = current.find((photo) => photo.id === id);
       revokePhotoPreviews(removed ? [removed] : []);
@@ -99,28 +103,34 @@ export default function MemoryComposer() {
     });
   };
 
-  const queueOffline = async () => {
-    await queueCurrentMemory({ user, activeProfile, date, note, photos, coverIndex, coverPosition });
-    setStatus(copy.queued);
-    setProgress(100);
+  const finishAndClose = (delay = 650) => {
+    window.dispatchEvent(new CustomEvent("zommy:draft-cleared"));
     window.setTimeout(() => {
       revokePhotoPreviews(photos);
       setPhotos([]);
       setOpen(false);
-    }, 700);
+    }, delay);
+  };
+
+  const queueOffline = async () => {
+    setDraftSuppressed(true);
+    await queueCurrentMemory({ user, activeProfile, date, note, photos, coverIndex, coverPosition });
+    await clearDraft().catch(() => null);
+    setStatus(copy.queued);
+    setProgress(100);
+    window.dispatchEvent(new CustomEvent("zommy:queue-updated"));
+    window.dispatchEvent(new CustomEvent("zommy:memories-synced"));
+    finishAndClose(700);
   };
 
   const afterSaved = async () => {
+    setDraftSuppressed(true);
     await clearDraft().catch(() => null);
     setStatus(copy.done);
     setProgress(100);
     window.dispatchEvent(new CustomEvent("zommy:memories-synced"));
     window.dispatchEvent(new CustomEvent("zommy:show-today"));
-    window.setTimeout(() => {
-      revokePhotoPreviews(photos);
-      setPhotos([]);
-      setOpen(false);
-    }, 650);
+    finishAndClose(650);
   };
 
   const saveMemory = async () => {
@@ -138,7 +148,6 @@ export default function MemoryComposer() {
     try {
       if (!navigator.onLine) {
         await queueOffline();
-        setSaving(false);
         return;
       }
 
@@ -160,6 +169,7 @@ export default function MemoryComposer() {
       if (!navigator.onLine) {
         await queueOffline().catch(() => null);
       } else {
+        setDraftSuppressed(false);
         setStatus(copy.genericError);
         setFailed(true);
       }
@@ -184,7 +194,7 @@ export default function MemoryComposer() {
         {profiles.length > 1 && (
           <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 16 }}>
             {profiles.map((profile) => (
-              <button key={profile.id} onClick={() => setProfileId(profile.id)} disabled={saving} style={{ flexShrink: 0, border: `1px solid ${profileId === profile.id ? profile.color : "rgba(255,255,255,0.13)"}`, background: profileId === profile.id ? `${profile.color}22` : "rgba(255,255,255,0.05)", color: profileId === profile.id ? profile.color : "rgba(255,255,255,0.72)", borderRadius: 999, padding: "8px 13px", fontSize: 13, fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>
+              <button key={profile.id} onClick={() => { setDraftSuppressed(false); setProfileId(profile.id); }} disabled={saving} style={{ flexShrink: 0, border: `1px solid ${profileId === profile.id ? profile.color : "rgba(255,255,255,0.13)"}`, background: profileId === profile.id ? `${profile.color}22` : "rgba(255,255,255,0.05)", color: profileId === profile.id ? profile.color : "rgba(255,255,255,0.72)", borderRadius: 999, padding: "8px 13px", fontSize: 13, fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>
                 {profile.emoji || "👶"} {profile.name}
               </button>
             ))}
@@ -194,7 +204,7 @@ export default function MemoryComposer() {
         <div style={{ display: "grid", gap: 15 }}>
           <label style={labelStyle()}>
             {copy.date}
-            <input type="date" value={date} max={today()} disabled={saving} onChange={(event) => setDate(event.target.value)} style={fieldStyle()} />
+            <input type="date" value={date} max={today()} disabled={saving} onChange={(event) => { setDraftSuppressed(false); setDate(event.target.value); }} style={fieldStyle()} />
           </label>
 
           <section style={{ display: "grid", gap: 8 }}>
@@ -202,7 +212,7 @@ export default function MemoryComposer() {
             {photos.length > 0 && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
                 {photos.map((photo, index) => (
-                  <button key={photo.id} type="button" onClick={() => setCoverIndex(index)} disabled={saving} style={{ border: `2px solid ${coverIndex === index ? activeProfile?.color || "#17d86f" : "transparent"}`, background: "rgba(255,255,255,0.05)", borderRadius: 13, overflow: "hidden", padding: 0, position: "relative", aspectRatio: "9 / 13", cursor: saving ? "wait" : "pointer" }}>
+                  <button key={photo.id} type="button" onClick={() => { setDraftSuppressed(false); setCoverIndex(index); }} disabled={saving} style={{ border: `2px solid ${coverIndex === index ? activeProfile?.color || "#17d86f" : "transparent"}`, background: "rgba(255,255,255,0.05)", borderRadius: 13, overflow: "hidden", padding: 0, position: "relative", aspectRatio: "9 / 13", cursor: saving ? "wait" : "pointer" }}>
                     <img src={photo.preview} alt="Selected memory preview" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: coverIndex === index ? coverPosition : "50% 50%", display: "block" }} />
                     <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(0,0,0,0.55)", color: "#fff", borderRadius: 999, padding: "3px 7px", fontSize: 10, fontWeight: 900 }}>{index === coverIndex ? copy.cover : index + 1}</span>
                     {!saving && <span onClick={(event) => { event.stopPropagation(); removePhoto(photo.id); }} style={{ position: "absolute", right: 6, top: 6, background: "rgba(0,0,0,0.6)", color: "#fff", borderRadius: 999, width: 24, height: 24, display: "grid", placeItems: "center", fontSize: 14 }}>×</span>}
@@ -226,7 +236,7 @@ export default function MemoryComposer() {
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.56)", marginBottom: 10 }}>{copy.cropHint}</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7 }}>
                 {cropOptions.map((option) => (
-                  <button key={option.id} type="button" disabled={saving} onClick={() => setCoverPosition(option.value)} style={{ border: `1px solid ${coverPosition === option.value ? activeProfile?.color || "#17d86f" : "rgba(255,255,255,0.13)"}`, background: coverPosition === option.value ? `${activeProfile?.color || "#17d86f"}22` : "transparent", color: coverPosition === option.value ? activeProfile?.color || "#17d86f" : "rgba(255,255,255,0.68)", borderRadius: 12, padding: "9px 8px", fontSize: 12, fontWeight: 850, cursor: saving ? "wait" : "pointer" }}>
+                  <button key={option.id} type="button" disabled={saving} onClick={() => { setDraftSuppressed(false); setCoverPosition(option.value); }} style={{ border: `1px solid ${coverPosition === option.value ? activeProfile?.color || "#17d86f" : "rgba(255,255,255,0.13)"}`, background: coverPosition === option.value ? `${activeProfile?.color || "#17d86f"}22` : "transparent", color: coverPosition === option.value ? activeProfile?.color || "#17d86f" : "rgba(255,255,255,0.68)", borderRadius: 12, padding: "9px 8px", fontSize: 12, fontWeight: 850, cursor: saving ? "wait" : "pointer" }}>
                     {copy[option.id]}
                   </button>
                 ))}
@@ -236,7 +246,7 @@ export default function MemoryComposer() {
 
           <label style={labelStyle()}>
             {copy.note}
-            <textarea value={note} disabled={saving} onChange={(event) => setNote(event.target.value)} placeholder={copy.notePlaceholder} rows={3} style={{ ...fieldStyle(), resize: "none", lineHeight: 1.55 }} />
+            <textarea value={note} disabled={saving} onChange={(event) => { setDraftSuppressed(false); setNote(event.target.value); }} placeholder={copy.notePlaceholder} rows={3} style={{ ...fieldStyle(), resize: "none", lineHeight: 1.55 }} />
           </label>
 
           {(status || saving) && (
