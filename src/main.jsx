@@ -8,6 +8,7 @@ import ComposerLauncherLayer from './ComposerLauncherLayer'
 import CropPositionLayer from './CropPositionLayer'
 import MemoryDiscovery from './MemoryDiscovery'
 import CompareModesLayer from './CompareModesLayer'
+import NotificationControlsLayer from './NotificationControlsLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -19,5 +20,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <CropPositionLayer />
     <MemoryDiscovery />
     <CompareModesLayer />
+    <NotificationControlsLayer />
   </React.StrictMode>
 )
