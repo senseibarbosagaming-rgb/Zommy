@@ -15,6 +15,7 @@ import ChildProfileCreator from './ChildProfileCreator'
 import ZommyIntro from './ZommyIntro'
 import ThemeLayer from './ThemeLayer'
 import ChapterScreen from './ChapterScreen'
+import MemorySavedToast from './MemorySavedToast'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -30,6 +31,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <FirstRunExperience />
     <NavExperienceLayer />
     <MemoryComposer />
+    <MemorySavedToast />
     <NotificationControlsLayer />
     <AccessibilitySafetyLayer />
     <PWAExperienceLayer />
