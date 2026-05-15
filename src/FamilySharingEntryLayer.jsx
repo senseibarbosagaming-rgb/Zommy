@@ -3,13 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 const COPY = {
   en: {
     title: "Family sharing",
-    body: "Invite another parent to share a child’s memories, timeline, and chapters.",
-    cta: "Open",
+    body: "Invite another parent to share memories, timeline, and chapters.",
   },
   pt: {
     title: "Partilha familiar",
     body: "Convida outro pai/mãe para partilhar memórias, timeline e capítulos.",
-    cta: "Abrir",
   },
 };
 
@@ -18,19 +16,74 @@ const getPrefs = () => {
   catch { return {}; }
 };
 
+const rowStyle = () => ({
+  border: "1px solid rgba(255,255,255,0.12)",
+  background: "rgba(255,255,255,0.045)",
+  borderRadius: "16px",
+  padding: "14px",
+  minHeight: "70px",
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "12px",
+  alignItems: "center",
+  color: "#fff",
+  textAlign: "left",
+  cursor: "pointer",
+  fontFamily: "Inter, system-ui, sans-serif",
+  width: "100%",
+});
+
+const addIntegratedRow = (copy) => {
+  const settingsTitle = Array.from(document.querySelectorAll("h1")).find((node) => /settings|definições/i.test(node.textContent || ""));
+  if (!settingsTitle) return;
+
+  const container = settingsTitle.closest("div")?.parentElement?.querySelector("section");
+  if (!container || document.getElementById("zommy-family-sharing-settings-row")) return;
+
+  const row = document.createElement("button");
+  row.id = "zommy-family-sharing-settings-row";
+  row.type = "button";
+  Object.assign(row.style, rowStyle());
+  row.innerHTML = `
+    <span style="min-width:0;display:block;">
+      <span style="display:block;color:#fff;font-size:15px;font-weight:900;">${copy.title}</span>
+      <span style="display:block;color:rgba(255,255,255,0.52);font-size:12px;margin-top:3px;font-weight:750;line-height:1.35;">${copy.body}</span>
+    </span>
+    <span style="color:rgba(255,255,255,0.42);font-size:20px;">›</span>
+  `;
+  row.addEventListener("click", () => window.dispatchEvent(new CustomEvent("zommy:show-family-sharing")));
+
+  const rows = Array.from(container.children);
+  const privacyCard = rows.find((child) => /privacy|privacidade/i.test(child.textContent || ""));
+  const oldFamilyInfo = rows.find((child) => /family sharing|partilha familiar/i.test(child.textContent || ""));
+
+  if (oldFamilyInfo && oldFamilyInfo !== row) oldFamilyInfo.remove();
+  if (privacyCard?.nextSibling) container.insertBefore(row, privacyCard.nextSibling);
+  else container.appendChild(row);
+};
+
+const removeIntegratedRow = () => {
+  document.getElementById("zommy-family-sharing-settings-row")?.remove();
+};
+
 export default function FamilySharingEntryLayer() {
-  const [visible, setVisible] = useState(false);
+  const [active, setActive] = useState(false);
   const copy = useMemo(() => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en, []);
 
   useEffect(() => {
-    const show = () => setVisible(true);
-    const hide = () => setVisible(false);
+    const show = () => setActive(true);
+    const hide = () => {
+      setActive(false);
+      removeIntegratedRow();
+    };
+
     window.addEventListener("zommy:show-settings", show);
     window.addEventListener("zommy:hide-settings", hide);
     window.addEventListener("zommy:show-family-sharing", hide);
     window.addEventListener("zommy:show-today", hide);
     window.addEventListener("zommy:show-timeline", hide);
     window.addEventListener("zommy:show-compare", hide);
+
     return () => {
       window.removeEventListener("zommy:show-settings", show);
       window.removeEventListener("zommy:hide-settings", hide);
@@ -38,22 +91,18 @@ export default function FamilySharingEntryLayer() {
       window.removeEventListener("zommy:show-today", hide);
       window.removeEventListener("zommy:show-timeline", hide);
       window.removeEventListener("zommy:show-compare", hide);
+      removeIntegratedRow();
     };
   }, []);
 
-  if (!visible) return null;
+  useEffect(() => {
+    if (!active) return undefined;
+    const inject = () => addIntegratedRow(copy);
+    inject();
+    const observer = new MutationObserver(inject);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [active, copy]);
 
-  return (
-    <div style={{ position: "fixed", left: "50%", bottom: "calc(88px + env(safe-area-inset-bottom, 0px))", transform: "translateX(-50%)", width: "min(448px, calc(100vw - 28px))", zIndex: 1120, pointerEvents: "none" }}>
-      <button
-        onClick={() => window.dispatchEvent(new CustomEvent("zommy:show-family-sharing"))}
-        style={{ width: "100%", pointerEvents: "auto", border: "1px solid rgba(167,139,250,0.42)", background: "rgba(16,20,24,0.94)", color: "#fff", borderRadius: 20, padding: "13px 14px", boxShadow: "0 18px 60px rgba(0,0,0,0.34)", display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center", textAlign: "left", cursor: "pointer", backdropFilter: "blur(18px)", fontFamily: "Inter, system-ui, sans-serif" }}>
-        <span>
-          <span style={{ display: "block", color: "#C4B5FD", fontSize: 13, fontWeight: 950 }}>{copy.title}</span>
-          <span style={{ display: "block", color: "rgba(255,255,255,0.68)", fontSize: 12, lineHeight: 1.35, marginTop: 3 }}>{copy.body}</span>
-        </span>
-        <span style={{ background: "#A78BFA", color: "#101418", borderRadius: 999, padding: "9px 11px", fontSize: 12, fontWeight: 950, whiteSpace: "nowrap" }}>{copy.cta}</span>
-      </button>
-    </div>
-  );
+  return null;
 }
