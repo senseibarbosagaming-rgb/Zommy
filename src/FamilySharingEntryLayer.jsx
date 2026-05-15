@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 
 const COPY = {
   en: {
-    title: "Family sharing",
-    body: "Invite another parent to share memories, timeline, and chapters.",
+    title: "Family circle",
+    body: "Invite another trusted parent to add memories, view the timeline, and help keep this child’s story.",
   },
   pt: {
-    title: "Partilha familiar",
-    body: "Convida outro pai/mãe para partilhar memórias, timeline e capítulos.",
+    title: "Círculo familiar",
+    body: "Convida outro pai/mãe de confiança para guardar memórias, ver a timeline e ajudar a contar esta história.",
   },
 };
 
@@ -55,7 +55,7 @@ const addIntegratedRow = (copy) => {
 
   const rows = Array.from(container.children);
   const privacyCard = rows.find((child) => /privacy|privacidade/i.test(child.textContent || ""));
-  const oldFamilyInfo = rows.find((child) => /family sharing|partilha familiar/i.test(child.textContent || ""));
+  const oldFamilyInfo = rows.find((child) => /family sharing|partilha familiar|family circle|círculo familiar/i.test(child.textContent || ""));
 
   if (oldFamilyInfo && oldFamilyInfo !== row) oldFamilyInfo.remove();
   if (privacyCard?.nextSibling) container.insertBefore(row, privacyCard.nextSibling);
