@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "./supabase";
+import { useEffect, useMemo, useState } from "react";
+import { useZommyData } from "./useZommyData";
 
 const COPY = {
   en: {
@@ -31,11 +31,8 @@ const COPY = {
 };
 
 const getPrefs = () => {
-  try {
-    return JSON.parse(localStorage.getItem("zommy_prefs") || "{}");
-  } catch {
-    return {};
-  }
+  try { return JSON.parse(localStorage.getItem("zommy_prefs") || "{}"); }
+  catch { return {}; }
 };
 
 const getCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
@@ -73,9 +70,7 @@ async function openProfileTimeline(profile) {
 }
 
 export default function NavExperienceLayer() {
-  const [user, setUser] = useState(null);
-  const [profiles, setProfiles] = useState([]);
-  const [memoryCount, setMemoryCount] = useState(0);
+  const { user, profiles, memoryCount, refresh } = useZommyData({ includeEntries: false, includeLocal: false });
   const [activeName, setActiveName] = useState("");
   const [activeTab, setActiveTab] = useState("today");
   const [chooserMode, setChooserMode] = useState(null);
@@ -83,53 +78,13 @@ export default function NavExperienceLayer() {
 
   const copy = useMemo(getCopy, []);
   const showLabels = memoryCount < 4;
-  const activeProfile = profiles.find((profile) => profile.name === activeName);
-
-  const refreshData = useCallback(async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const currentUser = sessionData.session?.user || null;
-    setUser(currentUser);
-
-    if (!currentUser) {
-      setProfiles([]);
-      setMemoryCount(0);
-      setActiveName("");
-      return;
-    }
-
-    const [{ data: profileRows }, { count }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id,name,emoji,color,created_at,archived_at")
-        .eq("user_id", currentUser.id)
-        .is("archived_at", null)
-        .order("created_at"),
-      supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", currentUser.id),
-    ]);
-
-    const nextProfiles = profileRows || [];
-    setProfiles(nextProfiles);
-    setMemoryCount(count || 0);
-    setActiveName(visibleProfileName(nextProfiles));
-  }, []);
-
-  useEffect(() => {
-    refreshData();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(refreshData);
-    window.addEventListener("focus", refreshData);
-    window.addEventListener("zommy:profiles-changed", refreshData);
-
-    return () => {
-      subscription.unsubscribe();
-      window.removeEventListener("focus", refreshData);
-      window.removeEventListener("zommy:profiles-changed", refreshData);
-    };
-  }, [refreshData]);
+  const activeProfile = profiles.find((profile) => profile.name === activeName) || (profiles.length === 1 ? profiles[0] : null);
 
   useEffect(() => {
     if (!user) return undefined;
     const observer = new MutationObserver(() => setActiveName(visibleProfileName(profiles)));
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    setActiveName(visibleProfileName(profiles));
     return () => observer.disconnect();
   }, [profiles, user]);
 
@@ -156,7 +111,7 @@ export default function NavExperienceLayer() {
     setChooserMode(null);
     setActiveTab("today");
     openComposer(profile);
-    refreshData();
+    refresh();
   };
 
   const handlePlus = async () => {
@@ -170,11 +125,6 @@ export default function NavExperienceLayer() {
       return;
     }
 
-    if (profiles.length === 1) {
-      beginMemoryFor(profiles[0]);
-      return;
-    }
-
     setChooserMode("memory");
   };
 
@@ -184,7 +134,7 @@ export default function NavExperienceLayer() {
     if (tab === "today") {
       clickLegacyNav(0);
       showToday();
-      refreshData();
+      refresh();
       return;
     }
 
@@ -192,13 +142,13 @@ export default function NavExperienceLayer() {
 
     if (tab === "compare") {
       openCompare();
-      refreshData();
+      refresh();
       return;
     }
 
     if (tab === "settings") {
       openSettings();
-      refreshData();
+      refresh();
       return;
     }
 
@@ -209,12 +159,12 @@ export default function NavExperienceLayer() {
 
     if (tab === "timeline" && profiles.length === 1) {
       await openProfileTimeline(profiles[0]);
-      refreshData();
+      refresh();
       return;
     }
 
     clickLegacyNav(1);
-    refreshData();
+    refresh();
   };
 
   const plusLabel = !profiles.length
@@ -263,7 +213,7 @@ export default function NavExperienceLayer() {
                     setChooserMode(null);
                     await openProfileTimeline(profile);
                     setActiveTab("timeline");
-                    refreshData();
+                    refresh();
                   } else {
                     beginMemoryFor(profile);
                   }
