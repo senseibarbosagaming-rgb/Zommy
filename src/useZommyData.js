@@ -28,12 +28,12 @@ export const loadZommyData = async ({ includeEntries = true, includeLocal = fals
   }
 
   const requests = [
-    supabase.from("profiles").select("*").eq("user_id", user.id).is("archived_at", null).order("created_at"),
-    supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase.from("profiles").select("*").is("archived_at", null).order("created_at"),
+    supabase.from("entries").select("id", { count: "exact", head: true }),
   ];
 
   if (includeEntries) {
-    requests.push(supabase.from("entries").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(entryLimit));
+    requests.push(supabase.from("entries").select("*").order("date", { ascending: false }).limit(entryLimit));
   }
 
   if (includeLocal) {
@@ -94,7 +94,7 @@ export function useZommyData(options = {}) {
     refresh();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(refresh);
 
-    const events = ["focus", "zommy:profiles-changed", "zommy:queue-updated", "zommy:memories-synced"];
+    const events = ["focus", "zommy:profiles-changed", "zommy:queue-updated", "zommy:memories-synced", "zommy:sharing-changed"];
     events.forEach((eventName) => window.addEventListener(eventName, refresh));
 
     return () => {
