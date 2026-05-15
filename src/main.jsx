@@ -6,7 +6,7 @@ import NavExperienceLayer from './NavExperienceLayer'
 import MemoryComposer from './MemoryComposer'
 import CropPositionLayer from './CropPositionLayer'
 import MemoryDiscovery from './MemoryDiscovery'
-import CompareModesLayer from './CompareModesLayer'
+import CompareScreen from './CompareScreen'
 import NotificationControlsLayer from './NotificationControlsLayer'
 import AccessibilitySafetyLayer from './AccessibilitySafetyLayer'
 import BrandConsistencyLayer from './BrandConsistencyLayer'
@@ -21,13 +21,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
     <TodayDashboardLayer />
     <TimelineScreen />
+    <CompareScreen />
     <SettingsScreen />
     <FirstRunExperience />
     <NavExperienceLayer />
     <MemoryComposer />
     <CropPositionLayer />
     <MemoryDiscovery />
-    <CompareModesLayer />
     <NotificationControlsLayer />
     <AccessibilitySafetyLayer />
     <BrandConsistencyLayer />
