@@ -3,9 +3,8 @@ import { supabase } from "./supabase";
 
 const COPY = {
   en: {
-    home: "Today",
+    today: "Today",
     timeline: "Timeline",
-    memory: "Memory",
     compare: "Compare",
     settings: "Settings",
     addMemory: "Add memory",
@@ -17,9 +16,8 @@ const COPY = {
     cancel: "Cancel",
   },
   pt: {
-    home: "Hoje",
+    today: "Hoje",
     timeline: "Timeline",
-    memory: "Memória",
     compare: "Comparar",
     settings: "Definições",
     addMemory: "Adicionar memória",
@@ -41,15 +39,10 @@ const getPrefs = () => {
 };
 
 const getCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
+const legacyButtons = () => Array.from(document.querySelectorAll("#root > div:first-child nav button"));
+const clickLegacyNav = (index) => legacyButtons()[index]?.click?.();
 
-const getOriginalNavButtons = () => Array.from(document.querySelectorAll("#root > div:first-child nav button"));
-
-const clickOriginalNav = (index) => {
-  const button = getOriginalNavButtons()[index];
-  if (button) button.click();
-};
-
-const getVisibleActiveProfileName = (profiles) => {
+const visibleProfileName = (profiles) => {
   const headerText = document.querySelector("#root > div:first-child header")?.innerText || "";
   return profiles.find((profile) => headerText.includes(profile.name))?.name || "";
 };
@@ -57,13 +50,19 @@ const getVisibleActiveProfileName = (profiles) => {
 const findClickableText = (text) => {
   const wanted = text.trim().toLowerCase();
   if (!wanted) return null;
-
   return Array.from(document.querySelectorAll("button, [role='button'], .b, div"))
     .find((node) => node.innerText?.trim().toLowerCase().includes(wanted));
 };
 
-const openProfileTimeline = async (profile) => {
-  clickOriginalNav(0);
+const showToday = () => window.dispatchEvent(new CustomEvent("zommy:show-today"));
+const hideToday = () => window.dispatchEvent(new CustomEvent("zommy:hide-today"));
+const openSettings = () => window.dispatchEvent(new CustomEvent("zommy:open-settings-hub"));
+const openCompare = () => window.dispatchEvent(new CustomEvent("zommy:open-compare-modes"));
+const openComposer = (profile) => window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: profile?.id || "" } }));
+
+async function openProfileTimeline(profile) {
+  hideToday();
+  clickLegacyNav(0);
   await new Promise((resolve) => window.setTimeout(resolve, 80));
 
   const profileCard = findClickableText(profile.name);
@@ -71,26 +70,19 @@ const openProfileTimeline = async (profile) => {
     profileCard.click();
     await new Promise((resolve) => window.setTimeout(resolve, 80));
   }
-};
-
-const openMemoryComposer = (profile) => {
-  window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", {
-    detail: { profileId: profile?.id || "" },
-  }));
-};
+}
 
 export default function NavExperienceLayer() {
   const [user, setUser] = useState(null);
   const [profiles, setProfiles] = useState([]);
   const [memoryCount, setMemoryCount] = useState(0);
   const [activeName, setActiveName] = useState("");
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeTab, setActiveTab] = useState("today");
   const [chooserMode, setChooserMode] = useState(null);
   const [message, setMessage] = useState("");
 
   const copy = useMemo(getCopy, []);
   const showLabels = memoryCount < 4;
-  const hasProfiles = profiles.length > 0;
   const activeProfile = profiles.find((profile) => profile.name === activeName);
 
   const refreshData = useCallback(async () => {
@@ -118,68 +110,58 @@ export default function NavExperienceLayer() {
     const nextProfiles = profileRows || [];
     setProfiles(nextProfiles);
     setMemoryCount(count || 0);
-    setActiveName(getVisibleActiveProfileName(nextProfiles));
+    setActiveName(visibleProfileName(nextProfiles));
   }, []);
 
   useEffect(() => {
     refreshData();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      refreshData();
-    });
-
-    const onFocus = () => refreshData();
-    const onProfilesChanged = () => refreshData();
-    window.addEventListener("focus", onFocus);
-    window.addEventListener("zommy:profiles-changed", onProfilesChanged);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(refreshData);
+    window.addEventListener("focus", refreshData);
+    window.addEventListener("zommy:profiles-changed", refreshData);
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener("focus", onFocus);
-      window.removeEventListener("zommy:profiles-changed", onProfilesChanged);
+      window.removeEventListener("focus", refreshData);
+      window.removeEventListener("zommy:profiles-changed", refreshData);
     };
   }, [refreshData]);
 
   useEffect(() => {
     if (!user) return undefined;
-
-    const observer = new MutationObserver(() => {
-      setActiveName(getVisibleActiveProfileName(profiles));
-    });
-
+    const observer = new MutationObserver(() => setActiveName(visibleProfileName(profiles)));
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
   }, [profiles, user]);
 
   if (!user) return null;
 
-  const showMessage = (text) => {
+  const flash = (text) => {
     setMessage(text);
     window.setTimeout(() => setMessage(""), 2400);
   };
 
   const openAddChild = async () => {
-    setActiveTab("home");
-    clickOriginalNav(0);
-    window.dispatchEvent(new CustomEvent("zommy:hide-today"));
+    setActiveTab("today");
+    hideToday();
+    clickLegacyNav(0);
     await new Promise((resolve) => window.setTimeout(resolve, 80));
 
     const addButton = Array.from(document.querySelectorAll("button"))
       .find((button) => /add a child|adicionar criança/i.test(button.innerText || ""));
     if (addButton) addButton.click();
-    else showMessage(copy.addChildFirstHint);
+    else flash(copy.addChildFirstHint);
   };
 
   const beginMemoryFor = (profile) => {
     setChooserMode(null);
-    setActiveTab("log");
-    openMemoryComposer(profile);
+    setActiveTab("today");
+    openComposer(profile);
     refreshData();
   };
 
   const handlePlus = async () => {
-    if (!hasProfiles) {
-      openAddChild();
+    if (!profiles.length) {
+      await openAddChild();
       return;
     }
 
@@ -199,17 +181,23 @@ export default function NavExperienceLayer() {
   const handleTab = async (tab) => {
     setActiveTab(tab);
 
-    if (tab === "home") {
-      clickOriginalNav(0);
-      window.dispatchEvent(new CustomEvent("zommy:show-today"));
+    if (tab === "today") {
+      clickLegacyNav(0);
+      showToday();
       refreshData();
       return;
     }
 
-    window.dispatchEvent(new CustomEvent("zommy:hide-today"));
+    hideToday();
 
     if (tab === "compare") {
-      window.dispatchEvent(new CustomEvent("zommy:open-compare-modes"));
+      openCompare();
+      refreshData();
+      return;
+    }
+
+    if (tab === "settings") {
+      openSettings();
       refreshData();
       return;
     }
@@ -225,29 +213,36 @@ export default function NavExperienceLayer() {
       return;
     }
 
-    const indexes = { timeline: 1, settings: 4 };
-    clickOriginalNav(indexes[tab]);
+    clickLegacyNav(1);
     refreshData();
   };
 
-  const plusLabel = !hasProfiles
+  const plusLabel = !profiles.length
     ? copy.addChildFirst
     : activeProfile
       ? copy.addNamedMemory(activeProfile.name)
       : copy.addMemory;
 
   const navItems = [
-    { id: "home", icon: "⌂", label: copy.home, color: "#60A5FA" },
+    { id: "today", icon: "⌂", label: copy.today, color: "#60A5FA" },
     { id: "timeline", icon: "▦", label: copy.timeline, color: "#34D399" },
     { id: "compare", icon: "⇄", label: copy.compare, color: "#FBBF24" },
     { id: "settings", icon: "◎", label: copy.settings, color: "#A78BFA" },
   ];
 
+  const renderNavButton = (item) => {
+    const isActive = activeTab === item.id;
+    return (
+      <button key={item.id} aria-label={item.label} onClick={() => handleTab(item.id)} className="b" style={{ minWidth: 0, height: showLabels ? 54 : 42, border: "none", borderRadius: 18, background: isActive ? "#3a5163" : "transparent", color: isActive ? item.color : "#d5dee6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: showLabels ? 3 : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer" }}>
+        <span style={{ fontSize: 22, lineHeight: 1 }}>{item.icon}</span>
+        {showLabels && <span style={{ fontSize: 10, lineHeight: 1, fontWeight: 800, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>}
+      </button>
+    );
+  };
+
   return (
     <>
-      <style>{`
-        #root > div:first-child > nav { display: none !important; }
-      `}</style>
+      <style>{`#root > div:first-child > nav { display: none !important; }`}</style>
 
       {message && (
         <div style={{ position: "fixed", bottom: showLabels ? 104 : 86, left: "50%", transform: "translateX(-50%)", zIndex: 1199, background: "#fff", color: "#111", borderRadius: 18, padding: "10px 16px", fontSize: 13, fontWeight: 650, boxShadow: "0 10px 35px rgba(0,0,0,0.26)", maxWidth: "min(88vw, 390px)", textAlign: "center" }}>
@@ -266,7 +261,6 @@ export default function NavExperienceLayer() {
                 <button key={profile.id} className="b" onClick={async () => {
                   if (chooserMode === "timeline") {
                     setChooserMode(null);
-                    window.dispatchEvent(new CustomEvent("zommy:hide-today"));
                     await openProfileTimeline(profile);
                     setActiveTab("timeline");
                     refreshData();
@@ -287,30 +281,12 @@ export default function NavExperienceLayer() {
       )}
 
       <nav aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 1100, background: "#43596a", boxShadow: "0 -1px 0 rgba(255,255,255,0.04), 0 -10px 30px rgba(0,0,0,0.12)", padding: showLabels ? "9px 10px calc(13px + env(safe-area-inset-bottom, 0px))" : "10px 12px calc(14px + env(safe-area-inset-bottom, 0px))", display: "grid", gridTemplateColumns: "1fr 1fr minmax(78px, 1.26fr) 1fr 1fr", alignItems: "center", gap: 4 }}>
-        {navItems.slice(0, 2).map((item) => {
-          const isActive = activeTab === item.id;
-          return (
-            <button key={item.id} aria-label={item.label} onClick={() => handleTab(item.id)} className="b" style={{ minWidth: 0, height: showLabels ? 54 : 42, border: "none", borderRadius: 18, background: isActive ? "#3a5163" : "transparent", color: isActive ? item.color : "#d5dee6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: showLabels ? 3 : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer" }}>
-              <span style={{ fontSize: 22, lineHeight: 1 }}>{item.icon}</span>
-              {showLabels && <span style={{ fontSize: 10, lineHeight: 1, fontWeight: 800, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>}
-            </button>
-          );
-        })}
-
+        {navItems.slice(0, 2).map(renderNavButton)}
         <button aria-label={plusLabel} onClick={handlePlus} className="b" style={{ minWidth: 0, minHeight: showLabels ? 58 : 44, borderRadius: showLabels ? 20 : 999, border: "2px solid #17d86f", background: "rgba(23,216,111,0.08)", color: "#17d86f", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2, padding: showLabels ? "6px 8px" : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer", boxShadow: "0 0 0 1px rgba(23,216,111,0.18), 0 8px 20px rgba(0,0,0,0.16)" }}>
           <span style={{ fontSize: showLabels ? 23 : 28, fontWeight: 600, lineHeight: 1, marginTop: showLabels ? -1 : -3 }}>+</span>
           {showLabels && <span style={{ fontSize: 10, lineHeight: 1.05, fontWeight: 900, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{plusLabel}</span>}
         </button>
-
-        {navItems.slice(2).map((item) => {
-          const isActive = activeTab === item.id;
-          return (
-            <button key={item.id} aria-label={item.label} onClick={() => handleTab(item.id)} className="b" style={{ minWidth: 0, height: showLabels ? 54 : 42, border: "none", borderRadius: 18, background: isActive ? "#3a5163" : "transparent", color: isActive ? item.color : "#d5dee6", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: showLabels ? 3 : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer" }}>
-              <span style={{ fontSize: 22, lineHeight: 1 }}>{item.icon}</span>
-              {showLabels && <span style={{ fontSize: 10, lineHeight: 1, fontWeight: 800, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>}
-            </button>
-          );
-        })}
+        {navItems.slice(2).map(renderNavButton)}
       </nav>
     </>
   );
