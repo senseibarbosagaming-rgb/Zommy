@@ -73,6 +73,8 @@ const LANGS = {
     signOutConfirm: "Sign out of Zommy",
     authError: "Could not sign in",
     googleProviderDisabled: "Google login is not enabled in Supabase yet.",
+    schemaNotReadyTitle: "Supabase setup needed",
+    schemaNotReadyBody: "The private-login database migration has not run yet. Run supabase/migrations/20260515000000_private_google_auth.sql in Supabase, then refresh.",
   },
   pt: {
     tagline: "Um registo tranquilo do crescimento deles.",
@@ -143,6 +145,8 @@ const LANGS = {
     signOutConfirm: "Terminar sessão no Zommy",
     authError: "Não foi possível iniciar sessão",
     googleProviderDisabled: "O login com Google ainda não está ativo no Supabase.",
+    schemaNotReadyTitle: "Configuração do Supabase necessária",
+    schemaNotReadyBody: "A migração da base de dados para login privado ainda não foi executada. Executa supabase/migrations/20260515000000_private_google_auth.sql no Supabase e atualiza a página.",
   },
 };
 
@@ -253,6 +257,17 @@ const getAuthErrorMessage = (error, t) => {
   return t.authError;
 };
 
+const isSchemaMigrationError = (error) => {
+  const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""} ${error?.code || ""}`.toLowerCase();
+
+  return error?.code === "42703"
+    || message.includes("user_id")
+    || message.includes("photo_path")
+    || message.includes("schema cache");
+};
+
+const getDataErrorMessage = (error, t) => isSchemaMigrationError(error) ? t.schemaNotReadyBody : t.error;
+
 const isSameMonthDay = (date, targetDate) => date.slice(5, 10) === targetDate.slice(5, 10);
 
 const getAnniversaryYears = (date, targetDate) => {
@@ -319,6 +334,7 @@ export default function Zommy() {
   const [view, setView] = useState("home");
   const [activeId, setActiveId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [setupError, setSetupError] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const [logDate, setLogDate] = useState(today());
@@ -429,6 +445,7 @@ export default function Zommy() {
     await supabase.auth.signOut();
     setProfiles([]);
     setEntries({});
+    setSetupError(null);
     setActiveId(null);
     setCompareId(null);
     setCompareA(null);
@@ -442,6 +459,7 @@ export default function Zommy() {
     if (!user) {
       setProfiles([]);
       setEntries({});
+      setSetupError(null);
       setLoading(false);
       return;
     }
@@ -470,7 +488,13 @@ export default function Zommy() {
       for (const p of (pd || [])) grouped[p.id] = [];
       for (const e of signedEntries) { if (!grouped[e.profile_id]) grouped[e.profile_id] = []; grouped[e.profile_id].push(e); }
       setEntries(grouped);
-    } catch { showToast(t.error); }
+      setSetupError(null);
+    } catch (error) {
+      console.error("Failed to load Zommy data", error);
+      const message = getDataErrorMessage(error, t);
+      if (isSchemaMigrationError(error)) setSetupError(message);
+      showToast(message);
+    }
     setLoading(false);
   }, [t.error, user]);
 
@@ -811,6 +835,17 @@ export default function Zommy() {
           </div>
         ) : (
           <>
+            {setupError && (
+              <div className="f" style={{ padding: "28px 20px 0" }}>
+                <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ fontFamily: fontSerif, fontSize: 20, color: T.text, fontWeight: 600 }}>⚙️ {t.schemaNotReadyTitle}</div>
+                  <p style={{ color: T.textSub, fontSize: 14, lineHeight: 1.7 }}>{setupError}</p>
+                  <code style={{ display: "block", padding: 12, borderRadius: 10, background: T.bg, color: T.textSub, fontSize: 12, lineHeight: 1.5, overflowX: "auto" }}>
+                    supabase/migrations/20260515000000_private_google_auth.sql
+                  </code>
+                </div>
+              </div>
+            )}
 
             {/* ── HOME ── */}
             {view === "home" && (

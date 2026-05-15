@@ -66,6 +66,17 @@ fix it in **Google Cloud Console**, not in the React app:
 
 The app's own redirect target is still your site origin (`http://localhost:5173` locally or `https://zommy.vercel.app` in production); Google first redirects through Supabase's callback URL so Supabase can complete the OAuth exchange.
 
+### The app says “Something went wrong” after login and REST requests return 400
+
+If the browser console shows requests like these returning `400`:
+
+```text
+/rest/v1/profiles?select=*&user_id=eq.<user-id>
+/rest/v1/entries?select=*&user_id=eq.<user-id>
+```
+
+then the private-data migration has not been applied yet, or Supabase's schema cache has not picked it up. Run `supabase/migrations/20260515000000_private_google_auth.sql` in the Supabase SQL editor, confirm the `profiles.user_id`, `entries.user_id`, and `entries.photo_path` columns exist, then refresh the app.
+
 ## Database and Storage migration
 
 Run this SQL file in the Supabase SQL editor:
