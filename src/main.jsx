@@ -17,10 +17,13 @@ import ThemeLayer from './ThemeLayer'
 import ChapterScreen from './ChapterScreen'
 import ChaptersLibrary from './ChaptersLibrary'
 import MemorySavedToast from './MemorySavedToast'
+import FamilySharingScreen from './FamilySharingScreen'
+import InviteAcceptanceLayer from './InviteAcceptanceLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeLayer />
+    <InviteAcceptanceLayer />
     <App />
     <ZommyIntro />
     <HomeRitualScreen />
@@ -29,6 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ChapterScreen />
     <CompareScreen />
     <SettingsScreen />
+    <FamilySharingScreen />
     <ChildProfileCreator />
     <FirstRunExperience />
     <NavExperienceLayer />
