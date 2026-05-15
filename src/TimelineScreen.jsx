@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import MemoryDetailModal from "./MemoryDetailModal";
+import { supabase } from "./supabase";
 import { useZommyData } from "./useZommyData";
 
 const TAGS = [
@@ -22,15 +23,21 @@ const COPY = {
     allAges: "All ages",
     allTags: "All tags",
     favorites: "Favorites",
-    calendar: "Calendar",
-    archive: "Archive",
+    memoriesTab: "Memories",
+    chaptersTab: "Chapters",
+    calendarTab: "Calendar",
     onThisDay: "On this day",
     noChildren: "Add a child first to build a timeline.",
     noResults: "No memories match this view yet.",
     noCalendar: "No memories in this month.",
     noOnThisDay: "No memories from this day in previous years yet.",
+    noChapters: "Chapters will appear here as monthly stories are drafted or locked.",
     memories: (count) => `${count} ${count === 1 ? "memory" : "memories"}`,
+    chapters: (count) => `${count} ${count === 1 ? "chapter" : "chapters"}`,
     addMemory: "Add memory",
+    openChapter: "Open chapter",
+    locked: "Locked",
+    draft: "Draft",
     age0to3: "0–3 months",
     firstYear: "First year",
     age1: "Age 1",
@@ -46,15 +53,21 @@ const COPY = {
     allAges: "Todas as idades",
     allTags: "Todas as tags",
     favorites: "Favoritas",
-    calendar: "Calendário",
-    archive: "Arquivo",
+    memoriesTab: "Memórias",
+    chaptersTab: "Capítulos",
+    calendarTab: "Calendário",
     onThisDay: "Neste dia",
     noChildren: "Adiciona uma criança para criar uma timeline.",
     noResults: "Ainda não há memórias com estes filtros.",
     noCalendar: "Sem memórias neste mês.",
     noOnThisDay: "Ainda não há memórias deste dia em anos anteriores.",
+    noChapters: "Os capítulos vão aparecer aqui como histórias mensais em rascunho ou fechadas.",
     memories: (count) => `${count} ${count === 1 ? "memória" : "memórias"}`,
+    chapters: (count) => `${count} ${count === 1 ? "capítulo" : "capítulos"}`,
     addMemory: "Adicionar memória",
+    openChapter: "Abrir capítulo",
+    locked: "Fechado",
+    draft: "Rascunho",
     age0to3: "0–3 meses",
     firstYear: "Primeiro ano",
     age1: "1 ano",
@@ -128,14 +141,27 @@ export default function TimelineScreen() {
   const [age, setAge] = useState("");
   const [tag, setTag] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [viewMode, setViewMode] = useState("archive");
+  const [viewMode, setViewMode] = useState("memories");
   const [calendarMonth, setCalendarMonth] = useState(todayIso().slice(0, 7));
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [chapters, setChapters] = useState([]);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
 
   const { user, profiles, entries, loading, refresh } = useZommyData({ includeEntries: true, includeLocal: false, entryLimit: 800 });
   const copy = useMemo(getCopy, []);
   const lang = getPrefs().lang === "pt" ? "pt" : "en";
   const profileById = useMemo(() => Object.fromEntries(profiles.map((profile) => [profile.id, profile])), [profiles]);
+
+  const loadChapters = async () => {
+    if (!user) return;
+    setChaptersLoading(true);
+    const { data, error } = await supabase
+      .from("capsules")
+      .select("*")
+      .order("period_start", { ascending: false });
+    if (!error) setChapters(data || []);
+    setChaptersLoading(false);
+  };
 
   useEffect(() => {
     const show = (event) => {
@@ -143,6 +169,7 @@ export default function TimelineScreen() {
       if (requestedProfileId) setProfileId(requestedProfileId);
       setOpen(true);
       refresh();
+      loadChapters();
     };
     const hide = () => setOpen(false);
     window.addEventListener("zommy:show-timeline", show);
@@ -151,11 +178,15 @@ export default function TimelineScreen() {
       window.removeEventListener("zommy:show-timeline", show);
       window.removeEventListener("zommy:hide-timeline", hide);
     };
-  }, [refresh]);
+  }, [refresh, user]);
 
   useEffect(() => {
     if (profileId !== "all" && !profiles.some((profile) => profile.id === profileId)) setProfileId("all");
   }, [profileId, profiles]);
+
+  useEffect(() => {
+    if (open && viewMode === "chapters") loadChapters();
+  }, [open, viewMode, user]);
 
   if (!open || !user) return null;
 
@@ -176,6 +207,7 @@ export default function TimelineScreen() {
     return true;
   });
 
+  const filteredChapters = chapters.filter((chapter) => profileId === "all" || chapter.profile_id === profileId);
   const onThisDayEntries = filtered.filter((entry) => sameMonthDay(entry.date, today) && entry.date.slice(0, 4) !== today.slice(0, 4));
   const calendarEntries = filtered.filter((entry) => entry.date.startsWith(calendarMonth));
   const calendarByDay = calendarEntries.reduce((map, entry) => {
@@ -183,7 +215,7 @@ export default function TimelineScreen() {
     next.set(entry.date, [...(next.get(entry.date) || []), entry]);
     return next;
   }, new Map());
-  const visibleEntries = viewMode === "today" ? onThisDayEntries : viewMode === "calendar" ? calendarEntries : filtered;
+  const visibleEntries = viewMode === "on-this-day" ? onThisDayEntries : viewMode === "calendar" ? calendarEntries : filtered;
   const grouped = groupByMonth(visibleEntries);
   const monthKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
@@ -192,7 +224,8 @@ export default function TimelineScreen() {
     window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: targetProfile?.id || "" } }));
   };
 
-  const emptyText = viewMode === "calendar" ? copy.noCalendar : viewMode === "today" ? copy.noOnThisDay : copy.noResults;
+  const emptyText = viewMode === "calendar" ? copy.noCalendar : viewMode === "on-this-day" ? copy.noOnThisDay : copy.noResults;
+  const countLabel = viewMode === "chapters" ? copy.chapters(filteredChapters.length) : copy.memories(visibleEntries.length);
 
   return (
     <main style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
@@ -200,7 +233,7 @@ export default function TimelineScreen() {
         <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0 4px" }}>
           <div>
             <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 34, lineHeight: 1.08, fontWeight: 650 }}>{copy.title}</h1>
-            <p style={{ color: "rgba(255,255,255,0.58)", marginTop: 4, fontSize: 13 }}>{copy.memories(visibleEntries.length)}</p>
+            <p style={{ color: "rgba(255,255,255,0.58)", marginTop: 4, fontSize: 13 }}>{countLabel}</p>
           </div>
           <button onClick={openComposer} style={{ border: "none", background: "#34D399", color: "#101418", borderRadius: 999, padding: "11px 13px", minHeight: 44, fontWeight: 950, cursor: "pointer" }}>+ {copy.addMemory}</button>
         </header>
@@ -209,6 +242,13 @@ export default function TimelineScreen() {
           <section style={{ border: "1px dashed rgba(255,255,255,0.16)", borderRadius: 20, padding: 24, color: "rgba(255,255,255,0.58)", textAlign: "center", lineHeight: 1.55 }}>{copy.noChildren}</section>
         ) : (
           <>
+            <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7, padding: "0 4px" }}>
+              <ModeTab active={viewMode === "memories"} onClick={() => setViewMode("memories")}>{copy.memoriesTab}</ModeTab>
+              <ModeTab active={viewMode === "chapters"} tone="#A78BFA" onClick={() => setViewMode("chapters")}>{copy.chaptersTab}</ModeTab>
+              <ModeTab active={viewMode === "calendar"} tone="#60A5FA" onClick={() => setViewMode("calendar")}>{copy.calendarTab}</ModeTab>
+              <ModeTab active={viewMode === "on-this-day"} tone="#FBBF24" onClick={() => setViewMode("on-this-day")}>{copy.onThisDay}</ModeTab>
+            </section>
+
             <section style={{ display: "flex", gap: 8, overflowX: "auto", padding: "0 4px 2px" }}>
               <FilterPill active={profileId === "all"} onClick={() => setProfileId("all")}>{copy.allChildren}</FilterPill>
               {profiles.map((profile) => (
@@ -216,38 +256,33 @@ export default function TimelineScreen() {
               ))}
             </section>
 
-            <section style={{ display: "grid", gap: 9, padding: "0 4px" }}>
-              <label style={labelStyle()}>
-                {copy.search}
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} style={inputStyle()} />
-              </label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <select value={year} onChange={(event) => setYear(event.target.value)} style={selectStyle()}>
-                  <option value="">{copy.allYears}</option>
-                  {years.map((item) => <option key={item} value={item}>{item}</option>)}
+            {viewMode !== "chapters" && (
+              <section style={{ display: "grid", gap: 9, padding: "0 4px" }}>
+                <label style={labelStyle()}>
+                  {copy.search}
+                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} style={inputStyle()} />
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <select value={year} onChange={(event) => setYear(event.target.value)} style={selectStyle()}>
+                    <option value="">{copy.allYears}</option>
+                    {years.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                  <select value={age} onChange={(event) => setAge(event.target.value)} style={selectStyle()}>
+                    <option value="">{copy.allAges}</option>
+                    <option value="0-3m">{copy.age0to3}</option>
+                    <option value="first-year">{copy.firstYear}</option>
+                    <option value="age-1">{copy.age1}</option>
+                    <option value="age-2">{copy.age2}</option>
+                    <option value="age-3-plus">{copy.age3plus}</option>
+                  </select>
+                </div>
+                <select value={tag} onChange={(event) => setTag(event.target.value)} style={selectStyle()}>
+                  <option value="">{copy.allTags}</option>
+                  {TAGS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                 </select>
-                <select value={age} onChange={(event) => setAge(event.target.value)} style={selectStyle()}>
-                  <option value="">{copy.allAges}</option>
-                  <option value="0-3m">{copy.age0to3}</option>
-                  <option value="first-year">{copy.firstYear}</option>
-                  <option value="age-1">{copy.age1}</option>
-                  <option value="age-2">{copy.age2}</option>
-                  <option value="age-3-plus">{copy.age3plus}</option>
-                </select>
-              </div>
-              <select value={tag} onChange={(event) => setTag(event.target.value)} style={selectStyle()}>
-                <option value="">{copy.allTags}</option>
-                {TAGS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-              </select>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <button onClick={() => setFavoritesOnly(!favoritesOnly)} style={toggleButton(favoritesOnly, "#FBBF24")}>★ {copy.favorites}</button>
-                <button onClick={() => setViewMode(viewMode === "calendar" ? "archive" : "calendar")} style={toggleButton(viewMode === "calendar", "#60A5FA")}>▦ {copy.calendar}</button>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <button onClick={() => setViewMode("archive")} style={toggleButton(viewMode === "archive", "#34D399")}>{copy.archive}</button>
-                <button onClick={() => setViewMode(viewMode === "today" ? "archive" : "today")} style={toggleButton(viewMode === "today", "#A78BFA")}>⏳ {copy.onThisDay}</button>
-              </div>
-            </section>
+              </section>
+            )}
 
             {viewMode === "calendar" && (
               <section style={{ display: "grid", gap: 10, padding: "0 4px" }}>
@@ -266,22 +301,28 @@ export default function TimelineScreen() {
               </section>
             )}
 
-            {loading && <div style={{ color: "rgba(255,255,255,0.42)", textAlign: "center", padding: 16 }}>Loading…</div>}
+            {(loading || chaptersLoading) && <div style={{ color: "rgba(255,255,255,0.42)", textAlign: "center", padding: 16 }}>Loading…</div>}
 
-            {!loading && visibleEntries.length === 0 && (
-              <section style={{ border: "1px dashed rgba(255,255,255,0.16)", borderRadius: 20, padding: 24, color: "rgba(255,255,255,0.58)", textAlign: "center", lineHeight: 1.55 }}>{emptyText}</section>
+            {viewMode === "chapters" ? (
+              <ChaptersView chapters={filteredChapters} entries={entries} profiles={profiles} copy={copy} />
+            ) : (
+              <>
+                {!loading && visibleEntries.length === 0 && (
+                  <section style={{ border: "1px dashed rgba(255,255,255,0.16)", borderRadius: 20, padding: 24, color: "rgba(255,255,255,0.58)", textAlign: "center", lineHeight: 1.55 }}>{emptyText}</section>
+                )}
+
+                <section style={{ display: "grid", gap: 18 }}>
+                  {monthKeys.map((month) => (
+                    <div key={month} style={{ display: "grid", gap: 10 }}>
+                      <h2 style={{ color: "rgba(255,255,255,0.62)", fontSize: 12, fontWeight: 950, letterSpacing: "0.8px", textTransform: "uppercase", padding: "0 4px" }}>{monthLabel(`${month}-01`, lang)}</h2>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6 }}>
+                        {grouped[month].map((entry) => <MemoryCard key={entry.id} entry={entry} profile={profileById[entry.profile_id]} lang={lang} onClick={() => setSelectedEntry(entry)} />)}
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              </>
             )}
-
-            <section style={{ display: "grid", gap: 18 }}>
-              {monthKeys.map((month) => (
-                <div key={month} style={{ display: "grid", gap: 10 }}>
-                  <h2 style={{ color: "rgba(255,255,255,0.62)", fontSize: 12, fontWeight: 950, letterSpacing: "0.8px", textTransform: "uppercase", padding: "0 4px" }}>{monthLabel(`${month}-01`, lang)}</h2>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6 }}>
-                    {grouped[month].map((entry) => <MemoryCard key={entry.id} entry={entry} profile={profileById[entry.profile_id]} lang={lang} onClick={() => setSelectedEntry(entry)} />)}
-                  </div>
-                </div>
-              ))}
-            </section>
           </>
         )}
       </div>
@@ -303,14 +344,40 @@ export default function TimelineScreen() {
   );
 }
 
+function ChaptersView({ chapters, entries, profiles, copy }) {
+  if (!chapters.length) {
+    return <section style={{ border: "1px dashed rgba(255,255,255,0.16)", borderRadius: 20, padding: 24, color: "rgba(255,255,255,0.58)", textAlign: "center", lineHeight: 1.55 }}>{copy.noChapters}</section>;
+  }
+
+  return (
+    <section style={{ display: "grid", gap: 14 }}>
+      {chapters.map((chapter) => {
+        const profile = profiles.find((item) => item.id === chapter.profile_id);
+        const chapterEntries = entries.filter((entry) => entry.profile_id === chapter.profile_id && entry.date >= chapter.period_start && entry.date <= chapter.period_end);
+        const cover = chapterEntries.find((entry) => entry.photoUrl);
+        return (
+          <article key={chapter.id} style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 28, overflow: "hidden", background: "rgba(255,255,255,0.04)", boxShadow: "0 18px 50px rgba(0,0,0,0.22)" }}>
+            {cover?.photoUrl ? <img src={cover.photoUrl} alt={chapter.title} style={{ width: "100%", height: 206, objectFit: "cover", display: "block" }} /> : <div style={{ height: 170, display: "grid", placeItems: "center", fontSize: 42, background: "rgba(255,255,255,0.03)" }}>{profile?.emoji || "📖"}</div>}
+            <div style={{ padding: 17, display: "grid", gap: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                <div style={{ color: chapter.status === "locked" ? "#FBBF24" : (profile?.color || "#34D399"), fontSize: 11, fontWeight: 950, letterSpacing: "0.8px", textTransform: "uppercase" }}>{chapter.status === "locked" ? copy.locked : copy.draft}</div>
+                <div style={{ color: "rgba(255,255,255,0.48)", fontSize: 12 }}>{copy.memories(chapterEntries.length)}</div>
+              </div>
+              <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 27, lineHeight: 1.08, fontWeight: 650 }}>{chapter.title}</h2>
+              {chapter.letter && <p style={{ color: "rgba(255,255,255,0.7)", lineHeight: 1.65, fontSize: 14, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{chapter.letter}</p>}
+              <button onClick={() => window.dispatchEvent(new CustomEvent("zommy:show-chapter", { detail: { profileId: chapter.profile_id } }))} style={{ justifySelf: "start", border: "none", background: profile?.color || "#34D399", color: "#101418", borderRadius: 999, padding: "11px 14px", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>{copy.openChapter}</button>
+            </div>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
 function MemoryCard({ entry, profile, lang, onClick }) {
   return (
     <button aria-label={`${profile?.name || "Child"} memory from ${entry.date}`} onClick={onClick} style={{ border: "1px solid rgba(255,255,255,0.09)", background: "rgba(255,255,255,0.045)", color: "#fff", borderRadius: 13, padding: 0, overflow: "hidden", textAlign: "left", cursor: "pointer", position: "relative", aspectRatio: "3 / 4", minWidth: 0 }}>
-      {entry.photoUrl ? (
-        <img src={entry.photoUrl} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} />
-      ) : (
-        <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", background: "rgba(255,255,255,0.035)", fontSize: 26 }}>{profile?.emoji || "📷"}</div>
-      )}
+      {entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} /> : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", background: "rgba(255,255,255,0.035)", fontSize: 26 }}>{profile?.emoji || "📷"}</div>}
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.36), transparent 34%, rgba(0,0,0,0.52))", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: 6, left: 6, right: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, pointerEvents: "none" }}>
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: profile?.color || "#34D399", boxShadow: "0 1px 6px rgba(0,0,0,0.35)" }} />
@@ -324,12 +391,12 @@ function MemoryCard({ entry, profile, lang, onClick }) {
   );
 }
 
+function ModeTab({ active, tone = "#34D399", onClick, children }) {
+  return <button onClick={onClick} style={{ border: `1px solid ${active ? tone : "rgba(255,255,255,0.12)"}`, background: active ? `${tone}22` : "rgba(255,255,255,0.035)", color: active ? tone : "rgba(255,255,255,0.66)", borderRadius: 14, minHeight: 42, padding: "8px 6px", fontSize: 11, fontWeight: 950, cursor: "pointer" }}>{children}</button>;
+}
+
 function FilterPill({ active, color = "#34D399", onClick, children }) {
-  return (
-    <button onClick={onClick} style={{ flexShrink: 0, border: `1px solid ${active ? color : "rgba(255,255,255,0.14)"}`, background: active ? `${color}22` : "rgba(255,255,255,0.04)", color: active ? color : "rgba(255,255,255,0.72)", borderRadius: 999, padding: "9px 12px", minHeight: 42, fontSize: 13, fontWeight: 900, cursor: "pointer" }}>
-      {children}
-    </button>
-  );
+  return <button onClick={onClick} style={{ flexShrink: 0, border: `1px solid ${active ? color : "rgba(255,255,255,0.14)"}`, background: active ? `${color}22` : "rgba(255,255,255,0.04)", color: active ? color : "rgba(255,255,255,0.72)", borderRadius: 999, padding: "9px 12px", minHeight: 42, fontSize: 13, fontWeight: 900, cursor: "pointer" }}>{children}</button>;
 }
 
 const labelStyle = () => ({ display: "grid", gap: 6, color: "rgba(255,255,255,0.58)", fontSize: 11, fontWeight: 850, textTransform: "uppercase", letterSpacing: "0.7px" });
