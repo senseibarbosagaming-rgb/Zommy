@@ -23,6 +23,7 @@ import FamilySharingEntryLayer from './FamilySharingEntryLayer'
 import FamilyCircleHomeLayer from './FamilyCircleHomeLayer'
 import BottomSafeAreaLayer from './BottomSafeAreaLayer'
 import ResumeRecoveryLayer from './ResumeRecoveryLayer'
+import ShellFallbackLayer from './ShellFallbackLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ResumeRecoveryLayer />
     <InviteAcceptanceLayer />
     <App />
+    <ShellFallbackLayer />
     <ZommyIntro />
     <HomeRitualScreen />
     <FamilyCircleHomeLayer />
