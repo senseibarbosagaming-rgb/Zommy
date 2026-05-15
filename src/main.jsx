@@ -22,30 +22,33 @@ import InviteAcceptanceLayer from './InviteAcceptanceLayer'
 import FamilySharingEntryLayer from './FamilySharingEntryLayer'
 import FamilyCircleHomeLayer from './FamilyCircleHomeLayer'
 import BottomSafeAreaLayer from './BottomSafeAreaLayer'
+import { AppShellProvider } from './AppShellContext'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeLayer />
     <BottomSafeAreaLayer />
-    <InviteAcceptanceLayer />
-    <App />
-    <ZommyIntro />
-    <HomeRitualScreen />
-    <FamilyCircleHomeLayer />
-    <TimelineScreen />
-    <ChaptersLibrary />
-    <ChapterScreen />
-    <CompareScreen />
-    <SettingsScreen />
-    <FamilySharingScreen />
-    <FamilySharingEntryLayer />
-    <ChildProfileCreator />
-    <FirstRunExperience />
-    <NavExperienceLayer />
-    <MemoryComposer />
-    <MemorySavedToast />
-    <NotificationControlsLayer />
-    <AccessibilitySafetyLayer />
-    <PWAExperienceLayer />
+    <AppShellProvider>
+      <InviteAcceptanceLayer />
+      <App />
+      <ZommyIntro />
+      <HomeRitualScreen />
+      <FamilyCircleHomeLayer />
+      <TimelineScreen />
+      <ChaptersLibrary />
+      <ChapterScreen />
+      <CompareScreen />
+      <SettingsScreen />
+      <FamilySharingScreen />
+      <FamilySharingEntryLayer />
+      <ChildProfileCreator />
+      <FirstRunExperience />
+      <NavExperienceLayer />
+      <MemoryComposer />
+      <MemorySavedToast />
+      <NotificationControlsLayer />
+      <AccessibilitySafetyLayer />
+      <PWAExperienceLayer />
+    </AppShellProvider>
   </React.StrictMode>
 )

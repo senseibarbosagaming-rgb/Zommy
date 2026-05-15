@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { useAppShell } from "./AppShellContext";
 
 const DEFAULT_PREFS = { lang: "en", theme: "dream" };
 const COPY = {
@@ -38,6 +39,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
+  const { ensureDefaultPrimaryScreen, hasPrimaryScreen } = useAppShell();
 
   const copy = COPY[prefs.lang === "pt" ? "pt" : "en"] || COPY.en;
   const user = session?.user || null;
@@ -71,6 +73,11 @@ export default function App() {
     });
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
+
+
+  useEffect(() => {
+    if (user) ensureDefaultPrimaryScreen();
+  }, [ensureDefaultPrimaryScreen, user]);
 
   const signIn = async () => {
     setSaving(true);
@@ -123,7 +130,9 @@ export default function App() {
           <button className="b" disabled={saving} onClick={signOut} style={{ border: `1px solid ${border}`, background: dark ? "rgba(255,244,232,.07)" : "rgba(255,255,255,.58)", color: sub, borderRadius: 999, padding: "8px 10px", fontSize: 12, fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>{copy.signOut}</button>
         </div>
       </header>
-      <main style={{ minHeight: "100dvh", paddingTop: 68, paddingBottom: 100 }} />
+      <main style={{ minHeight: "100dvh", paddingTop: 68, paddingBottom: 100 }}>
+        {!hasPrimaryScreen && <div style={{ minHeight: "calc(100dvh - 168px)", display: "grid", placeItems: "center", padding: "24px", color: sub, textAlign: "center", lineHeight: 1.55 }}>Choose a tab below or add a child to begin.</div>}
+      </main>
     </div>
   );
 }
