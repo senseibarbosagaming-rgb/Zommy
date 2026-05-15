@@ -78,8 +78,7 @@ const todayIso = () => {
 
 const formatDate = (date, lang) => new Date(`${date}T12:00:00`).toLocaleDateString(lang === "pt" ? "pt-PT" : "en-GB", {
   day: "numeric",
-  month: "long",
-  year: "numeric",
+  month: "short",
 });
 
 const monthLabel = (date, lang) => new Date(`${date.slice(0, 7)}-01T12:00:00`).toLocaleDateString(lang === "pt" ? "pt-PT" : "en-GB", {
@@ -92,23 +91,6 @@ const diffDays = (from, to) => {
   const start = new Date(`${from}T12:00:00`);
   const end = new Date(`${to}T12:00:00`);
   return Math.floor((end - start) / 86400000);
-};
-
-const ageAtMemory = (profile, entryDate, lang) => {
-  if (!profile?.birthdate) return "";
-  const days = diffDays(profile.birthdate, entryDate);
-  if (days == null || days < 0) return "";
-  const months = Math.floor(days / 30.44);
-  const years = Math.floor(months / 12);
-  const remainderMonths = months % 12;
-
-  if (lang === "pt") {
-    if (years <= 0) return `${months} mes${months === 1 ? "" : "es"}`;
-    return `${years} ano${years === 1 ? "" : "s"}${remainderMonths ? ` e ${remainderMonths} mes${remainderMonths === 1 ? "" : "es"}` : ""}`;
-  }
-
-  if (years <= 0) return `${months} month${months === 1 ? "" : "s"}`;
-  return `${years} year${years === 1 ? "" : "s"}${remainderMonths ? `, ${remainderMonths} month${remainderMonths === 1 ? "" : "s"}` : ""}`;
 };
 
 const ageFilterMatch = (filter, profile, entryDate) => {
@@ -214,8 +196,8 @@ export default function TimelineScreen() {
 
   return (
     <main style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
-      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100dvh", padding: "20px 16px 112px", display: "grid", gap: 14 }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100dvh", padding: "20px 12px 112px", display: "grid", gap: 14 }}>
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0 4px" }}>
           <div>
             <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 34, lineHeight: 1.08, fontWeight: 650 }}>{copy.title}</h1>
             <p style={{ color: "rgba(255,255,255,0.58)", marginTop: 4, fontSize: 13 }}>{copy.memories(visibleEntries.length)}</p>
@@ -227,14 +209,14 @@ export default function TimelineScreen() {
           <section style={{ border: "1px dashed rgba(255,255,255,0.16)", borderRadius: 20, padding: 24, color: "rgba(255,255,255,0.58)", textAlign: "center", lineHeight: 1.55 }}>{copy.noChildren}</section>
         ) : (
           <>
-            <section style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
+            <section style={{ display: "flex", gap: 8, overflowX: "auto", padding: "0 4px 2px" }}>
               <FilterPill active={profileId === "all"} onClick={() => setProfileId("all")}>{copy.allChildren}</FilterPill>
               {profiles.map((profile) => (
                 <FilterPill key={profile.id} active={profileId === profile.id} color={profile.color} onClick={() => setProfileId(profile.id)}>{profile.emoji || "👶"} {profile.name}</FilterPill>
               ))}
             </section>
 
-            <section style={{ display: "grid", gap: 9 }}>
+            <section style={{ display: "grid", gap: 9, padding: "0 4px" }}>
               <label style={labelStyle()}>
                 {copy.search}
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} style={inputStyle()} />
@@ -268,7 +250,7 @@ export default function TimelineScreen() {
             </section>
 
             {viewMode === "calendar" && (
-              <section style={{ display: "grid", gap: 10 }}>
+              <section style={{ display: "grid", gap: 10, padding: "0 4px" }}>
                 <input type="month" value={calendarMonth} onChange={(event) => setCalendarMonth(event.target.value)} style={selectStyle()} />
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
                   {monthDays(calendarMonth).map((day) => {
@@ -293,8 +275,8 @@ export default function TimelineScreen() {
             <section style={{ display: "grid", gap: 18 }}>
               {monthKeys.map((month) => (
                 <div key={month} style={{ display: "grid", gap: 10 }}>
-                  <h2 style={{ color: "rgba(255,255,255,0.62)", fontSize: 12, fontWeight: 950, letterSpacing: "0.8px", textTransform: "uppercase" }}>{monthLabel(`${month}-01`, lang)}</h2>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
+                  <h2 style={{ color: "rgba(255,255,255,0.62)", fontSize: 12, fontWeight: 950, letterSpacing: "0.8px", textTransform: "uppercase", padding: "0 4px" }}>{monthLabel(`${month}-01`, lang)}</h2>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6 }}>
                     {grouped[month].map((entry) => <MemoryCard key={entry.id} entry={entry} profile={profileById[entry.profile_id]} lang={lang} onClick={() => setSelectedEntry(entry)} />)}
                   </div>
                 </div>
@@ -323,19 +305,20 @@ export default function TimelineScreen() {
 
 function MemoryCard({ entry, profile, lang, onClick }) {
   return (
-    <button onClick={onClick} style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.045)", color: "#fff", borderRadius: 18, padding: 0, overflow: "hidden", textAlign: "left", cursor: "pointer" }}>
+    <button aria-label={`${profile?.name || "Child"} memory from ${entry.date}`} onClick={onClick} style={{ border: "1px solid rgba(255,255,255,0.09)", background: "rgba(255,255,255,0.045)", color: "#fff", borderRadius: 13, padding: 0, overflow: "hidden", textAlign: "left", cursor: "pointer", position: "relative", aspectRatio: "3 / 4", minWidth: 0 }}>
       {entry.photoUrl ? (
-        <img src={entry.photoUrl} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", aspectRatio: "9 / 13", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} />
+        <img src={entry.photoUrl} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} />
       ) : (
-        <div style={{ width: "100%", aspectRatio: "9 / 13", display: "grid", placeItems: "center", background: "rgba(255,255,255,0.035)", fontSize: 30 }}>{profile?.emoji || "📷"}</div>
+        <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", background: "rgba(255,255,255,0.035)", fontSize: 26 }}>{profile?.emoji || "📷"}</div>
       )}
-      <div style={{ padding: 10, display: "grid", gap: 4 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 6, alignItems: "center" }}>
-          <span style={{ color: profile?.color || "#34D399", fontSize: 11, fontWeight: 900 }}>{profile?.emoji || "👶"} {profile?.name || "Memory"}</span>
-          {entry.favorite && <span style={{ color: "#FBBF24", fontSize: 13 }}>★</span>}
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 850 }}>{formatDate(entry.date, lang)}</div>
-        <div style={{ color: "rgba(255,255,255,0.46)", fontSize: 11 }}>{ageAtMemory(profile, entry.date, lang)}</div>
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.36), transparent 34%, rgba(0,0,0,0.52))", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: 6, left: 6, right: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, pointerEvents: "none" }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: profile?.color || "#34D399", boxShadow: "0 1px 6px rgba(0,0,0,0.35)" }} />
+        {entry.favorite && <span style={{ color: "#FBBF24", fontSize: 12, textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}>★</span>}
+      </div>
+      <div style={{ position: "absolute", left: 7, right: 7, bottom: 7, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 4, pointerEvents: "none" }}>
+        <span style={{ color: "rgba(255,255,255,0.9)", fontSize: 10, lineHeight: 1.05, fontWeight: 900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.emoji || "👶"} {profile?.name || "Memory"}</span>
+        <span style={{ color: "rgba(255,255,255,0.72)", fontSize: 9, fontWeight: 850, whiteSpace: "nowrap" }}>{formatDate(entry.date, lang)}</span>
       </div>
     </button>
   );
