@@ -9,7 +9,6 @@ const COPY = {
     settings: "Settings",
     addMemory: "Add memory",
     addChildFirst: "Add child first",
-    addChildFirstHint: "Create a child profile before saving memories.",
     addNamedMemory: (name) => `Add ${name} memory`,
     chooseChild: "Who is this memory for?",
     chooseTimeline: "Whose timeline do you want to open?",
@@ -22,7 +21,6 @@ const COPY = {
     settings: "Definições",
     addMemory: "Adicionar memória",
     addChildFirst: "Adicionar criança",
-    addChildFirstHint: "Cria primeiro um perfil antes de guardar memórias.",
     addNamedMemory: (name) => `Adicionar memória de ${name}`,
     chooseChild: "Para quem é esta memória?",
     chooseTimeline: "Que timeline queres abrir?",
@@ -36,11 +34,9 @@ const getPrefs = () => {
 };
 
 const getCopy = () => COPY[getPrefs().lang === "pt" ? "pt" : "en"] || COPY.en;
-const legacyButtons = () => Array.from(document.querySelectorAll("#root > div:first-child nav button"));
-const clickLegacyNav = (index) => legacyButtons()[index]?.click?.();
 
 const visibleProfileName = (profiles) => {
-  const headerText = document.querySelector("#root > div:first-child header")?.innerText || "";
+  const headerText = document.querySelector("header")?.innerText || "";
   return profiles.find((profile) => headerText.includes(profile.name))?.name || "";
 };
 
@@ -52,6 +48,7 @@ const showCompare = () => window.dispatchEvent(new CustomEvent("zommy:show-compa
 const hideCompare = () => window.dispatchEvent(new CustomEvent("zommy:hide-compare"));
 const showSettings = () => window.dispatchEvent(new CustomEvent("zommy:show-settings"));
 const hideSettings = () => window.dispatchEvent(new CustomEvent("zommy:hide-settings"));
+const openProfileCreator = () => window.dispatchEvent(new CustomEvent("zommy:open-profile-creator"));
 const openComposer = (profile) => window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: profile?.id || "" } }));
 
 export default function NavExperienceLayer() {
@@ -59,7 +56,6 @@ export default function NavExperienceLayer() {
   const [activeName, setActiveName] = useState("");
   const [activeTab, setActiveTab] = useState("today");
   const [chooserMode, setChooserMode] = useState(null);
-  const [message, setMessage] = useState("");
 
   const copy = useMemo(getCopy, []);
   const showLabels = memoryCount < 4;
@@ -75,28 +71,11 @@ export default function NavExperienceLayer() {
 
   if (!user) return null;
 
-  const flash = (text) => {
-    setMessage(text);
-    window.setTimeout(() => setMessage(""), 2400);
-  };
-
   const hidePrimaryScreens = () => {
     hideToday();
     hideTimeline();
     hideCompare();
     hideSettings();
-  };
-
-  const openAddChild = async () => {
-    setActiveTab("today");
-    hidePrimaryScreens();
-    clickLegacyNav(0);
-    await new Promise((resolve) => window.setTimeout(resolve, 80));
-
-    const addButton = Array.from(document.querySelectorAll("button"))
-      .find((button) => /add a child|adicionar criança/i.test(button.innerText || ""));
-    if (addButton) addButton.click();
-    else flash(copy.addChildFirstHint);
   };
 
   const beginMemoryFor = (profile) => {
@@ -106,9 +85,12 @@ export default function NavExperienceLayer() {
     refresh();
   };
 
-  const handlePlus = async () => {
+  const handlePlus = () => {
     if (!profiles.length) {
-      await openAddChild();
+      setActiveTab("today");
+      hidePrimaryScreens();
+      showToday();
+      openProfileCreator();
       return;
     }
 
@@ -120,12 +102,11 @@ export default function NavExperienceLayer() {
     setChooserMode("memory");
   };
 
-  const handleTab = async (tab) => {
+  const handleTab = (tab) => {
     setActiveTab(tab);
     hidePrimaryScreens();
 
     if (tab === "today") {
-      clickLegacyNav(0);
       showToday();
       refresh();
       return;
@@ -174,14 +155,6 @@ export default function NavExperienceLayer() {
 
   return (
     <>
-      <style>{`#root > div:first-child > nav { display: none !important; }`}</style>
-
-      {message && (
-        <div style={{ position: "fixed", bottom: showLabels ? 104 : 86, left: "50%", transform: "translateX(-50%)", zIndex: 1199, background: "#fff", color: "#111", borderRadius: 18, padding: "10px 16px", fontSize: 13, fontWeight: 650, boxShadow: "0 10px 35px rgba(0,0,0,0.26)", maxWidth: "min(88vw, 390px)", textAlign: "center" }}>
-          {message}
-        </div>
-      )}
-
       {chooserMode && (
         <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "rgba(0,0,0,0.58)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }} onClick={() => setChooserMode(null)}>
           <div style={{ width: "100%", maxWidth: 452, background: "#111820", color: "#fff", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: 18, boxShadow: "0 24px 90px rgba(0,0,0,0.45)" }} onClick={(event) => event.stopPropagation()}>
