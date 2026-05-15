@@ -44,30 +44,13 @@ const visibleProfileName = (profiles) => {
   return profiles.find((profile) => headerText.includes(profile.name))?.name || "";
 };
 
-const findClickableText = (text) => {
-  const wanted = text.trim().toLowerCase();
-  if (!wanted) return null;
-  return Array.from(document.querySelectorAll("button, [role='button'], .b, div"))
-    .find((node) => node.innerText?.trim().toLowerCase().includes(wanted));
-};
-
 const showToday = () => window.dispatchEvent(new CustomEvent("zommy:show-today"));
 const hideToday = () => window.dispatchEvent(new CustomEvent("zommy:hide-today"));
+const showTimeline = (profile) => window.dispatchEvent(new CustomEvent("zommy:show-timeline", { detail: { profileId: profile?.id || "" } }));
+const hideTimeline = () => window.dispatchEvent(new CustomEvent("zommy:hide-timeline"));
 const openSettings = () => window.dispatchEvent(new CustomEvent("zommy:open-settings-hub"));
 const openCompare = () => window.dispatchEvent(new CustomEvent("zommy:open-compare-modes"));
 const openComposer = (profile) => window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: profile?.id || "" } }));
-
-async function openProfileTimeline(profile) {
-  hideToday();
-  clickLegacyNav(0);
-  await new Promise((resolve) => window.setTimeout(resolve, 80));
-
-  const profileCard = findClickableText(profile.name);
-  if (profileCard) {
-    profileCard.click();
-    await new Promise((resolve) => window.setTimeout(resolve, 80));
-  }
-}
 
 export default function NavExperienceLayer() {
   const { user, profiles, memoryCount, refresh } = useZommyData({ includeEntries: false, includeLocal: false });
@@ -98,6 +81,7 @@ export default function NavExperienceLayer() {
   const openAddChild = async () => {
     setActiveTab("today");
     hideToday();
+    hideTimeline();
     clickLegacyNav(0);
     await new Promise((resolve) => window.setTimeout(resolve, 80));
 
@@ -132,6 +116,7 @@ export default function NavExperienceLayer() {
     setActiveTab(tab);
 
     if (tab === "today") {
+      hideTimeline();
       clickLegacyNav(0);
       showToday();
       refresh();
@@ -139,6 +124,14 @@ export default function NavExperienceLayer() {
     }
 
     hideToday();
+
+    if (tab === "timeline") {
+      showTimeline(activeProfile);
+      refresh();
+      return;
+    }
+
+    hideTimeline();
 
     if (tab === "compare") {
       openCompare();
@@ -151,20 +144,6 @@ export default function NavExperienceLayer() {
       refresh();
       return;
     }
-
-    if (tab === "timeline" && profiles.length > 1 && !activeProfile) {
-      setChooserMode("timeline");
-      return;
-    }
-
-    if (tab === "timeline" && profiles.length === 1) {
-      await openProfileTimeline(profiles[0]);
-      refresh();
-      return;
-    }
-
-    clickLegacyNav(1);
-    refresh();
   };
 
   const plusLabel = !profiles.length
@@ -208,11 +187,12 @@ export default function NavExperienceLayer() {
             </div>
             <div style={{ display: "grid", gap: 10 }}>
               {profiles.map((profile) => (
-                <button key={profile.id} className="b" onClick={async () => {
+                <button key={profile.id} className="b" onClick={() => {
                   if (chooserMode === "timeline") {
                     setChooserMode(null);
-                    await openProfileTimeline(profile);
                     setActiveTab("timeline");
+                    hideToday();
+                    showTimeline(profile);
                     refresh();
                   } else {
                     beginMemoryFor(profile);
