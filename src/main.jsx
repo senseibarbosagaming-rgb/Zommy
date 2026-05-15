@@ -12,10 +12,12 @@ import PWAExperienceLayer from './PWAExperienceLayer'
 import TodayDashboardLayer from './TodayDashboardLayer'
 import TimelineScreen from './TimelineScreen'
 import ChildProfileCreator from './ChildProfileCreator'
+import ZommyIntro from './ZommyIntro'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
+    <ZommyIntro />
     <TodayDashboardLayer />
     <TimelineScreen />
     <CompareScreen />
