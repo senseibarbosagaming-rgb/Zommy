@@ -48,7 +48,8 @@ const showToday = () => window.dispatchEvent(new CustomEvent("zommy:show-today")
 const hideToday = () => window.dispatchEvent(new CustomEvent("zommy:hide-today"));
 const showTimeline = (profile) => window.dispatchEvent(new CustomEvent("zommy:show-timeline", { detail: { profileId: profile?.id || "" } }));
 const hideTimeline = () => window.dispatchEvent(new CustomEvent("zommy:hide-timeline"));
-const openSettings = () => window.dispatchEvent(new CustomEvent("zommy:open-settings-hub"));
+const showSettings = () => window.dispatchEvent(new CustomEvent("zommy:show-settings"));
+const hideSettings = () => window.dispatchEvent(new CustomEvent("zommy:hide-settings"));
 const openCompare = () => window.dispatchEvent(new CustomEvent("zommy:open-compare-modes"));
 const openComposer = (profile) => window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: profile?.id || "" } }));
 
@@ -82,6 +83,7 @@ export default function NavExperienceLayer() {
     setActiveTab("today");
     hideToday();
     hideTimeline();
+    hideSettings();
     clickLegacyNav(0);
     await new Promise((resolve) => window.setTimeout(resolve, 80));
 
@@ -117,6 +119,7 @@ export default function NavExperienceLayer() {
 
     if (tab === "today") {
       hideTimeline();
+      hideSettings();
       clickLegacyNav(0);
       showToday();
       refresh();
@@ -126,6 +129,7 @@ export default function NavExperienceLayer() {
     hideToday();
 
     if (tab === "timeline") {
+      hideSettings();
       showTimeline(activeProfile);
       refresh();
       return;
@@ -134,13 +138,14 @@ export default function NavExperienceLayer() {
     hideTimeline();
 
     if (tab === "compare") {
+      hideSettings();
       openCompare();
       refresh();
       return;
     }
 
     if (tab === "settings") {
-      openSettings();
+      showSettings();
       refresh();
       return;
     }
@@ -192,6 +197,7 @@ export default function NavExperienceLayer() {
                     setChooserMode(null);
                     setActiveTab("timeline");
                     hideToday();
+                    hideSettings();
                     showTimeline(profile);
                     refresh();
                   } else {
