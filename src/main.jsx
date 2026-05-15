@@ -13,9 +13,11 @@ import TodayDashboardLayer from './TodayDashboardLayer'
 import TimelineScreen from './TimelineScreen'
 import ChildProfileCreator from './ChildProfileCreator'
 import ZommyIntro from './ZommyIntro'
+import ThemeLayer from './ThemeLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <ThemeLayer />
     <App />
     <ZommyIntro />
     <TodayDashboardLayer />
