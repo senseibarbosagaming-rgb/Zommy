@@ -11,17 +11,24 @@ const COPY = {
     emailPlaceholder: "name@example.com",
     createInvite: "Create invite link",
     copyLink: "Copy invite link",
+    cancelInvite: "Cancel",
+    removeAccess: "Remove",
     copied: "Invite link copied.",
     created: "Invite created.",
+    removed: "Access removed.",
+    cancelled: "Invite cancelled.",
     noChildren: "Add a child before inviting someone.",
     pending: "Pending invites",
     members: "Shared with",
     owner: "Owner",
     editor: "Editor",
+    you: "You",
+    expires: "Expires",
     noMembers: "No shared members yet.",
     noInvites: "No pending invites.",
     close: "Close",
-    error: "Could not create invite.",
+    error: "Something went wrong.",
+    inviteError: "Could not create invite.",
     hint: "Send this link to the other parent. They should open it, sign in with the invited Google account, and Zommy will add the child to their app.",
   },
   pt: {
@@ -32,17 +39,24 @@ const COPY = {
     emailPlaceholder: "nome@exemplo.com",
     createInvite: "Criar link de convite",
     copyLink: "Copiar link",
+    cancelInvite: "Cancelar",
+    removeAccess: "Remover",
     copied: "Link copiado.",
     created: "Convite criado.",
+    removed: "Acesso removido.",
+    cancelled: "Convite cancelado.",
     noChildren: "Adiciona uma criança antes de convidar alguém.",
     pending: "Convites pendentes",
     members: "Partilhado com",
     owner: "Owner",
     editor: "Editor",
+    you: "Tu",
+    expires: "Expira",
     noMembers: "Ainda não há membros partilhados.",
     noInvites: "Sem convites pendentes.",
     close: "Fechar",
-    error: "Não foi possível criar o convite.",
+    error: "Algo correu mal.",
+    inviteError: "Não foi possível criar o convite.",
     hint: "Envia este link à outra pessoa. Deve abrir o link, iniciar sessão com a conta Google convidada, e o Zommy adiciona a criança à app.",
   },
 };
@@ -59,6 +73,7 @@ const randomToken = () => {
 };
 
 const inviteLink = (token) => `${window.location.origin}${window.location.pathname}?zommy_invite=${encodeURIComponent(token)}`;
+const formatShortDate = (value) => value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "";
 
 export default function FamilySharingScreen() {
   const [open, setOpen] = useState(false);
@@ -73,6 +88,8 @@ export default function FamilySharingScreen() {
   const lang = getPrefs().lang === "pt" ? "pt" : "en";
   const copy = useMemo(() => COPY[lang] || COPY.en, [lang]);
   const selectedProfile = profiles.find((profile) => profile.id === profileId) || profiles[0];
+  const currentMember = members.find((member) => member.is_current_user);
+  const isOwner = currentMember?.role === "owner";
 
   const showToast = (message) => {
     setToast(message);
@@ -81,10 +98,11 @@ export default function FamilySharingScreen() {
 
   const loadSharing = async (nextProfileId = profileId || profiles[0]?.id) => {
     if (!nextProfileId) return;
-    const [{ data: memberRows }, { data: inviteRows }] = await Promise.all([
-      supabase.from("profile_members").select("*").eq("profile_id", nextProfileId).order("created_at"),
+    const [{ data: memberRows, error: memberError }, { data: inviteRows }] = await Promise.all([
+      supabase.rpc("list_profile_members", { target_profile_id: nextProfileId }),
       supabase.from("profile_invites").select("*").eq("profile_id", nextProfileId).is("accepted_at", null).order("created_at", { ascending: false }),
     ]);
+    if (memberError) console.error("Failed to load profile members", memberError);
     setMembers(memberRows || []);
     setInvites(inviteRows || []);
   };
@@ -129,7 +147,7 @@ export default function FamilySharingScreen() {
     setBusy(false);
     if (error) {
       console.error("Failed to create invite", error);
-      showToast(copy.error);
+      showToast(copy.inviteError);
       return;
     }
     const link = inviteLink(token);
@@ -143,6 +161,34 @@ export default function FamilySharingScreen() {
     if (!link) return;
     await navigator.clipboard?.writeText(link).catch(() => null);
     showToast(copy.copied);
+  };
+
+  const removeMember = async (member) => {
+    if (!selectedProfile || !member?.user_id || member.role === "owner") return;
+    setBusy(true);
+    const { error } = await supabase.rpc("remove_profile_member", { target_profile_id: selectedProfile.id, target_user_id: member.user_id });
+    setBusy(false);
+    if (error) {
+      console.error("Failed to remove member", error);
+      showToast(copy.error);
+      return;
+    }
+    await loadSharing(selectedProfile.id);
+    window.dispatchEvent(new CustomEvent("zommy:sharing-changed"));
+    showToast(copy.removed);
+  };
+
+  const cancelInvite = async (invite) => {
+    setBusy(true);
+    const { error } = await supabase.rpc("cancel_profile_invite", { target_invite_id: invite.id });
+    setBusy(false);
+    if (error) {
+      console.error("Failed to cancel invite", error);
+      showToast(copy.error);
+      return;
+    }
+    await loadSharing(selectedProfile.id);
+    showToast(copy.cancelled);
   };
 
   return (
@@ -173,19 +219,25 @@ export default function FamilySharingScreen() {
                 {copy.email}
                 <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder={copy.emailPlaceholder} style={fieldStyle()} />
               </label>
-              <button disabled={busy || !email.trim()} onClick={createInvite} style={primaryButton(!busy && !!email.trim())}>{copy.createInvite}</button>
+              <button disabled={busy || !email.trim() || !isOwner} onClick={createInvite} style={primaryButton(!busy && !!email.trim() && isOwner)}>{copy.createInvite}</button>
               {lastLink && <button onClick={() => copyInvite(lastLink)} style={secondaryButton()}>{copy.copyLink}</button>}
               <p style={{ color: "rgba(255,255,255,0.56)", lineHeight: 1.5, fontSize: 12 }}>{copy.hint}</p>
             </section>
 
             <section style={panelStyle()}>
               <h2 style={sectionTitle()}>{copy.members}</h2>
-              {members.length ? members.map((member) => (
-                <div key={member.id} style={rowStyle()}>
-                  <span style={{ color: "rgba(255,255,255,0.78)", fontSize: 13 }}>{member.user_id === user.id ? user.email : member.user_id}</span>
-                  <span style={{ color: member.role === "owner" ? "#FBBF24" : "#34D399", fontSize: 12, fontWeight: 900 }}>{member.role === "owner" ? copy.owner : copy.editor}</span>
-                </div>
-              )) : <p style={emptyStyle()}>{copy.noMembers}</p>}
+              {members.length ? members.map((member) => {
+                const canRemove = isOwner && !member.is_current_user && member.role !== "owner";
+                return (
+                  <div key={member.membership_id} style={rowStyle()}>
+                    <span style={{ display: "grid", gap: 3, minWidth: 0 }}>
+                      <span style={{ color: "rgba(255,255,255,0.84)", fontSize: 13, fontWeight: 850, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{member.is_current_user ? `${copy.you} · ${member.email}` : member.email}</span>
+                      <span style={{ color: member.role === "owner" ? "#FBBF24" : "#34D399", fontSize: 11, fontWeight: 900 }}>{member.role === "owner" ? copy.owner : copy.editor}</span>
+                    </span>
+                    {canRemove && <button disabled={busy} onClick={() => removeMember(member)} style={miniDangerButton()}>{copy.removeAccess}</button>}
+                  </div>
+                );
+              }) : <p style={emptyStyle()}>{copy.noMembers}</p>}
             </section>
 
             <section style={panelStyle()}>
@@ -194,11 +246,14 @@ export default function FamilySharingScreen() {
                 const link = inviteLink(invite.token);
                 return (
                   <div key={invite.id} style={{ ...rowStyle(), alignItems: "flex-start" }}>
-                    <span style={{ display: "grid", gap: 3 }}>
-                      <span style={{ color: "rgba(255,255,255,0.82)", fontSize: 13 }}>{invite.email}</span>
-                      <span style={{ color: "rgba(255,255,255,0.44)", fontSize: 11 }}>{link}</span>
+                    <span style={{ display: "grid", gap: 3, minWidth: 0 }}>
+                      <span style={{ color: "rgba(255,255,255,0.82)", fontSize: 13, fontWeight: 850 }}>{invite.email}</span>
+                      <span style={{ color: "rgba(255,255,255,0.44)", fontSize: 11 }}>{copy.expires} {formatShortDate(invite.expires_at)}</span>
                     </span>
-                    <button onClick={() => copyInvite(link)} style={miniButton()}>{copy.copyLink}</button>
+                    <span style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      <button onClick={() => copyInvite(link)} style={miniButton()}>{copy.copyLink}</button>
+                      {isOwner && <button disabled={busy} onClick={() => cancelInvite(invite)} style={miniDangerButton()}>{copy.cancelInvite}</button>}
+                    </span>
                   </div>
                 );
               }) : <p style={emptyStyle()}>{copy.noInvites}</p>}
@@ -217,6 +272,7 @@ const primaryButton = (active = true) => ({ width: "100%", border: "none", backg
 const secondaryButton = () => ({ width: "100%", border: "1px solid rgba(52,211,153,0.45)", background: "rgba(52,211,153,0.12)", color: "#34D399", borderRadius: 15, minHeight: 44, fontSize: 13, fontWeight: 900, cursor: "pointer" });
 const ghostButton = () => ({ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.72)", borderRadius: 999, minHeight: 44, padding: "8px 12px", fontSize: 13, fontWeight: 850, cursor: "pointer" });
 const miniButton = () => ({ border: "1px solid rgba(255,255,255,0.13)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.78)", borderRadius: 999, padding: "7px 9px", fontSize: 11, fontWeight: 850, whiteSpace: "nowrap", cursor: "pointer" });
+const miniDangerButton = () => ({ border: "1px solid rgba(248,113,113,0.35)", background: "rgba(248,113,113,0.1)", color: "#fca5a5", borderRadius: 999, padding: "7px 9px", fontSize: 11, fontWeight: 850, whiteSpace: "nowrap", cursor: "pointer" });
 const sectionTitle = () => ({ fontSize: 13, fontWeight: 950, color: "rgba(255,255,255,0.68)", textTransform: "uppercase", letterSpacing: "0.8px" });
 const rowStyle = () => ({ border: "1px solid rgba(255,255,255,0.09)", background: "rgba(255,255,255,0.035)", borderRadius: 14, padding: 11, display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" });
 const emptyStyle = () => ({ color: "rgba(255,255,255,0.46)", fontSize: 13, lineHeight: 1.5 });
