@@ -1,7 +1,10 @@
 {
+  "id": "/?source=pwa",
   "name": "Zommy",
   "short_name": "Zommy",
   "description": "Save family memories quickly from your phone.",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
@@ -9,12 +12,25 @@
   "background_color": "#101418",
   "theme_color": "#43596a",
   "orientation": "portrait-primary",
+  "categories": ["lifestyle", "photo"],
   "icons": [
     {
       "src": "/icons/icon.svg",
-      "sizes": "any",
+      "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-monochrome.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "monochrome"
     }
   ],
   "shortcuts": [
@@ -26,7 +42,7 @@
       "icons": [
         {
           "src": "/icons/icon.svg",
-          "sizes": "any",
+          "sizes": "512x512",
           "type": "image/svg+xml"
         }
       ]
