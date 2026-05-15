@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Zommy maskable app icon">
+  <defs>
+    <linearGradient id="zommy-maskable-bg" x1="64" y1="48" x2="448" y2="464" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1B2733"/>
+      <stop offset="0.52" stop-color="#101418"/>
+      <stop offset="1" stop-color="#263A45"/>
+    </linearGradient>
+    <linearGradient id="zommy-maskable-z" x1="160" y1="132" x2="352" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F8FAFC"/>
+      <stop offset="0.58" stop-color="#DDE7EF"/>
+      <stop offset="1" stop-color="#9FB0BD"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#zommy-maskable-bg)"/>
+  <circle cx="256" cy="256" r="184" fill="rgba(255,255,255,0.04)"/>
+  <path d="M164 136H348L206 376H344" fill="none" stroke="url(#zommy-maskable-z)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M164 136H348" fill="none" stroke="#34D399" stroke-width="16" stroke-linecap="round" opacity="0.84"/>
+  <path d="M206 376H344" fill="none" stroke="#FBBF24" stroke-width="16" stroke-linecap="round" opacity="0.8"/>
+</svg>
