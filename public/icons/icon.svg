@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Zommy app icon">
+  <rect width="512" height="512" rx="112" fill="#101418"/>
+  <circle cx="256" cy="210" r="108" fill="#34D399" opacity="0.16"/>
+  <path d="M148 320c34-56 70-84 108-84s74 28 108 84" fill="none" stroke="#34D399" stroke-width="34" stroke-linecap="round"/>
+  <circle cx="220" cy="190" r="16" fill="#F8FAFC"/>
+  <circle cx="292" cy="190" r="16" fill="#F8FAFC"/>
+  <path d="M222 248c20 18 48 18 68 0" fill="none" stroke="#F8FAFC" stroke-width="18" stroke-linecap="round"/>
+  <path d="M164 126l26-38 26 38" fill="none" stroke="#FBBF24" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="408" fill="#F8FAFC" font-family="Arial, Helvetica, sans-serif" font-size="86" font-weight="800" text-anchor="middle">Z</text>
+</svg>
