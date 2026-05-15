@@ -75,14 +75,27 @@ If the browser console shows requests like these returning `400`:
 /rest/v1/entries?select=*&user_id=eq.<user-id>
 ```
 
-then the private-data migration has not been applied yet, or Supabase's schema cache has not picked it up. Run `supabase/migrations/20260515000000_private_google_auth.sql` in the Supabase SQL editor, confirm the `profiles.user_id`, `entries.user_id`, and `entries.photo_path` columns exist, then refresh the app.
+then the private-data migration has not been applied yet, or Supabase's schema cache has not picked it up. Open `supabase/migrations/20260515000000_private_google_auth.sql`, copy the SQL statements inside that file into the Supabase SQL editor, run them, confirm the `profiles.user_id`, `entries.user_id`, and `entries.photo_path` columns exist, then refresh the app.
 
 ## Database and Storage migration
 
-Run this SQL file in the Supabase SQL editor:
+Run the **contents** of this SQL file in the Supabase SQL editor:
 
 ```text
 supabase/migrations/20260515000000_private_google_auth.sql
+```
+
+Do **not** paste the filename/path itself into Supabase. The SQL editor can only run SQL statements, so you must open the file above and copy everything inside it, starting with:
+
+```sql
+-- Zommy private Google-auth setup.
+begin;
+```
+
+and ending with:
+
+```sql
+commit;
 ```
 
 This migration intentionally wipes existing `profiles` and `entries` rows because the selected migration option was **wipe and start clean**.

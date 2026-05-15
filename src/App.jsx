@@ -74,7 +74,7 @@ const LANGS = {
     authError: "Could not sign in",
     googleProviderDisabled: "Google login is not enabled in Supabase yet.",
     schemaNotReadyTitle: "Supabase setup needed",
-    schemaNotReadyBody: "The private-login database migration has not run yet. Run supabase/migrations/20260515000000_private_google_auth.sql in Supabase, then refresh.",
+    schemaNotReadyBody: "The private-login database migration has not run yet. Open supabase/migrations/20260515000000_private_google_auth.sql, copy its SQL contents into the Supabase SQL editor, run them, then refresh.",
   },
   pt: {
     tagline: "Um registo tranquilo do crescimento deles.",
@@ -146,7 +146,7 @@ const LANGS = {
     authError: "Não foi possível iniciar sessão",
     googleProviderDisabled: "O login com Google ainda não está ativo no Supabase.",
     schemaNotReadyTitle: "Configuração do Supabase necessária",
-    schemaNotReadyBody: "A migração da base de dados para login privado ainda não foi executada. Executa supabase/migrations/20260515000000_private_google_auth.sql no Supabase e atualiza a página.",
+    schemaNotReadyBody: "A migração da base de dados para login privado ainda não foi executada. Abre supabase/migrations/20260515000000_private_google_auth.sql, copia o conteúdo SQL para o editor SQL do Supabase, executa-o e atualiza a página.",
   },
 };
 
