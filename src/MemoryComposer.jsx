@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { SUPABASE_ANON_KEY, SUPABASE_URL, supabase } from "./supabase";
+import { clearDraft, getDraft, putDraft } from "./pwaStorage";
+import { queueMemoryDraft, uploadMemoryPayload } from "./pwaUploadQueue";
+import { supabase } from "./supabase";
 
 const COPY = {
   en: {
@@ -21,6 +23,8 @@ const COPY = {
     compressing: (index, total) => `Compressing ${index}/${total}`,
     uploading: (index, total, pct) => `Uploading ${index}/${total} · ${pct}%`,
     saving: "Saving memory…",
+    queued: "Saved offline. It will upload when connection returns.",
+    draftRestored: "Draft restored.",
     done: "Memory saved.",
     genericError: "Upload failed. Your photos and note are still here.",
     photoError: "Add at least one photo.",
@@ -45,6 +49,8 @@ const COPY = {
     compressing: (index, total) => `A comprimir ${index}/${total}`,
     uploading: (index, total, pct) => `A carregar ${index}/${total} · ${pct}%`,
     saving: "A guardar memória…",
+    queued: "Guardada offline. Vai carregar quando a ligação voltar.",
+    draftRestored: "Rascunho recuperado.",
     done: "Memória guardada.",
     genericError: "O upload falhou. As fotos e a nota continuam aqui.",
     photoError: "Adiciona pelo menos uma foto.",
@@ -71,76 +77,8 @@ const cropOptions = [
   { id: "bottom", value: "50% 82%" },
 ];
 
-const readFileAsImage = (file) => new Promise((resolve, reject) => {
-  const url = URL.createObjectURL(file);
-  const image = new Image();
-  image.onload = () => {
-    URL.revokeObjectURL(url);
-    resolve(image);
-  };
-  image.onerror = () => {
-    URL.revokeObjectURL(url);
-    reject(new Error("Could not read image"));
-  };
-  image.src = url;
-});
-
-const canvasToBlob = (canvas, quality) => new Promise((resolve, reject) => {
-  canvas.toBlob((blob) => {
-    if (blob) resolve(blob);
-    else reject(new Error("Could not compress image"));
-  }, "image/jpeg", quality);
-});
-
-const compressImage = async (file) => {
-  const image = await readFileAsImage(file);
-  const maxSide = 1800;
-  const ratio = Math.min(1, maxSide / Math.max(image.width, image.height));
-  const width = Math.max(1, Math.round(image.width * ratio));
-  const height = Math.max(1, Math.round(image.height * ratio));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-  context.drawImage(image, 0, 0, width, height);
-  const blob = await canvasToBlob(canvas, 0.78);
-
-  if (blob.size >= file.size && file.size < 2_000_000) return file;
-  return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "photo"}.jpg`, { type: "image/jpeg" });
-};
-
-const getSessionToken = async () => {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.access_token || SUPABASE_ANON_KEY;
-};
-
-const uploadWithProgress = async ({ file, path, onProgress }) => {
-  const token = await getSessionToken();
-  const endpoint = `${SUPABASE_URL}/storage/v1/object/photos/${encodeURIComponent(path).replace(/%2F/g, "/")}`;
-
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", endpoint);
-    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-    xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY);
-    xhr.setRequestHeader("Content-Type", file.type || "image/jpeg");
-    xhr.setRequestHeader("x-upsert", "false");
-
-    xhr.upload.onprogress = (event) => {
-      if (!event.lengthComputable) return;
-      onProgress(Math.round((event.loaded / event.total) * 100));
-    };
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve(path);
-      else reject(new Error(xhr.responseText || `Upload failed with ${xhr.status}`));
-    };
-    xhr.onerror = () => reject(new Error("Network upload failed"));
-    xhr.send(file);
-  });
-};
-
 const makePhotoId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const photoFromFile = (file) => ({ id: makePhotoId(), file, preview: URL.createObjectURL(file) });
 
 export default function MemoryComposer() {
   const [open, setOpen] = useState(false);
@@ -173,17 +111,19 @@ export default function MemoryComposer() {
         .from("profiles")
         .select("id,name,emoji,color,created_at")
         .eq("user_id", currentUser.id)
+        .is("archived_at", null)
         .order("created_at");
 
       const nextProfiles = data || [];
+      const draft = await getDraft().catch(() => null);
       setProfiles(nextProfiles);
-      setProfileId(requestedProfileId || (nextProfiles.length === 1 ? nextProfiles[0].id : ""));
-      setDate(today());
-      setNote("");
-      setPhotos([]);
-      setCoverIndex(0);
-      setCoverPosition("50% 50%");
-      setStatus("");
+      setProfileId(requestedProfileId || draft?.profileId || (nextProfiles.length === 1 ? nextProfiles[0].id : ""));
+      setDate(draft?.date || today());
+      setNote(draft?.note || "");
+      setPhotos((draft?.photos || []).map((photo) => photoFromFile(photo.file || photo.blob || photo)));
+      setCoverIndex(draft?.coverIndex || 0);
+      setCoverPosition(draft?.coverPosition || "50% 50%");
+      setStatus(draft ? copy.draftRestored : "");
       setProgress(0);
       setFailed(false);
       setOpen(true);
@@ -191,7 +131,15 @@ export default function MemoryComposer() {
 
     window.addEventListener("zommy:open-memory-composer", openComposer);
     return () => window.removeEventListener("zommy:open-memory-composer", openComposer);
-  }, []);
+  }, [copy.draftRestored]);
+
+  useEffect(() => {
+    if (!open || saving) return;
+    const timeout = window.setTimeout(() => {
+      putDraft({ profileId, date, note, photos: photos.map((photo) => ({ file: photo.file })), coverIndex, coverPosition }).catch(() => null);
+    }, 350);
+    return () => window.clearTimeout(timeout);
+  }, [coverIndex, coverPosition, date, note, open, photos, profileId, saving]);
 
   useEffect(() => () => {
     photos.forEach((photo) => URL.revokeObjectURL(photo.preview));
@@ -209,10 +157,7 @@ export default function MemoryComposer() {
     const files = Array.from(event.target.files || []).filter((file) => file.type.startsWith("image/"));
     if (!files.length) return;
 
-    setPhotos((current) => [
-      ...current,
-      ...files.map((file) => ({ id: makePhotoId(), file, preview: URL.createObjectURL(file) })),
-    ]);
+    setPhotos((current) => [...current, ...files.map(photoFromFile)]);
     setFailed(false);
     setStatus("");
     event.target.value = "";
@@ -228,6 +173,15 @@ export default function MemoryComposer() {
     });
   };
 
+  const queueOffline = async () => {
+    await queueMemoryDraft({ userId: user.id, profileId: activeProfile.id, date, note, photos: photos.map((photo) => ({ file: photo.file })), coverIndex, coverPosition });
+    await clearDraft().catch(() => null);
+    window.dispatchEvent(new CustomEvent("zommy:queue-updated"));
+    setStatus(copy.queued);
+    setProgress(100);
+    window.setTimeout(() => setOpen(false), 700);
+  };
+
   const saveMemory = async () => {
     setFailed(false);
     setProgress(0);
@@ -238,46 +192,40 @@ export default function MemoryComposer() {
 
     setSaving(true);
     try {
-      const uploaded = [];
-      for (let i = 0; i < photos.length; i += 1) {
-        const photo = photos[i];
-        setStatus(copy.compressing(i + 1, photos.length));
-        const compressed = await compressImage(photo.file);
-        const path = `${user.id}/${Date.now()}-${i}.jpg`;
-        setStatus(copy.uploading(i + 1, photos.length, 0));
-        await uploadWithProgress({
-          file: compressed,
-          path,
-          onProgress: (pct) => {
-            setProgress(Math.round(((i + pct / 100) / photos.length) * 100));
-            setStatus(copy.uploading(i + 1, photos.length, pct));
-          },
-        });
-        uploaded.push({ path, position: i === coverIndex ? coverPosition : "50% 50%" });
+      if (!navigator.onLine) {
+        await queueOffline();
+        setSaving(false);
+        return;
       }
 
-      const cover = uploaded[coverIndex] || uploaded[0];
-      setStatus(copy.saving);
-      const { error } = await supabase.from("entries").insert({
-        id: Date.now(),
-        user_id: user.id,
-        profile_id: activeProfile.id,
+      await uploadMemoryPayload({
+        userId: user.id,
+        profileId: activeProfile.id,
         date,
-        note: note.trim(),
-        photo_path: cover.path,
-        cover_photo_path: cover.path,
-        cover_position: cover.position,
-        photos: uploaded,
+        note,
+        photos,
+        coverIndex,
+        coverPosition,
+        onProgress: setProgress,
+        onStatus: ({ stage, index, total, pct }) => {
+          if (stage === "compressing") setStatus(copy.compressing(index, total));
+          if (stage === "uploading") setStatus(copy.uploading(index, total, pct));
+          if (stage === "saving") setStatus(copy.saving);
+        },
       });
 
-      if (error) throw error;
+      await clearDraft().catch(() => null);
       setStatus(copy.done);
       setProgress(100);
       window.setTimeout(() => window.location.reload(), 500);
     } catch (error) {
       console.error("Failed to save memory", error);
-      setStatus(copy.genericError);
-      setFailed(true);
+      if (!navigator.onLine) {
+        await queueOffline().catch(() => null);
+      } else {
+        setStatus(copy.genericError);
+        setFailed(true);
+      }
       setSaving(false);
     }
   };
@@ -314,9 +262,9 @@ export default function MemoryComposer() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
                 {photos.map((photo, index) => (
                   <button key={photo.id} type="button" onClick={() => setCoverIndex(index)} disabled={saving} style={{ border: `2px solid ${coverIndex === index ? activeProfile?.color || "#17d86f" : "transparent"}`, background: "rgba(255,255,255,0.05)", borderRadius: 13, overflow: "hidden", padding: 0, position: "relative", aspectRatio: "9 / 13", cursor: saving ? "wait" : "pointer" }}>
-                    <img src={photo.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: coverIndex === index ? coverPosition : "50% 50%", display: "block" }} />
+                    <img src={photo.preview} alt="Selected memory preview" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: coverIndex === index ? coverPosition : "50% 50%", display: "block" }} />
                     <span style={{ position: "absolute", left: 6, top: 6, background: "rgba(0,0,0,0.55)", color: "#fff", borderRadius: 999, padding: "3px 7px", fontSize: 10, fontWeight: 900 }}>{index === coverIndex ? "Cover" : index + 1}</span>
-                    {!saving && <span onClick={(event) => { event.stopPropagation(); removePhoto(photo.id); }} style={{ position: "absolute", right: 6, top: 6, background: "rgba(0,0,0,0.6)", color: "#fff", borderRadius: 999, width: 21, height: 21, display: "grid", placeItems: "center", fontSize: 14 }}>×</span>}
+                    {!saving && <span onClick={(event) => { event.stopPropagation(); removePhoto(photo.id); }} style={{ position: "absolute", right: 6, top: 6, background: "rgba(0,0,0,0.6)", color: "#fff", borderRadius: 999, width: 24, height: 24, display: "grid", placeItems: "center", fontSize: 14 }}>×</span>}
                   </button>
                 ))}
               </div>
