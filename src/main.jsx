@@ -9,20 +9,19 @@ import NotificationControlsLayer from './NotificationControlsLayer'
 import AccessibilitySafetyLayer from './AccessibilitySafetyLayer'
 import SettingsScreen from './SettingsScreen'
 import PWAExperienceLayer from './PWAExperienceLayer'
-import TodayDashboardLayer from './TodayDashboardLayer'
+import HomeRitualScreen from './HomeRitualScreen'
 import TimelineScreen from './TimelineScreen'
 import ChildProfileCreator from './ChildProfileCreator'
 import ZommyIntro from './ZommyIntro'
 import ThemeLayer from './ThemeLayer'
 import ChapterScreen from './ChapterScreen'
-import ChapterLauncherLayer from './ChapterLauncherLayer'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeLayer />
     <App />
     <ZommyIntro />
-    <TodayDashboardLayer />
+    <HomeRitualScreen />
     <TimelineScreen />
     <ChapterScreen />
     <CompareScreen />
@@ -31,7 +30,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <FirstRunExperience />
     <NavExperienceLayer />
     <MemoryComposer />
-    <ChapterLauncherLayer />
     <NotificationControlsLayer />
     <AccessibilitySafetyLayer />
     <PWAExperienceLayer />
