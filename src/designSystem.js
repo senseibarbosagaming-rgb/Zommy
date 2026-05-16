@@ -1,31 +1,46 @@
+// designSystem.js — Milk & Stone tokens with legacy aliases for compatibility
 export const palette = {
-  // Brand tokens — Milk & Stone
+  // New tokens
   milk: "#FAFAF8",       // page background
   surface: "#FFFFFF",    // cards and surfaces
-  stone: "#1A1714",      // primary text (warmer than black)
+  stone: "#1A1714",      // primary text
   muted: "#8C8480",      // secondary text
-  accent: "#C17B5C",     // warm terracotta accent (used sparingly)
-
-  // Shadows
+  accent: "#C17B5C",     // warm terracotta accent
   shadow: "0 2px 12px rgba(0,0,0,0.06)",
   shadowSoft: "0 8px 24px rgba(0,0,0,0.04)",
+
+  // Legacy aliases (kept for compatibility with existing code)
+  ivory: "#FAFAF8",
+  parchment: "#FAFAF8",
+  paper: "#FFFFFF",
+  paperSoft: "#F7EFE6",
+  paperWarm: "#FFF4EA",
+  ink: "#1A1714",
+  inkMuted: "#8C8480",
+  inkFaint: "rgba(26,23,20,0.54)",
+  clay: "#C17B5C", // maps to accent
+  peach: "#EBCBBB",
+  sage: "#8DA399",
+  honey: "#F4DFA7",
+  deep: "#3A4A43",
+  lavender: "#A99FB7",
+  softBlue: "#91AFC7",
+  roseBeige: "#D9A99D",
+  border: "rgba(26,23,20,0.06)",
+  borderStrong: "rgba(26,23,20,0.12)",
 };
 
 export const memoryTones = [
-  // Keep a small set of gentle tone accents for memory cards; these should not be used as full-surface fills
   { name: "Clay", color: palette.accent, bg: "#FFF4F0" },
-  { name: "Sage", color: "#8DA399", bg: "#F1F6F3" },
-  { name: "Lavender", color: "#A99FB7", bg: "#F3F1F6" },
+  { name: "Sage", color: palette.sage, bg: "#F1F6F3" },
+  { name: "Lavender", color: palette.lavender, bg: "#F3F1F6" },
 ];
 
 export const type = {
-  // Editorial serif for headings and confident display
   serif: '"Playfair Display", Georgia, "Times New Roman", serif',
-  // Legible geometric UI type for body and controls
   sans: '"DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 };
 
-// App surface — neutral warm page background, no decorative gradients
 export const appSurface = {
   position: "fixed",
   inset: 0,
@@ -36,7 +51,6 @@ export const appSurface = {
   fontFamily: type.sans,
 };
 
-// Content column. Horizontal padding is a consistent 20px everywhere per design rules.
 export const contentFrame = (bottom = 112) => ({
   maxWidth: 480,
   margin: "0 auto",
@@ -50,7 +64,6 @@ export const card = {
   borderRadius: 20,
   background: palette.surface,
   boxShadow: palette.shadow,
-  // keep content readable — no backdropFilter or borders on surfaces
 };
 
 export const label = {
