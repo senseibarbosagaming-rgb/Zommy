@@ -1,124 +1,111 @@
 export const palette = {
-  ivory: "#FBF7F0",
-  parchment: "#FBF7F0",
-  paper: "#FFFDF8",
-  paperSoft: "#F7EFE6",
-  paperWarm: "#FFF4EA",
-  ink: "#2E2923",
-  inkMuted: "#7B7065",
-  inkFaint: "rgba(46,41,35,0.54)",
-  clay: "#B9785F",
-  peach: "#EBCBBB",
-  sage: "#8DA399",
-  honey: "#F4DFA7",
-  deep: "#3A4A43",
-  lavender: "#A99FB7",
-  softBlue: "#91AFC7",
-  roseBeige: "#D9A99D",
-  border: "rgba(91,67,48,0.14)",
-  borderStrong: "rgba(91,67,48,0.24)",
-  shadow: "0 24px 70px rgba(91,67,48,0.16)",
-  shadowSoft: "0 14px 38px rgba(91,67,48,0.10)",
-  shadowLift: "0 8px 24px rgba(91,67,48,0.08)",
+  // Brand tokens — Milk & Stone
+  milk: "#FAFAF8",       // page background
+  surface: "#FFFFFF",    // cards and surfaces
+  stone: "#1A1714",      // primary text (warmer than black)
+  muted: "#8C8480",      // secondary text
+  accent: "#C17B5C",     // warm terracotta accent (used sparingly)
+
+  // Shadows
+  shadow: "0 2px 12px rgba(0,0,0,0.06)",
+  shadowSoft: "0 8px 24px rgba(0,0,0,0.04)",
 };
 
 export const memoryTones = [
-  { name: "Clay", color: palette.clay, bg: "#F1DDD3" },
-  { name: "Sage", color: palette.sage, bg: "#E2ECE7" },
-  { name: "Honey", color: "#D7A84D", bg: "#FFF1C9" },
-  { name: "Lavender grey", color: palette.lavender, bg: "#ECE7F1" },
-  { name: "Soft blue", color: palette.softBlue, bg: "#E3EEF5" },
-  { name: "Rose beige", color: palette.roseBeige, bg: "#F3DFDA" },
+  // Keep a small set of gentle tone accents for memory cards; these should not be used as full-surface fills
+  { name: "Clay", color: palette.accent, bg: "#FFF4F0" },
+  { name: "Sage", color: "#8DA399", bg: "#F1F6F3" },
+  { name: "Lavender", color: "#A99FB7", bg: "#F3F1F6" },
 ];
 
 export const type = {
-  sans: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  serif: 'Lora, Georgia, "Times New Roman", serif',
+  // Editorial serif for headings and confident display
+  serif: '"Playfair Display", Georgia, "Times New Roman", serif',
+  // Legible geometric UI type for body and controls
+  sans: '"DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 };
 
+// App surface — neutral warm page background, no decorative gradients
 export const appSurface = {
   position: "fixed",
   inset: 0,
   zIndex: 900,
-  background: `
-    radial-gradient(circle at 18% -6%, rgba(244,223,167,0.42), transparent 31%),
-    radial-gradient(circle at 100% 2%, rgba(141,163,153,0.20), transparent 34%),
-    linear-gradient(180deg, ${palette.ivory} 0%, #F8EFE4 100%)
-  `,
-  color: palette.ink,
+  background: palette.milk,
+  color: palette.stone,
   overflowY: "auto",
   fontFamily: type.sans,
 };
 
+// Content column. Horizontal padding is a consistent 20px everywhere per design rules.
 export const contentFrame = (bottom = 112) => ({
   maxWidth: 480,
   margin: "0 auto",
   minHeight: "100dvh",
-  padding: `calc(18px + env(safe-area-inset-top, 0px)) 16px calc(${bottom}px + var(--z-keyboard-inset, 0px))`,
+  padding: `calc(18px + env(safe-area-inset-top, 0px)) 20px calc(${bottom}px + var(--z-keyboard-inset, 0px))`,
   display: "grid",
-  gap: 14,
+  gap: 24,
 });
 
 export const card = {
-  border: `1px solid ${palette.border}`,
-  borderRadius: 26,
-  background: "rgba(255,253,248,0.86)",
-  boxShadow: palette.shadowSoft,
-  backdropFilter: "blur(18px)",
+  borderRadius: 20,
+  background: palette.surface,
+  boxShadow: palette.shadow,
+  // keep content readable — no backdropFilter or borders on surfaces
 };
 
 export const label = {
-  color: palette.clay,
-  fontSize: 11,
-  fontWeight: 850,
-  letterSpacing: "0.10em",
+  color: palette.muted,
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: "0.06em",
   textTransform: "uppercase",
 };
 
 export const softCard = (overrides = {}) => ({
   ...card,
-  padding: 16,
+  padding: 20,
   ...overrides,
 });
 
-export const primaryButton = (tone = palette.clay) => ({
+export const primaryButton = (tone = palette.accent) => ({
   border: "none",
   background: tone,
-  color: "#FFFDF8",
+  color: "#FFFFFF",
   borderRadius: 999,
   padding: "12px 16px",
-  fontSize: 13,
-  fontWeight: 900,
+  fontSize: 14,
+  fontWeight: 700,
   cursor: "pointer",
-  boxShadow: `0 12px 28px ${tone}33`,
+  boxShadow: palette.shadowSoft,
+  minHeight: 48,
 });
 
-export const secondaryButton = (tone = palette.clay) => ({
-  border: `1px solid ${tone}45`,
-  background: `${tone}16`,
+export const secondaryButton = (tone = palette.accent) => ({
+  border: `1px solid ${tone}22`,
+  background: "transparent",
   color: tone,
   borderRadius: 999,
   padding: "10px 13px",
   fontSize: 13,
-  fontWeight: 850,
+  fontWeight: 500,
   cursor: "pointer",
+  minHeight: 48,
 });
 
 export const emptyStateCard = {
   ...card,
-  borderStyle: "dashed",
   padding: 24,
   textAlign: "center",
   display: "grid",
-  gap: 10,
+  gap: 12,
 };
 
 export const field = {
   width: "100%",
-  border: `1px solid ${palette.border}`,
-  background: palette.paper,
-  color: palette.ink,
-  borderRadius: 16,
+  border: `1px solid rgba(0,0,0,0.04)`,
+  background: palette.surface,
+  color: palette.stone,
+  borderRadius: 12,
   padding: "12px 13px",
   font: "inherit",
   fontSize: 15,
