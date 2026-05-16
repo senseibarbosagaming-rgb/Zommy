@@ -6,7 +6,7 @@ const COPY = {
   en: {
     today: "Home",
     timeline: "Story",
-    compare: "Then & now",
+    compare: "Rediscover",
     settings: "Settings",
     addMemory: "Save memory",
     addChildFirst: "Add child",
@@ -18,7 +18,7 @@ const COPY = {
   pt: {
     today: "Início",
     timeline: "História",
-    compare: "Antes e agora",
+    compare: "Redescobrir",
     settings: "Definições",
     addMemory: "Guardar memória",
     addChildFirst: "Adicionar criança",
