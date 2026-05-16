@@ -19,6 +19,7 @@ const COPY = {
     emptyReturn: "The memories you save now will come back here later, when they feel different.",
     draftTitle: "Finish the almost-memory",
     draftBody: "You started saving something. Finish it before the details fade.",
+    draftCta: "Continue",
     queuedTitle: "Waiting for connection",
     queuedBody: (count) => `${count} offline ${count === 1 ? "memory" : "memories"} will upload when connection returns.`,
     totalMemories: "memories saved",
@@ -41,6 +42,7 @@ const COPY = {
     emptyReturn: "As memórias que guardas agora vão voltar aqui mais tarde, quando souberem diferente.",
     draftTitle: "Termina a quase-memória",
     draftBody: "Começaste a guardar algo. Termina antes que os detalhes desapareçam.",
+    draftCta: "Continuar",
     queuedTitle: "À espera de ligação",
     queuedBody: (count) => `${count} ${count === 1 ? "memória offline" : "memórias offline"} vai carregar quando a ligação voltar.`,
     totalMemories: "memórias guardadas",
@@ -137,12 +139,13 @@ export default function HomeRitualScreen() {
   const returnEntry = anniversary || favorite || latest;
 
   const openChapter = () => window.dispatchEvent(new CustomEvent("zommy:show-chapter", { detail: { profileId: profile.id } }));
+  const openDraft = () => window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { restoreDraft: true } }));
 
   const returnLabel = anniversary ? copy.fromThisDay : favorite ? copy.favorite : copy.latest;
   const returnTitle = anniversary ? copy.yearsAgo(yearsBetween(anniversary.date, today)) : returnEntry ? formatDate(returnEntry.date, lang) : copy.returnTitle;
 
   return (
-    <main style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
+    <main className="zommy-primary-screen" style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
       <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100dvh", padding: "22px 16px 112px", display: "grid", gap: 14 }}>
         <header style={{ display: "grid", gap: 15 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
@@ -157,12 +160,12 @@ export default function HomeRitualScreen() {
 
         {(draft || queuedCount > 0) && (
           <section style={{ display: "grid", gap: 10 }}>
-            {draft && <StatusCard title={copy.draftTitle} body={copy.draftBody} tone="#FBBF24" />}
+            {draft && <StatusCard title={copy.draftTitle} body={copy.draftBody} cta={copy.draftCta} onClick={openDraft} tone="#FBBF24" />}
             {queuedCount > 0 && <StatusCard title={copy.queuedTitle} body={copy.queuedBody(queuedCount)} tone="#60A5FA" />}
           </section>
         )}
 
-        <section style={{ border: `1px solid ${(profile.color || "#34D399")}55`, borderRadius: 26, padding: 16, background: `linear-gradient(145deg, ${(profile.color || "#34D399")}18, rgba(255,255,255,0.04))`, display: "grid", gap: 13 }}>
+        <section className="zommy-elevated-card" style={{ border: `1px solid ${(profile.color || "#34D399")}55`, borderRadius: 26, padding: 16, background: `linear-gradient(145deg, ${(profile.color || "#34D399")}18, rgba(255,255,255,0.04))`, display: "grid", gap: 13 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 14, alignItems: "center" }}>
             <div>
               <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 27, lineHeight: 1.08, fontWeight: 650 }}>{copy.chapterTitle(monthName(period.start, lang))}</h2>
@@ -173,7 +176,7 @@ export default function HomeRitualScreen() {
           <button onClick={openChapter} style={{ justifySelf: "start", border: "none", background: profile.color || "#34D399", color: "#101418", borderRadius: 999, padding: "11px 14px", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>{copy.chapterCta}</button>
         </section>
 
-        <section style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 26, overflow: "hidden", background: "rgba(255,255,255,0.045)" }}>
+        <section className="zommy-elevated-card" style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 26, overflow: "hidden", background: "rgba(255,255,255,0.045)" }}>
           {returnEntry?.photoUrl ? (
             <img src={returnEntry.photoUrl} alt={`${profile.name} memory`} style={{ width: "100%", height: 250, objectFit: "cover", objectPosition: returnEntry.cover_position || "50% 50%", display: "block" }} />
           ) : (
@@ -199,7 +202,7 @@ export default function HomeRitualScreen() {
 
 function MetricCard({ value, label }) {
   return (
-    <div style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", borderRadius: 18, padding: 14, minHeight: 82, display: "grid", alignContent: "center", gap: 4 }}>
+    <div className="zommy-elevated-card" style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", borderRadius: 18, padding: 14, minHeight: 82, display: "grid", alignContent: "center", gap: 4 }}>
       <div style={{ fontSize: 25, fontWeight: 950 }}>{value}</div>
       <div style={{ color: "rgba(255,255,255,0.54)", fontSize: 12 }}>{label}</div>
     </div>
@@ -207,11 +210,21 @@ function MetricCard({ value, label }) {
 }
 
 function StatusCard({ title, body, cta, onClick, tone = "#34D399" }) {
-  return (
-    <article style={{ border: `1px solid ${tone}55`, background: `${tone}16`, borderRadius: 18, padding: 14, display: "grid", gap: 7 }}>
+  const content = (
+    <>
       <div style={{ color: tone, fontSize: 13, fontWeight: 950 }}>{title}</div>
       <p style={{ color: "rgba(255,255,255,0.68)", fontSize: 13, lineHeight: 1.5 }}>{body}</p>
-      {cta && <button onClick={onClick} style={{ justifySelf: "start", border: "none", background: tone, color: "#101418", borderRadius: 999, padding: "8px 11px", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>{cta}</button>}
+      {cta && <div style={{ justifySelf: "start", background: tone, color: "#101418", borderRadius: 999, padding: "8px 11px", fontSize: 12, fontWeight: 950 }}>{cta}</div>}
+    </>
+  );
+
+  if (onClick) {
+    return <button className="zommy-elevated-card" onClick={onClick} style={{ width: "100%", textAlign: "left", border: `1px solid ${tone}55`, background: `${tone}16`, borderRadius: 18, padding: 14, display: "grid", gap: 7, cursor: "pointer" }}>{content}</button>;
+  }
+
+  return (
+    <article className="zommy-elevated-card" style={{ border: `1px solid ${tone}55`, background: `${tone}16`, borderRadius: 18, padding: 14, display: "grid", gap: 7 }}>
+      {content}
     </article>
   );
 }
