@@ -97,7 +97,6 @@ const storagePathsFor = (entry) => {
   return [...paths];
 };
 
-
 const shareFileFromUrl = async ({ url, title, text }) => {
   if (!url || !navigator.share) return false;
 
@@ -227,18 +226,29 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1800, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }} onClick={onClose}>
-      <article role="dialog" aria-modal="true" aria-labelledby="zommy-memory-detail-title" style={{ width: "100%", maxWidth: 452, maxHeight: "92dvh", overflowY: "auto", background: "#111820", color: "#fff", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 24, boxShadow: "0 24px 90px rgba(0,0,0,0.55)", fontFamily: "Inter, system-ui, sans-serif" }} onClick={(event) => event.stopPropagation()}>
-        {selectedPhoto?.url && <img src={selectedPhoto.url} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", maxHeight: 430, objectFit: "cover", objectPosition: selectedPhoto.position || entry.cover_position || "50% 50%", display: "block" }} />}
+    <main className="zommy-primary-screen" style={{ position: "fixed", inset: 0, zIndex: 1800, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
+      <div style={{ maxWidth: 480, minHeight: "100dvh", margin: "0 auto", display: "grid", alignContent: "start", paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+        <header style={{ position: "sticky", top: 0, zIndex: 3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "calc(10px + env(safe-area-inset-top, 0px)) 14px 10px", background: "rgba(16,20,24,0.88)", backdropFilter: "blur(18px)", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+          <button onClick={onClose} aria-label={copy.close} disabled={busy} style={backButton()}>←</button>
+          <div style={{ minWidth: 0, textAlign: "center" }}>
+            <div style={{ color: profile?.color || "#34D399", fontSize: 11, fontWeight: 950, textTransform: "uppercase", letterSpacing: "0.7px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.emoji || "👶"} {profile?.name || "Memory"}</div>
+            <div style={{ color: "rgba(255,255,255,0.58)", fontSize: 12, marginTop: 2 }}>{displayDate}</div>
+          </div>
+          <button onClick={shareMemory} aria-label={copy.share} disabled={busy} style={backButton()}>↗</button>
+        </header>
 
-        <div style={{ padding: 16, display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-            <div>
-              <div style={{ color: profile?.color || "#34D399", fontSize: 12, fontWeight: 950, textTransform: "uppercase", letterSpacing: "0.7px" }}>{profile?.emoji || "👶"} {profile?.name || "Memory"}</div>
-              <h2 id="zommy-memory-detail-title" style={{ fontFamily: "Lora, Georgia, serif", fontSize: 24, lineHeight: 1.15, marginTop: 4 }}>{displayDate}</h2>
-              {displayAge && <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 }}>{displayAge}</p>}
-            </div>
-            <button onClick={onClose} aria-label={copy.close} disabled={busy} style={iconButton()}>×</button>
+        {selectedPhoto?.url ? (
+          <section style={{ background: "#050608" }}>
+            <img src={selectedPhoto.url} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", maxHeight: "62dvh", objectFit: "cover", objectPosition: selectedPhoto.position || entry.cover_position || "50% 50%", display: "block" }} />
+          </section>
+        ) : (
+          <section style={{ minHeight: 280, display: "grid", placeItems: "center", background: "rgba(255,255,255,0.035)", fontSize: 42 }}>{profile?.emoji || "📷"}</section>
+        )}
+
+        <div style={{ padding: 16, display: "grid", gap: 14 }}>
+          <div>
+            <h1 id="zommy-memory-detail-title" style={{ fontFamily: "Lora, Georgia, serif", fontSize: 30, lineHeight: 1.08, fontWeight: 650 }}>{displayDate}</h1>
+            {displayAge && <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginTop: 5 }}>{displayAge}</p>}
           </div>
 
           {mode === "edit" ? (
@@ -249,7 +259,7 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
               </label>
               <label style={fieldLabel()}>
                 {copy.note}
-                <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} disabled={busy} style={{ ...inputStyle(), resize: "vertical", lineHeight: 1.55 }} />
+                <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={5} disabled={busy} style={{ ...inputStyle(), resize: "vertical", lineHeight: 1.55 }} />
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
                 <button onClick={() => { setMode("view"); setNote(entry.note || ""); setDate(entry.date || ""); setFavorite(Boolean(entry.favorite)); }} disabled={busy} style={secondaryButton()}>{copy.cancel}</button>
@@ -258,7 +268,7 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
             </section>
           ) : mode === "confirmDelete" ? (
             <section style={{ border: "1px solid rgba(248,113,113,0.34)", background: "rgba(248,113,113,0.1)", borderRadius: 18, padding: 14, display: "grid", gap: 12 }}>
-              <h3 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 22, lineHeight: 1.18 }}>{copy.deleteTitle}</h3>
+              <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 24, lineHeight: 1.18 }}>{copy.deleteTitle}</h2>
               <p style={{ color: "rgba(255,255,255,0.72)", fontSize: 14, lineHeight: 1.6 }}>{copy.deleteBody(profile?.name || "", displayDate)}</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
                 <button onClick={() => setMode("view")} disabled={busy} style={secondaryButton()}>{copy.cancel}</button>
@@ -268,35 +278,37 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
           ) : (
             <>
               {galleryPhotos.length > 1 && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7 }}>
+                <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
                   {galleryPhotos.map((photo, index) => (
-                    <button key={photo.path || photo.url || index} type="button" onClick={() => setSelectedPhotoIndex(index)} disabled={busy} aria-label={`Show photo ${index + 1}`} style={{ border: `2px solid ${index === selectedPhotoIndex ? profile?.color || "#34D399" : "transparent"}`, borderRadius: 13, overflow: "hidden", padding: 0, background: "rgba(255,255,255,0.06)", aspectRatio: "1", cursor: busy ? "wait" : "pointer" }}>
+                    <button key={photo.path || photo.url || index} type="button" onClick={() => setSelectedPhotoIndex(index)} disabled={busy} aria-label={`Show photo ${index + 1}`} className="zommy-elevated-card" style={{ flex: "0 0 68px", border: `2px solid ${index === selectedPhotoIndex ? profile?.color || "#34D399" : "transparent"}`, borderRadius: 15, overflow: "hidden", padding: 0, background: "rgba(255,255,255,0.06)", aspectRatio: "1", cursor: busy ? "wait" : "pointer" }}>
                       <img src={photo.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: photo.position || "50% 50%", display: "block" }} />
                     </button>
                   ))}
                 </div>
               )}
-              <p style={{ color: note ? "rgba(255,255,255,0.76)" : "rgba(255,255,255,0.42)", lineHeight: 1.6, fontSize: 15 }}>{note || copy.noteEmpty}</p>
-              <button onClick={toggleFavorite} disabled={busy} style={{ border: `1px solid ${favorite ? "#FBBF24" : "rgba(255,255,255,0.14)"}`, background: favorite ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.05)", color: favorite ? "#FBBF24" : "#fff", borderRadius: 15, minHeight: 48, fontSize: 14, fontWeight: 950, cursor: busy ? "wait" : "pointer" }}>
+              <section style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", borderRadius: 20, padding: 15 }}>
+                <p style={{ color: note ? "rgba(255,255,255,0.78)" : "rgba(255,255,255,0.42)", lineHeight: 1.65, fontSize: 15 }}>{note || copy.noteEmpty}</p>
+              </section>
+              <button className="zommy-elevated-card" onClick={toggleFavorite} disabled={busy} style={{ border: `1px solid ${favorite ? "#FBBF24" : "rgba(255,255,255,0.14)"}`, background: favorite ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.05)", color: favorite ? "#FBBF24" : "#fff", borderRadius: 16, minHeight: 50, fontSize: 14, fontWeight: 950, cursor: busy ? "wait" : "pointer" }}>
                 {favorite ? "★ " + copy.removeFavorite : "☆ " + copy.favorite}
               </button>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                <button onClick={() => setMode("edit")} disabled={busy} style={secondaryButton()}>{copy.edit}</button>
-                <button onClick={shareMemory} disabled={busy} style={secondaryButton()}>{copy.share}</button>
-                <button onClick={() => setMode("confirmDelete")} disabled={busy} style={dangerGhostButton()}>{copy.delete}</button>
+                <button className="zommy-elevated-card" onClick={() => setMode("edit")} disabled={busy} style={secondaryButton()}>{copy.edit}</button>
+                <button className="zommy-elevated-card" onClick={shareMemory} disabled={busy} style={secondaryButton()}>{copy.share}</button>
+                <button className="zommy-elevated-card" onClick={() => setMode("confirmDelete")} disabled={busy} style={dangerGhostButton()}>{copy.delete}</button>
               </div>
             </>
           )}
 
           {message && <div role="status" style={{ color: message === copy.failed ? "#fca5a5" : "rgba(255,255,255,0.62)", fontSize: 13, fontWeight: 800 }}>{message}</div>}
         </div>
-      </article>
-    </div>
+      </div>
+    </main>
   );
 }
 
-function iconButton() {
-  return { border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "#fff", borderRadius: 999, minWidth: 44, minHeight: 44, cursor: "pointer", fontSize: 20 };
+function backButton() {
+  return { border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 999, minWidth: 42, minHeight: 42, cursor: "pointer", fontSize: 18, fontWeight: 850 };
 }
 
 function fieldLabel() {
@@ -304,7 +316,7 @@ function fieldLabel() {
 }
 
 function inputStyle() {
-  return { width: "100%", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 13, padding: "12px 13px", font: "inherit", fontSize: 15 };
+  return { width: "100%", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 13, padding: "12px 13px", font: "inherit", fontSize: 16 };
 }
 
 function secondaryButton() {
