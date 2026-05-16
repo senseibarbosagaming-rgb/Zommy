@@ -4,6 +4,8 @@ import { supabase } from "./supabase";
 export const PRIMARY_SCREENS = {
   today: { show: "zommy:show-today", hide: "zommy:hide-today" },
   timeline: { show: "zommy:show-timeline", hide: "zommy:hide-timeline" },
+  compare: { show: "zommy:show-compare", hide: "zommy:hide-compare" },
+  family: { show: "zommy:show-family-sharing", hide: "zommy:hide-family-sharing" },
   settings: { show: "zommy:show-settings", hide: "zommy:hide-settings" },
 };
 

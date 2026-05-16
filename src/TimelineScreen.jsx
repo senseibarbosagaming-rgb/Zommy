@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import MemoryDetailModal from "./MemoryDetailModal";
-import { appSurface, contentFrame, palette, type } from "./designSystem";
+import { appSurface, card, contentFrame, emptyStateCard, palette, primaryButton, type } from "./designSystem";
 import { supabase } from "./supabase";
 import { useZommyData } from "./useZommyData";
 
@@ -16,7 +16,7 @@ const TAGS = [
 
 const COPY = {
   en: {
-    title: "Timeline",
+    title: "Memories",
     allChildren: "All children",
     search: "Search memories",
     searchPlaceholder: "grandma, beach, first word…",
@@ -31,8 +31,8 @@ const COPY = {
     chaptersTab: "Chapters",
     calendarTab: "Calendar",
     onThisDay: "On this day",
-    noChildren: "Add a child first to build a timeline.",
-    noResults: "No memories match this view yet.",
+    noChildren: "Create a child profile first, then Zommy will start keeping their story here.",
+    noResults: "Start with today.|One photo. One sentence. That’s enough.",
     noCalendar: "No memories in this month.",
     noOnThisDay: "No memories from this day in previous years yet.",
     noChapters: "Chapters will appear here as monthly stories are drafted or locked.",
@@ -49,7 +49,7 @@ const COPY = {
     age3plus: "Age 3+",
   },
   pt: {
-    title: "Timeline",
+    title: "Memórias",
     allChildren: "Todas as crianças",
     search: "Pesquisar memórias",
     searchPlaceholder: "avó, praia, primeira palavra…",
@@ -259,7 +259,7 @@ export default function TimelineScreen() {
         </header>
 
         {profiles.length === 0 ? (
-          <section style={{ border: `1px dashed ${palette.borderStrong}`, borderRadius: 20, padding: 24, color: palette.inkMuted, textAlign: "center", lineHeight: 1.55 }}>{copy.noChildren}</section>
+          <EmptyTimeline copy={{ headline: "Add the first child story.", body: copy.noChildren, cta: "Add child" }} onClick={() => window.dispatchEvent(new CustomEvent("zommy:open-profile-creator"))} />
         ) : (
           <>
             <section style={{ display: "flex", gap: 7, overflowX: "auto", padding: "1px 4px 2px" }}>
@@ -330,14 +330,14 @@ export default function TimelineScreen() {
             ) : (
               <>
                 {!loading && visibleEntries.length === 0 && (
-                  <section style={{ border: `1px dashed ${palette.borderStrong}`, borderRadius: 20, padding: 24, color: palette.inkMuted, textAlign: "center", lineHeight: 1.55 }}>{emptyText}</section>
+                  <EmptyTimeline copy={{ headline: (emptyText.includes("|") ? emptyText.split("|")[0] : "A quieter page for now."), body: (emptyText.includes("|") ? emptyText.split("|")[1] : emptyText), cta: copy.addMemory }} onClick={openComposer} />
                 )}
 
                 <section style={{ display: "grid", gap: 16 }}>
                   {monthKeys.map((month) => (
                     <div key={month} style={{ display: "grid", gap: 8 }}>
-                      <h2 style={{ color: palette.inkFaint, fontSize: 11, fontWeight: 900, letterSpacing: "0.7px", textTransform: "uppercase", padding: "0 4px" }}>{monthLabel(`${month}-01`, lang)}</h2>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5 }}>
+                      <h2 style={{ fontFamily: type.serif, color: palette.ink, fontSize: 25, lineHeight: 1.1, fontWeight: 650, padding: "8px 4px 2px" }}>{monthLabel(`${month}-01`, lang)}</h2>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
                         {grouped[month].map((entry) => <MemoryCard key={entry.id} entry={entry} profile={profileById[entry.profile_id]} lang={lang} onClick={() => setSelectedEntry(entry)} />)}
                       </div>
                     </div>
@@ -350,7 +350,7 @@ export default function TimelineScreen() {
       </div>
 
       {profiles.length > 0 && (
-        <button onClick={openComposer} aria-label={copy.addMemory} style={{ position: "fixed", right: "calc(18px + env(safe-area-inset-right, 0px))", bottom: "calc(92px + env(safe-area-inset-bottom, 0px))", zIndex: 910, width: 50, height: 50, border: "none", borderRadius: 999, background: palette.sage, color: palette.ink, fontSize: 30, fontWeight: 800, lineHeight: 1, boxShadow: palette.shadow, cursor: "pointer" }}>+</button>
+        <button onClick={openComposer} aria-label={copy.addMemory} style={{ position: "fixed", right: "calc(18px + env(safe-area-inset-right, 0px))", bottom: "calc(92px + env(safe-area-inset-bottom, 0px))", zIndex: 910, width: 54, height: 54, border: "none", borderRadius: 22, background: palette.clay, color: "#FFFDF8", fontSize: 30, fontWeight: 800, lineHeight: 1, boxShadow: palette.shadow, cursor: "pointer" }}>+</button>
       )}
 
       {selectedEntry && (
@@ -402,16 +402,16 @@ function ChaptersView({ chapters, entries, profiles, copy }) {
 
 function MemoryCard({ entry, profile, lang, onClick }) {
   return (
-    <button aria-label={`${profile?.name || "Child"} memory from ${entry.date}`} onClick={onClick} style={{ border: `1px solid ${palette.border}`, background: "rgba(255,253,248,0.70)", color: palette.ink, borderRadius: 12, padding: 0, overflow: "hidden", textAlign: "left", cursor: "pointer", position: "relative", aspectRatio: "3 / 4", minWidth: 0 }}>
+    <button className="zommy-elevated-card" aria-label={`${profile?.name || "Child"} memory from ${entry.date}`} onClick={onClick} style={{ border: `1px solid ${palette.border}`, background: palette.paper, color: palette.ink, borderRadius: 24, padding: 0, overflow: "hidden", textAlign: "left", cursor: "pointer", position: "relative", aspectRatio: "3 / 4.2", minWidth: 0, boxShadow: palette.shadowLift }}>
       {entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} /> : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", background: "rgba(255,248,239,0.74)", fontSize: 24 }}>{profile?.emoji || "📷"}</div>}
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.28), transparent 36%, rgba(0,0,0,0.5))", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(46,41,35,0.18), transparent 42%, rgba(46,41,35,0.58))", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: 6, left: 6, right: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, pointerEvents: "none" }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: profile?.color || palette.sage, boxShadow: "0 1px 6px rgba(0,0,0,0.35)" }} />
         {entry.favorite && <span style={{ color: palette.honey, fontSize: 12, textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}>★</span>}
       </div>
       <div style={{ position: "absolute", left: 6, right: 6, bottom: 6, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 4, pointerEvents: "none" }}>
         <span style={{ color: "rgba(255,255,255,0.92)", fontSize: 10, lineHeight: 1.05, fontWeight: 850, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.emoji || "👶"} {profile?.name || "Memory"}</span>
-        <span style={{ color: palette.inkMuted, fontSize: 9, fontWeight: 800, whiteSpace: "nowrap" }}>{formatDate(entry.date, lang)}</span>
+        <span style={{ color: "rgba(255,255,255,0.80)", fontSize: 10, fontWeight: 800, whiteSpace: "nowrap" }}>{formatDate(entry.date, lang)}</span>
       </div>
     </button>
   );
@@ -454,6 +454,17 @@ const filterCountBadge = () => ({
 });
 
 const labelStyle = () => ({ display: "grid", gap: 5, color: palette.inkFaint, fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.6px" });
-const inputStyle = () => ({ width: "100%", border: `1px solid ${palette.border}`, background: "rgba(255,253,248,0.74)", color: palette.ink, borderRadius: 12, padding: "11px 12px", font: "inherit", fontSize: 15 });
-const selectStyle = () => ({ border: `1px solid ${palette.border}`, background: palette.paper, color: palette.ink, borderRadius: 12, padding: "10px 11px", font: "inherit", minWidth: 0, fontSize: 13 });
-const toggleButton = (active, color) => ({ border: `1px solid ${active ? color : palette.border}`, background: active ? `${color}22` : "rgba(255,253,248,0.70)", color: active ? color : palette.inkMuted, borderRadius: 12, minHeight: 39, fontSize: 13, fontWeight: 850, cursor: "pointer" });
+const inputStyle = () => ({ width: "100%", border: `1px solid ${palette.border}`, background: "rgba(255,253,248,0.74)", color: palette.ink, borderRadius: 20, padding: "11px 12px", font: "inherit", fontSize: 15 });
+const selectStyle = () => ({ border: `1px solid ${palette.border}`, background: palette.paper, color: palette.ink, borderRadius: 20, padding: "10px 11px", font: "inherit", minWidth: 0, fontSize: 13 });
+const toggleButton = (active, color) => ({ border: `1px solid ${active ? color : palette.border}`, background: active ? `${color}22` : "rgba(255,253,248,0.70)", color: active ? color : palette.inkMuted, borderRadius: 20, minHeight: 39, fontSize: 13, fontWeight: 850, cursor: "pointer" });
+
+
+function EmptyTimeline({ copy, onClick }) {
+  return (
+    <section style={emptyStateCard}>
+      <h2 style={{ fontFamily: type.serif, fontSize: 28, lineHeight: 1.12, color: palette.ink }}>{copy.headline}</h2>
+      <p style={{ color: palette.inkMuted, lineHeight: 1.6 }}>{copy.body}</p>
+      <button className="b" onClick={onClick} style={{ ...primaryButton(), justifySelf: "center" }}>{copy.cta}</button>
+    </section>
+  );
+}

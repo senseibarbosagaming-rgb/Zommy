@@ -10,6 +10,7 @@ import SettingsScreen from "./SettingsScreen";
 import PWAExperienceLayer from "./PWAExperienceLayer";
 import HomeRitualScreen from "./HomeRitualScreen";
 import TimelineScreen from "./TimelineScreen";
+import CompareScreen from "./CompareScreen";
 import ChildProfileCreator from "./ChildProfileCreator";
 import ZommyIntro from "./ZommyIntro";
 import ChapterScreen from "./ChapterScreen";
@@ -62,6 +63,7 @@ function AuthedExperience() {
       <HomeRitualScreen />
       <FamilyCircleHomeLayer />
       <TimelineScreen />
+      <CompareScreen />
       <ChaptersLibrary />
       <ChapterScreen />
       <SettingsScreen />
@@ -141,9 +143,9 @@ export default function App() {
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Inter:wght@400;600;700;800;900&display=swap');
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-    html,body{background:#FFF4E8;overscroll-behavior:none}
+    html,body{background:#FBF7F0;overscroll-behavior:none}
     button,input,textarea,select{font:inherit}
-    .b{transition:transform .12s,opacity .12s}.b:active{transform:scale(.98);opacity:.86}
+    .b{transition:transform .14s ease,opacity .14s ease,box-shadow .14s ease}.b:active{transform:scale(.985);opacity:.88}.b:focus-visible{outline:3px solid rgba(185,120,95,.28);outline-offset:2px}
     .zommy-primary-screen{animation:zommy-screen-enter .22s cubic-bezier(.2,.8,.2,1) both;will-change:transform,opacity}
     .zommy-elevated-card{transition:transform .16s ease,opacity .16s ease,box-shadow .16s ease}.zommy-elevated-card:active{transform:scale(.985);opacity:.92}.zommy-glass{background:rgba(255,253,248,.76);border:1px solid rgba(122,77,57,.14);box-shadow:0 16px 44px rgba(122,77,57,.10);backdrop-filter:blur(18px)}
     @keyframes zommy-screen-enter{from{opacity:.01;transform:translate3d(0,10px,0) scale(.992)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
@@ -187,7 +189,7 @@ export default function App() {
       <div style={{ fontFamily: type.sans, background: `radial-gradient(circle at 12% -8%, rgba(227,184,92,.22), transparent 32%), radial-gradient(circle at 100% 0%, rgba(127,169,149,.16), transparent 34%), ${bg}`, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", position: "relative", overflow: "hidden" }}>
         <style>{css}</style>
         {toast && <Toast message={toast} dark={dark} bottom={100} />}
-        <header style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", zIndex: 120, width: "100%", maxWidth: 480, minHeight: 68, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: dark ? "rgba(24,18,15,.78)" : "rgba(255,253,248,.82)", backdropFilter: "blur(18px)", borderBottom: `1px solid ${border}` }}>
+        <header style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", zIndex: 120, width: "100%", maxWidth: 480, minHeight: 68, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: dark ? "rgba(24,18,15,.78)" : "rgba(255,253,248,.88)", backdropFilter: "blur(18px)", borderBottom: `1px solid ${border}` }}>
           <div aria-label="Zommy" style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 24, fontWeight: 900, letterSpacing: "-.8px" }}><BrandMark size={38} /><span>Zommy</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
             {avatar ? <img src={avatar} alt="" referrerPolicy="no-referrer" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} /> : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(217,130,107,.16)", color: "#D9826B", display: "grid", placeItems: "center", fontWeight: 900 }}>{name.slice(0,1).toUpperCase()}</div>}
