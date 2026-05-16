@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppShell } from "./AppShellContext";
+import { palette, type } from "./designSystem";
 import { useZommyData } from "./useZommyData";
 
 const COPY = {
   en: {
     today: "Home",
     timeline: "Story",
-    compare: "Rediscover",
     settings: "Settings",
     addMemory: "Save memory",
     addChildFirst: "Add child",
@@ -18,7 +18,6 @@ const COPY = {
   pt: {
     today: "Início",
     timeline: "História",
-    compare: "Redescobrir",
     settings: "Definições",
     addMemory: "Guardar memória",
     addChildFirst: "Adicionar criança",
@@ -45,7 +44,7 @@ export default function NavExperienceLayer() {
   const [chooserMode, setChooserMode] = useState(null);
 
   const copy = useMemo(getCopy, []);
-  const showLabels = memoryCount < 4;
+  const showLabels = memoryCount < 6;
   const activeTab = activeScreen || "today";
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) || (profiles.length === 1 ? profiles[0] : null);
 
@@ -100,11 +99,6 @@ export default function NavExperienceLayer() {
       return;
     }
 
-    if (tab === "compare") {
-      openPrimaryScreen("compare", { profileId: activeProfile?.id || activeProfileId || "" });
-      refresh();
-      return;
-    }
 
     if (tab === "settings") {
       openPrimaryScreen("settings", { profileId: activeProfile?.id || activeProfileId || "" });
@@ -119,16 +113,15 @@ export default function NavExperienceLayer() {
       : copy.addMemory;
 
   const navItems = [
-    { id: "today", icon: "⌂", label: copy.today, color: "#D9826B" },
-    { id: "timeline", icon: "♡", label: copy.timeline, color: "#8FB9A8" },
-    { id: "compare", icon: "◐", label: copy.compare, color: "#F2C879" },
-    { id: "settings", icon: "☼", label: copy.settings, color: "#BCA8D7" },
+    { id: "today", icon: "⌂", label: copy.today, color: palette.clay },
+    { id: "timeline", icon: "♡", label: copy.timeline, color: palette.sage },
+    { id: "settings", icon: "☼", label: copy.settings, color: palette.lavender },
   ];
 
   const renderNavButton = (item) => {
     const isActive = activeTab === item.id;
     return (
-      <button key={item.id} aria-label={item.label} onClick={() => handleTab(item.id)} className="b" style={{ minWidth: 0, height: showLabels ? 54 : 42, border: "none", borderRadius: 18, background: isActive ? "rgba(255,253,247,0.72)" : "transparent", color: isActive ? item.color : "#80695B", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: showLabels ? 3 : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer" }}>
+      <button key={item.id} aria-label={item.label} onClick={() => handleTab(item.id)} className="b" style={{ minWidth: 0, height: showLabels ? 54 : 42, border: "none", borderRadius: 18, background: isActive ? "rgba(255,253,248,0.90)" : "transparent", color: isActive ? item.color : palette.inkMuted, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: showLabels ? 3 : 0, fontFamily: type.sans, cursor: "pointer" }}>
         <span style={{ fontSize: 22, lineHeight: 1 }}>{item.icon}</span>
         {showLabels && <span style={{ fontSize: 10, lineHeight: 1, fontWeight: 800, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>}
       </button>
@@ -140,7 +133,7 @@ export default function NavExperienceLayer() {
       {chooserMode && (
         <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "rgba(58,42,34,0.42)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }} onClick={() => setChooserMode(null)}>
           <div style={{ width: "100%", maxWidth: 452, background: "#FFFDF7", color: "#3A2A22", border: "1px solid rgba(122,77,57,0.16)", borderRadius: 26, padding: 18, boxShadow: "0 24px 90px rgba(122,77,57,0.22)" }} onClick={(event) => event.stopPropagation()}>
-            <div style={{ fontFamily: "Lora, Georgia, serif", fontSize: 22, fontWeight: 650, marginBottom: 14 }}>
+            <div style={{ fontFamily: type.serif, fontSize: 22, fontWeight: 650, marginBottom: 14 }}>
               {chooserMode === "timeline" ? copy.chooseTimeline : copy.chooseChild}
             </div>
             <div style={{ display: "grid", gap: 10 }}>
@@ -167,9 +160,9 @@ export default function NavExperienceLayer() {
         </div>
       )}
 
-      <nav aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 1100, background: "#F2DDCC", boxShadow: "0 -1px 0 rgba(122,77,57,0.12), 0 -14px 34px rgba(122,77,57,0.12)", padding: showLabels ? "9px 10px calc(13px + env(safe-area-inset-bottom, 0px))" : "10px 12px calc(14px + env(safe-area-inset-bottom, 0px))", display: "grid", gridTemplateColumns: "1fr 1fr minmax(78px, 1.26fr) 1fr 1fr", alignItems: "center", gap: 4 }}>
+      <nav aria-label="Main navigation" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 1100, background: "rgba(255,253,248,0.84)", backdropFilter: "blur(22px)", borderTop: `1px solid ${palette.border}`, boxShadow: "0 -18px 48px rgba(122,77,57,0.12)", padding: showLabels ? "9px 10px calc(13px + env(safe-area-inset-bottom, 0px))" : "10px 12px calc(14px + env(safe-area-inset-bottom, 0px))", display: "grid", gridTemplateColumns: "1fr 1fr minmax(82px, 1.18fr) 1fr", alignItems: "center", gap: 4 }}>
         {navItems.slice(0, 2).map(renderNavButton)}
-        <button aria-label={plusLabel} onClick={handlePlus} className="b" style={{ minWidth: 0, minHeight: showLabels ? 58 : 44, borderRadius: showLabels ? 22 : 999, border: "2px solid #D9826B", background: "#FFFDF7", color: "#D9826B", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2, padding: showLabels ? "6px 8px" : 0, fontFamily: "Inter, system-ui, sans-serif", cursor: "pointer", boxShadow: "0 10px 24px rgba(217,130,107,0.2)" }}>
+        <button aria-label={plusLabel} onClick={handlePlus} className="b" style={{ minWidth: 0, minHeight: showLabels ? 58 : 44, borderRadius: showLabels ? 22 : 999, border: `2px solid ${palette.clay}`, background: "#FFFDF7", color: palette.clay, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2, padding: showLabels ? "6px 8px" : 0, fontFamily: type.sans, cursor: "pointer", boxShadow: "0 14px 34px rgba(201,121,93,0.22)" }}>
           <span style={{ fontSize: showLabels ? 23 : 28, fontWeight: 800, lineHeight: 1, marginTop: showLabels ? -1 : -3 }}>+</span>
           {showLabels && <span style={{ fontSize: 10, lineHeight: 1.05, fontWeight: 900, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{plusLabel}</span>}
         </button>

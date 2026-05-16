@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { monthBounds } from "./capsuleCore";
+import { appSurface, card, contentFrame, label, palette, type } from "./designSystem";
 import { useZommyData } from "./useZommyData";
 
 const COPY = {
@@ -145,16 +146,16 @@ export default function HomeRitualScreen() {
   const returnTitle = anniversary ? copy.yearsAgo(yearsBetween(anniversary.date, today)) : returnEntry ? formatDate(returnEntry.date, lang) : copy.returnTitle;
 
   return (
-    <main className="zommy-primary-screen" style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
-      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100dvh", padding: "22px 16px 112px", display: "grid", gap: 14 }}>
+    <main className="zommy-primary-screen" style={appSurface}>
+      <div style={contentFrame()}>
         <header style={{ display: "grid", gap: 15 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
             <div>
-              <div style={{ color: profile.color || "#34D399", fontSize: 12, fontWeight: 950, letterSpacing: "0.9px", textTransform: "uppercase" }}>{copy.today}</div>
-              <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 40, lineHeight: 1.02, fontWeight: 650, marginTop: 5 }}>{profile.name}</h1>
-              <p style={{ color: "rgba(255,255,255,0.64)", marginTop: 6, fontSize: 14 }}>{copy.ageLine(childAge(profile.birthdate, lang))}</p>
+              <div style={{ ...label, color: profile.color || palette.clay }}>{copy.today}</div>
+              <h1 style={{ fontFamily: type.serif, fontSize: 40, lineHeight: 1.02, fontWeight: 650, marginTop: 5 }}>{profile.name}</h1>
+              <p style={{ color: palette.inkMuted, marginTop: 6, fontSize: 14 }}>{copy.ageLine(childAge(profile.birthdate, lang))}</p>
             </div>
-            <div style={{ width: 64, height: 64, borderRadius: 22, background: `${profile.color || "#34D399"}22`, color: profile.color || "#34D399", display: "grid", placeItems: "center", fontSize: 34, boxShadow: `0 16px 44px ${(profile.color || "#34D399")}1f` }}>{profile.emoji || "👶"}</div>
+            <div style={{ width: 64, height: 64, borderRadius: 22, background: `linear-gradient(145deg, ${profile.color || palette.sage}22, rgba(255,253,248,.86))`, color: profile.color || "#34D399", display: "grid", placeItems: "center", fontSize: 34, boxShadow: palette.shadowSoft }}>{profile.emoji || "👶"}</div>
           </div>
         </header>
 
@@ -165,27 +166,27 @@ export default function HomeRitualScreen() {
           </section>
         )}
 
-        <section className="zommy-elevated-card" style={{ border: `1px solid ${(profile.color || "#34D399")}55`, borderRadius: 26, padding: 16, background: `linear-gradient(145deg, ${(profile.color || "#34D399")}18, rgba(255,255,255,0.04))`, display: "grid", gap: 13 }}>
+        <section className="zommy-elevated-card" style={{ ...card, border: `1px solid ${(profile.color || palette.sage)}44`, padding: 18, background: `linear-gradient(145deg, ${(profile.color || palette.sage)}18, rgba(255,253,248,0.84))`, display: "grid", gap: 13 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 14, alignItems: "center" }}>
             <div>
-              <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 27, lineHeight: 1.08, fontWeight: 650 }}>{copy.chapterTitle(monthName(period.start, lang))}</h2>
-              <p style={{ color: "rgba(255,255,255,0.68)", lineHeight: 1.55, fontSize: 14, marginTop: 6 }}>{copy.chapterBody(monthEntries.length, profile.name)}</p>
+              <h2 style={{ fontFamily: type.serif, fontSize: 27, lineHeight: 1.08, fontWeight: 650 }}>{copy.chapterTitle(monthName(period.start, lang))}</h2>
+              <p style={{ color: palette.inkMuted, lineHeight: 1.55, fontSize: 14, marginTop: 6 }}>{copy.chapterBody(monthEntries.length, profile.name)}</p>
             </div>
-            <div style={{ width: 54, height: 54, borderRadius: 18, background: "rgba(255,255,255,0.08)", display: "grid", placeItems: "center", fontSize: 28 }}>✍️</div>
+            <div style={{ width: 54, height: 54, borderRadius: 18, background: "rgba(255,248,239,0.9)", display: "grid", placeItems: "center", fontSize: 28 }}>✍️</div>
           </div>
-          <button onClick={openChapter} style={{ justifySelf: "start", border: "none", background: profile.color || "#34D399", color: "#101418", borderRadius: 999, padding: "11px 14px", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>{copy.chapterCta}</button>
+          <button onClick={openChapter} style={{ justifySelf: "start", border: "none", background: profile.color || "#34D399", color: palette.ink, borderRadius: 999, padding: "11px 14px", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>{copy.chapterCta}</button>
         </section>
 
-        <section className="zommy-elevated-card" style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 26, overflow: "hidden", background: "rgba(255,255,255,0.045)" }}>
+        <section className="zommy-elevated-card" style={{ ...card, overflow: "hidden" }}>
           {returnEntry?.photoUrl ? (
             <img src={returnEntry.photoUrl} alt={`${profile.name} memory`} style={{ width: "100%", height: 250, objectFit: "cover", objectPosition: returnEntry.cover_position || "50% 50%", display: "block" }} />
           ) : (
-            <div style={{ height: 190, display: "grid", placeItems: "center", color: "rgba(255,255,255,0.36)", fontSize: 42, background: "rgba(255,255,255,0.035)" }}>{profile.emoji || "📷"}</div>
+            <div style={{ height: 190, display: "grid", placeItems: "center", color: palette.inkFaint, fontSize: 42, background: "rgba(255,248,239,0.74)" }}>{profile.emoji || "📷"}</div>
           )}
           <div style={{ padding: 16, display: "grid", gap: 8 }}>
-            <div style={{ color: anniversary ? "#A78BFA" : favorite ? "#FBBF24" : "rgba(255,255,255,0.56)", fontSize: 11, fontWeight: 950, letterSpacing: "0.8px", textTransform: "uppercase" }}>{returnLabel}</div>
-            <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 23, lineHeight: 1.2, fontWeight: 650 }}>{returnTitle}</h2>
-            {returnEntry?.note ? <p style={{ color: "rgba(255,255,255,0.72)", lineHeight: 1.58, fontSize: 14 }}>{returnEntry.note}</p> : <p style={{ color: "rgba(255,255,255,0.62)", lineHeight: 1.58, fontSize: 14 }}>{copy.emptyReturn}</p>}
+            <div style={{ color: anniversary ? "#A78BFA" : favorite ? palette.honey : palette.inkFaint, fontSize: 11, fontWeight: 950, letterSpacing: "0.8px", textTransform: "uppercase" }}>{returnLabel}</div>
+            <h2 style={{ fontFamily: type.serif, fontSize: 23, lineHeight: 1.2, fontWeight: 650 }}>{returnTitle}</h2>
+            {returnEntry?.note ? <p style={{ color: palette.inkMuted, lineHeight: 1.58, fontSize: 14 }}>{returnEntry.note}</p> : <p style={{ color: palette.inkMuted, lineHeight: 1.58, fontSize: 14 }}>{copy.emptyReturn}</p>}
           </div>
         </section>
 
@@ -194,7 +195,7 @@ export default function HomeRitualScreen() {
           <MetricCard value={weeklyCount} label={weeklyCount ? copy.thisWeek : copy.noWeek} />
         </section>
 
-        {loading && <div style={{ color: "rgba(255,255,255,0.42)", textAlign: "center", padding: 18 }}>Loading…</div>}
+        {loading && <div style={{ color: palette.inkFaint, textAlign: "center", padding: 18 }}>Loading…</div>}
       </div>
     </main>
   );
@@ -202,9 +203,9 @@ export default function HomeRitualScreen() {
 
 function MetricCard({ value, label }) {
   return (
-    <div className="zommy-elevated-card" style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", borderRadius: 18, padding: 14, minHeight: 82, display: "grid", alignContent: "center", gap: 4 }}>
+    <div className="zommy-elevated-card" style={{ ...card, borderRadius: 20, padding: 14, minHeight: 82, display: "grid", alignContent: "center", gap: 4 }}>
       <div style={{ fontSize: 25, fontWeight: 950 }}>{value}</div>
-      <div style={{ color: "rgba(255,255,255,0.54)", fontSize: 12 }}>{label}</div>
+      <div style={{ color: palette.inkMuted, fontSize: 12 }}>{label}</div>
     </div>
   );
 }
@@ -213,17 +214,17 @@ function StatusCard({ title, body, cta, onClick, tone = "#34D399" }) {
   const content = (
     <>
       <div style={{ color: tone, fontSize: 13, fontWeight: 950 }}>{title}</div>
-      <p style={{ color: "rgba(255,255,255,0.68)", fontSize: 13, lineHeight: 1.5 }}>{body}</p>
-      {cta && <div style={{ justifySelf: "start", background: tone, color: "#101418", borderRadius: 999, padding: "8px 11px", fontSize: 12, fontWeight: 950 }}>{cta}</div>}
+      <p style={{ color: palette.inkMuted, fontSize: 13, lineHeight: 1.5 }}>{body}</p>
+      {cta && <div style={{ justifySelf: "start", background: tone, color: palette.ink, borderRadius: 999, padding: "8px 11px", fontSize: 12, fontWeight: 950 }}>{cta}</div>}
     </>
   );
 
   if (onClick) {
-    return <button className="zommy-elevated-card" onClick={onClick} style={{ width: "100%", textAlign: "left", border: `1px solid ${tone}55`, background: `${tone}16`, borderRadius: 18, padding: 14, display: "grid", gap: 7, cursor: "pointer" }}>{content}</button>;
+    return <button className="zommy-elevated-card" onClick={onClick} style={{ width: "100%", textAlign: "left", border: `1px solid ${tone}55`, background: `linear-gradient(145deg, ${tone}16, rgba(255,253,248,.80))`, borderRadius: 18, padding: 14, display: "grid", gap: 7, cursor: "pointer" }}>{content}</button>;
   }
 
   return (
-    <article className="zommy-elevated-card" style={{ border: `1px solid ${tone}55`, background: `${tone}16`, borderRadius: 18, padding: 14, display: "grid", gap: 7 }}>
+    <article className="zommy-elevated-card" style={{ border: `1px solid ${tone}55`, background: `linear-gradient(145deg, ${tone}16, rgba(255,253,248,.80))`, borderRadius: 18, padding: 14, display: "grid", gap: 7 }}>
       {content}
     </article>
   );

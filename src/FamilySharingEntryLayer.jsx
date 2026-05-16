@@ -82,7 +82,6 @@ export default function FamilySharingEntryLayer() {
     window.addEventListener("zommy:show-family-sharing", hide);
     window.addEventListener("zommy:show-today", hide);
     window.addEventListener("zommy:show-timeline", hide);
-    window.addEventListener("zommy:show-compare", hide);
 
     return () => {
       window.removeEventListener("zommy:show-settings", show);
@@ -90,7 +89,6 @@ export default function FamilySharingEntryLayer() {
       window.removeEventListener("zommy:show-family-sharing", hide);
       window.removeEventListener("zommy:show-today", hide);
       window.removeEventListener("zommy:show-timeline", hide);
-      window.removeEventListener("zommy:show-compare", hide);
       removeIntegratedRow();
     };
   }, []);
