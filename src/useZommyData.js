@@ -2,7 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { getDraft, getQueuedCount } from "./pwaStorage";
 import { supabase } from "./supabase";
 
-export const coverPath = (entry) => entry?.cover_photo_path || entry?.photo_path || entry?.photo || entry?.photos?.[0]?.path || "";
+export const photoPathFrom = (photo) => {
+  if (!photo) return "";
+  if (typeof photo === "string") return photo;
+  return photo.path || photo.photo_path || photo.url || "";
+};
+
+export const coverPath = (entry) => entry?.cover_photo_path || entry?.photo_path || entry?.photo || photoPathFrom(entry?.photos?.[0]) || "";
 
 const isExternal = (value) => /^https?:\/\//i.test(value || "") || /^data:/i.test(value || "");
 
@@ -53,10 +59,21 @@ export const loadZommyData = async ({ includeEntries = true, includeLocal = fals
   if (includeEntries && entryResult.error) throw entryResult.error;
 
   const entries = includeEntries
-    ? await Promise.all((entryResult.data || []).map(async (entry) => ({
-      ...entry,
-      photoUrl: await signedPhoto(coverPath(entry)),
-    })))
+    ? await Promise.all((entryResult.data || []).map(async (entry) => {
+      const photos = Array.isArray(entry.photos) ? entry.photos : [];
+      const photoUrls = await Promise.all(photos.map(async (photo) => ({
+        ...photo,
+        path: photoPathFrom(photo),
+        url: await signedPhoto(photoPathFrom(photo)),
+      })));
+      const fallbackCover = coverPath(entry);
+
+      return {
+        ...entry,
+        photoUrl: await signedPhoto(fallbackCover),
+        photosWithUrls: photoUrls.filter((photo) => photo.url),
+      };
+    }))
     : [];
 
   return {

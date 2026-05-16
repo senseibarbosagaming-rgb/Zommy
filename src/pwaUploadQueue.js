@@ -109,7 +109,20 @@ export const queueMemoryDraft = async ({ userId, profileId, date, note, photos, 
   return id;
 };
 
+const ensureFreshSession = async () => {
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) return null;
+  const expiresAt = (data.session.expires_at || 0) * 1000;
+  if (expiresAt && expiresAt - Date.now() < 5 * 60 * 1000) {
+    const { data: refreshed, error } = await supabase.auth.refreshSession();
+    if (error) throw error;
+    return refreshed.session;
+  }
+  return data.session;
+};
+
 export const uploadMemoryPayload = async ({ userId, profileId, date, note, photos, coverIndex, coverPosition, onStatus = () => {}, onProgress = () => {} }) => {
+  await ensureFreshSession();
   const uploaded = [];
 
   for (let i = 0; i < photos.length; i += 1) {

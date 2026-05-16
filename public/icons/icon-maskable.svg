@@ -1,19 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Zommy maskable app icon">
   <defs>
-    <linearGradient id="zommy-maskable-bg" x1="64" y1="48" x2="448" y2="464" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1B2733"/>
-      <stop offset="0.52" stop-color="#101418"/>
-      <stop offset="1" stop-color="#263A45"/>
+    <linearGradient id="zommy-maskable-bg" x1="72" y1="48" x2="440" y2="456" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF3E3"/>
+      <stop offset="0.56" stop-color="#FFE2D1"/>
+      <stop offset="1" stop-color="#D9826B"/>
     </linearGradient>
-    <linearGradient id="zommy-maskable-z" x1="160" y1="132" x2="352" y2="380" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F8FAFC"/>
-      <stop offset="0.58" stop-color="#DDE7EF"/>
-      <stop offset="1" stop-color="#9FB0BD"/>
-    </linearGradient>
+    <filter id="warm-maskable-shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#7A4D39" flood-opacity="0.22"/>
+    </filter>
   </defs>
   <rect width="512" height="512" fill="url(#zommy-maskable-bg)"/>
-  <circle cx="256" cy="256" r="184" fill="rgba(255,255,255,0.04)"/>
-  <path d="M164 136H348L206 376H344" fill="none" stroke="url(#zommy-maskable-z)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M164 136H348" fill="none" stroke="#34D399" stroke-width="16" stroke-linecap="round" opacity="0.84"/>
-  <path d="M206 376H344" fill="none" stroke="#FBBF24" stroke-width="16" stroke-linecap="round" opacity="0.8"/>
+  <circle cx="258" cy="250" r="152" fill="#FFFDF7" opacity="0.94" filter="url(#warm-maskable-shadow)"/>
+  <path d="M158 242L256 164L354 242" fill="none" stroke="#7A4D39" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M190 226V342H322V226" fill="none" stroke="#7A4D39" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 318C231 299 210 281 210 255C210 237 224 225 241 225C250 225 258 230 264 238C270 230 278 225 287 225C304 225 318 237 318 255C318 281 291 301 256 326" fill="#D9826B"/>
+  <circle cx="180" cy="164" r="22" fill="#8FB9A8"/>
+  <circle cx="336" cy="166" r="18" fill="#F2C879"/>
+  <circle cx="360" cy="330" r="16" fill="#BCA8D7"/>
 </svg>

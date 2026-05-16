@@ -21,6 +21,7 @@ const COPY = {
     deleteConfirm: "Delete memory",
     shareText: (name, date, note) => `${name ? `${name} · ` : ""}${date}${note ? `\n\n${note}` : ""}`,
     copied: "Memory text copied.",
+    photoCopied: "Photo link copied.",
     failed: "Something went wrong. Try again.",
   },
   pt: {
@@ -42,6 +43,7 @@ const COPY = {
     deleteConfirm: "Eliminar memória",
     shareText: (name, date, note) => `${name ? `${name} · ` : ""}${date}${note ? `\n\n${note}` : ""}`,
     copied: "Texto da memória copiado.",
+    photoCopied: "Link da foto copiado.",
     failed: "Algo correu mal. Tenta de novo.",
   },
 };
@@ -95,6 +97,29 @@ const storagePathsFor = (entry) => {
   return [...paths];
 };
 
+
+const shareFileFromUrl = async ({ url, title, text }) => {
+  if (!url || !navigator.share) return false;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return false;
+    const blob = await response.blob();
+    const extension = blob.type?.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+    const file = new File([blob], `zommy-memory.${extension}`, { type: blob.type || "image/jpeg" });
+    const shareData = { title, text, files: [file] };
+
+    if (navigator.canShare?.(shareData)) {
+      await navigator.share(shareData);
+      return true;
+    }
+  } catch (error) {
+    console.warn("Photo share failed", error);
+  }
+
+  return false;
+};
+
 export default function MemoryDetailModal({ entry, profile, user, lang = "en", onClose, onChanged }) {
   const copy = useMemo(getCopy, []);
   const [mode, setMode] = useState("view");
@@ -103,6 +128,14 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
   const [favorite, setFavorite] = useState(Boolean(entry.favorite));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+
+  const galleryPhotos = useMemo(() => {
+    const signedPhotos = Array.isArray(entry.photosWithUrls) ? entry.photosWithUrls : [];
+    if (signedPhotos.length) return signedPhotos;
+    return entry.photoUrl ? [{ path: entry.cover_photo_path || entry.photo_path || entry.photo || "", url: entry.photoUrl, position: entry.cover_position || "50% 50%" }] : [];
+  }, [entry]);
+  const selectedPhoto = galleryPhotos[selectedPhotoIndex] || galleryPhotos[0] || null;
 
   const displayDate = date ? formatDate(date, lang) : "";
   const displayAge = ageAtMemory(profile, date, lang);
@@ -149,8 +182,18 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
 
   const shareMemory = async () => {
     const text = copy.shareText(profile?.name || "", displayDate, note);
+    const photoUrl = selectedPhoto?.url || entry.photoUrl;
+
     try {
-      if (navigator.share) {
+      if (await shareFileFromUrl({ url: photoUrl, title: "Zommy memory", text })) return;
+
+      if (navigator.share && photoUrl) {
+        await navigator.share({ title: "Zommy memory", url: photoUrl });
+      } else if (photoUrl) {
+        await navigator.clipboard.writeText(photoUrl);
+        setMessage(copy.photoCopied);
+        window.setTimeout(() => setMessage(""), 1800);
+      } else if (navigator.share) {
         await navigator.share({ title: "Zommy memory", text });
       } else {
         await navigator.clipboard.writeText(text);
@@ -186,7 +229,7 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1800, background: "rgba(0,0,0,0.82)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }} onClick={onClose}>
       <article role="dialog" aria-modal="true" aria-labelledby="zommy-memory-detail-title" style={{ width: "100%", maxWidth: 452, maxHeight: "92dvh", overflowY: "auto", background: "#111820", color: "#fff", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 24, boxShadow: "0 24px 90px rgba(0,0,0,0.55)", fontFamily: "Inter, system-ui, sans-serif" }} onClick={(event) => event.stopPropagation()}>
-        {entry.photoUrl && <img src={entry.photoUrl} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", maxHeight: 430, objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} />}
+        {selectedPhoto?.url && <img src={selectedPhoto.url} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", maxHeight: 430, objectFit: "cover", objectPosition: selectedPhoto.position || entry.cover_position || "50% 50%", display: "block" }} />}
 
         <div style={{ padding: 16, display: "grid", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
@@ -224,6 +267,15 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
             </section>
           ) : (
             <>
+              {galleryPhotos.length > 1 && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7 }}>
+                  {galleryPhotos.map((photo, index) => (
+                    <button key={photo.path || photo.url || index} type="button" onClick={() => setSelectedPhotoIndex(index)} disabled={busy} aria-label={`Show photo ${index + 1}`} style={{ border: `2px solid ${index === selectedPhotoIndex ? profile?.color || "#34D399" : "transparent"}`, borderRadius: 13, overflow: "hidden", padding: 0, background: "rgba(255,255,255,0.06)", aspectRatio: "1", cursor: busy ? "wait" : "pointer" }}>
+                      <img src={photo.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: photo.position || "50% 50%", display: "block" }} />
+                    </button>
+                  ))}
+                </div>
+              )}
               <p style={{ color: note ? "rgba(255,255,255,0.76)" : "rgba(255,255,255,0.42)", lineHeight: 1.6, fontSize: 15 }}>{note || copy.noteEmpty}</p>
               <button onClick={toggleFavorite} disabled={busy} style={{ border: `1px solid ${favorite ? "#FBBF24" : "rgba(255,255,255,0.14)"}`, background: favorite ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.05)", color: favorite ? "#FBBF24" : "#fff", borderRadius: 15, minHeight: 48, fontSize: 14, fontWeight: 950, cursor: busy ? "wait" : "pointer" }}>
                 {favorite ? "★ " + copy.removeFavorite : "☆ " + copy.favorite}
