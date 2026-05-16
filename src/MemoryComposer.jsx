@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { clearDraft } from "./pwaStorage";
 import { uploadMemoryPayload } from "./pwaUploadQueue";
 import {
@@ -30,9 +30,14 @@ export default function MemoryComposer() {
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   const [draftSuppressed, setDraftSuppressed] = useState(false);
+  const photosRef = useRef([]);
 
   const copy = useMemo(getComposerCopy, []);
   const activeProfile = profiles.find((profile) => profile.id === profileId);
+
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
 
   useEffect(() => {
     const openComposer = async (event) => {
@@ -42,7 +47,7 @@ export default function MemoryComposer() {
       if (!nextUser) return;
 
       const draftToRestore = restoreDraft ? draft : null;
-      revokePhotoPreviews(photos);
+      revokePhotoPreviews(photosRef.current);
       const nextPhotos = photosFromDraft(draftToRestore);
       setProfiles(nextProfiles);
       setProfileId(draftToRestore?.profileId || requestedProfileId || (nextProfiles.length === 1 ? nextProfiles[0].id : ""));
@@ -61,7 +66,7 @@ export default function MemoryComposer() {
 
     window.addEventListener("zommy:open-memory-composer", openComposer);
     return () => window.removeEventListener("zommy:open-memory-composer", openComposer);
-  }, [copy.draftRestored, photos]);
+  }, [copy.draftRestored]);
 
   useEffect(() => {
     if (!open || saving || draftSuppressed) return undefined;
@@ -71,7 +76,7 @@ export default function MemoryComposer() {
     return () => window.clearTimeout(timeout);
   }, [coverIndex, coverPosition, date, draftSuppressed, note, open, photos, profileId, saving]);
 
-  useEffect(() => () => revokePhotoPreviews(photos), [photos]);
+  useEffect(() => () => revokePhotoPreviews(photosRef.current), []);
 
   if (!open) return null;
 

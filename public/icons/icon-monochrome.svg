@@ -1,4 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Zommy monochrome app icon">
   <rect width="512" height="512" fill="#101418"/>
-  <path d="M154 124H364L205 350H358" fill="none" stroke="#F8FAFC" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="156" fill="none" stroke="#F8FAFC" stroke-width="22" opacity="0.94"/>
+  <path d="M156 244L256 164L356 244" fill="none" stroke="#F8FAFC" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M190 228V344H322V228" fill="none" stroke="#F8FAFC" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 318C231 299 210 281 210 255C210 237 224 225 241 225C250 225 258 230 264 238C270 230 278 225 287 225C304 225 318 237 318 255C318 281 291 301 256 326" fill="#F8FAFC"/>
 </svg>

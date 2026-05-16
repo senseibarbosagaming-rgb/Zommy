@@ -1,4 +1,4 @@
-const CACHE_NAME = "zommy-shell-v4";
+const CACHE_NAME = "zommy-shell-v5";
 const STATIC_ASSETS = [
   "/offline.html",
   "/manifest.webmanifest",

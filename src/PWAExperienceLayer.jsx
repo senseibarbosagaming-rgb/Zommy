@@ -96,8 +96,17 @@ export default function PWAExperienceLayer() {
       runFlush();
     };
     const onOffline = () => setOnline(false);
+    const onResume = () => {
+      if (document.visibilityState === "hidden") return;
+      window.dispatchEvent(new CustomEvent("zommy:app-resume"));
+      refreshQueue();
+      runFlush();
+    };
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+    window.addEventListener("focus", onResume);
+    window.addEventListener("pageshow", onResume);
+    document.addEventListener("visibilitychange", onResume);
 
     refreshQueue();
     runFlush();
@@ -115,6 +124,9 @@ export default function PWAExperienceLayer() {
       window.removeEventListener("appinstalled", installed);
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
+      window.removeEventListener("focus", onResume);
+      window.removeEventListener("pageshow", onResume);
+      document.removeEventListener("visibilitychange", onResume);
       window.removeEventListener("zommy:queue-updated", queueUpdated);
     };
   }, []);
