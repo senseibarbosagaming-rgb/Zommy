@@ -1,42 +1,4 @@
-// App.jsx
-//
-// WHAT CHANGED vs the old version
-// ─────────────────────────────────────────────────────────────────────────────
-// BEFORE: AuthedExperience rendered ALL screens simultaneously as a flat pile
-//         of fixed-position layers. Every screen was always mounted, always
-//         running hooks, and toggled via its own internal `open` state driven
-//         by window events. The header lived here but was visually buried
-//         under all the z-index:900+ screens.
-//
-// AFTER:
-//   1. <ScreenRenderer> renders ONLY the active screen — one component in the
-//      DOM at a time. Unmounting inactive screens stops all their data hooks,
-//      prevents state drift, and kills the "screen doesn't open" race condition.
-//
-//   2. The authenticated layout is now a proper shell: a fixed header at the
-//      top, the active screen fills the space, the bottom nav sits on top.
-//      No more competing fixed layers.
-//
-//   3. Overlay components that should ALWAYS be mounted (MemoryComposer,
-//      MemorySavedToast, ChildProfileCreator, etc.) stay in <AlwaysOnLayers>.
-//      These are not screens — they're modals/toasts that float over any screen.
-//
-//   4. App-level concerns (session, prefs, global CSS) remain here. The header
-//      is now part of the real document flow for the auth screen, and hidden
-//      behind the shell header when authenticated.
-//
-//   5. The sign-in page and loading states are unchanged visually.
-//
-// Migration notes for screen components (HomeRitualScreen, TimelineScreen, etc.)
-// ─────────────────────────────────────────────────────────────────────────────
-//   - You can REMOVE the useEffect that listened for zommy:show-X / zommy:hide-X
-//     and the `open` state it toggled. The component now only mounts when active.
-//   - You can REMOVE the `if (!open || !user) return null` guard at the top.
-//   - Everything else (data hooks, UI, event dispatching) stays exactly the same.
-//   - This is optional — the old pattern still works as a no-op since the
-//     component won't be mounted at all when inactive. But cleaning it up reduces
-//     unnecessary hook registrations.
-// ─────────────────────────────────────────────────────────────────────────────
+// App.jsx — updated global styles and token-driven surfaces for Milk & Stone
 
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
@@ -103,76 +65,58 @@ const authMessage = (error, copy) => {
   return text.includes("provider") ? copy.providerError : copy.authError;
 };
 
-// ─── global CSS ───────────────────────────────────────────────────────────────
-// Injected once via a <style> tag in the document head so it doesn't re-inject
-// on every render.
+// ─── global CSS (built from tokens) ───────────────────────────────────────────
+const GLOBAL_CSS = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap');
 
-const GLOBAL_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Inter:wght@400;600;700;800;900&display=swap');
-
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
+:root{
+  --color-milk: ${palette.milk};
+  --color-surface: ${palette.surface};
+  --color-stone: ${palette.stone};
+  --color-muted: ${palette.muted};
+  --color-accent: ${palette.accent};
+  --shadow: ${palette.shadow};
+  --shadow-soft: ${palette.shadowSoft};
+  --radius: 20px;
+  --gap: 24px;
+  --hpad: 20px;
 }
 
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
 html, body {
-  background: #FBF7F0;
+  background: var(--color-milk);
+  color: var(--color-stone);
+  font-family: ${type.sans};
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
 }
 
-button, input, textarea, select {
-  font: inherit;
-}
+h1,h2,h3,h4 { font-family: ${type.serif}; font-weight: 700; color: var(--color-stone); margin: 0; }
+
+button, input, textarea, select { font: inherit; }
 
 /* Interactive press effect — add className="b" to any tappable element */
-.b {
-  transition: transform .14s ease, opacity .14s ease, box-shadow .14s ease;
-}
-.b:active {
-  transform: scale(.985);
-  opacity: .88;
-}
-.b:focus-visible {
-  outline: 3px solid rgba(185,120,95,.28);
-  outline-offset: 2px;
-}
+.b { transition: transform .14s ease, opacity .14s ease, box-shadow .14s ease; }
+.b:active { transform: scale(.992); opacity: .94; }
+.b:focus-visible { outline: 3px solid rgba(193,123,92,0.18); outline-offset: 2px; }
 
 /* Primary screen enter animation */
-.zommy-primary-screen {
-  animation: zommy-screen-enter .22s cubic-bezier(.2,.8,.2,1) both;
-  will-change: transform, opacity;
-}
+.zommy-primary-screen { animation: zommy-screen-enter .22s cubic-bezier(.2,.8,.2,1) both; will-change: transform, opacity; }
 
 /* Card hover/press effects */
-.zommy-elevated-card {
-  transition: transform .16s ease, opacity .16s ease, box-shadow .16s ease;
-}
-.zommy-elevated-card:active {
-  transform: scale(.985);
-  opacity: .92;
-}
+.zommy-elevated-card { transition: transform .16s ease, opacity .16s ease, box-shadow .16s ease; }
+.zommy-elevated-card:active { transform: scale(.992); opacity: .96; }
 
-/* Glass card style */
-.zommy-glass {
-  background: rgba(255,253,248,.76);
-  border: 1px solid rgba(122,77,57,.14);
-  box-shadow: 0 16px 44px rgba(122,77,57,.10);
-  backdrop-filter: blur(18px);
-}
+@keyframes zommy-screen-enter { from { opacity: .01; transform: translate3d(0, 10px, 0) scale(.992); } to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
 
-@keyframes zommy-screen-enter {
-  from { opacity: .01; transform: translate3d(0, 10px, 0) scale(.992); }
-  to   { opacity: 1;   transform: translate3d(0, 0,    0) scale(1);    }
-}
+@media (prefers-reduced-motion: reduce) { .b, .zommy-primary-screen, .zommy-elevated-card { transition: none !important; animation: none !important; } }
 
-@media (prefers-reduced-motion: reduce) {
-  .b, .zommy-primary-screen, .zommy-elevated-card {
-    transition: none !important;
-    animation: none !important;
-  }
-}
+/* Layout helpers */
+.container-center { max-width: 480px; margin: 0 auto; padding: 0 var(--hpad); }
+
+/* Small utilities */
+.visually-hidden { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
 `;
 
 function injectGlobalStyles() {
@@ -183,69 +127,49 @@ function injectGlobalStyles() {
   document.head.appendChild(style);
 }
 
-// ─── BrandMark ────────────────────────────────────────────────────────────────
-
+// ─── BrandMark — simplified, token-driven mark ───────────────────────────────
 function BrandMark({ size = 92 }) {
   const r = Math.round(size * 0.32);
+  const tone = palette.accent;
   return (
     <div
       aria-hidden="true"
       style={{
         width: size, height: size,
         borderRadius: r,
-        background: "linear-gradient(145deg,#FFFDF7,#FFE2D1)",
-        border: "1px solid rgba(122,77,57,0.14)",
-        boxShadow: "0 22px 54px rgba(122,77,57,0.18)",
+        background: palette.surface,
+        border: `1px solid ${palette.border}`,
+        boxShadow: palette.shadowSoft,
         display: "grid", placeItems: "center",
         position: "relative", overflow: "hidden",
         flexShrink: 0,
       }}
     >
-      <div style={{
-        position: "absolute",
-        width: size * 1.15, height: size * 1.15,
-        borderRadius: "50%",
-        background: "rgba(143,185,168,0.18)",
-        transform: `translate(${-size * 0.34}px, ${-size * 0.34}px)`,
-      }} />
-      <svg
-        viewBox="0 0 120 120"
-        width={Math.round(size * 0.64)}
-        height={Math.round(size * 0.64)}
-        fill="none"
-        style={{ position: "relative" }}
-      >
-        <path d="M24 58L60 30L96 58"     stroke="#7A4D39" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M36 54V92H84V54"         stroke="#7A4D39" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M60 84C49 76 42 68 42 58C42 51 48 46 55 46C59 46 62 48 65 52C68 48 72 46 76 46C83 46 89 51 89 58C89 70 75 79 60 88" fill="#D9826B" />
+      <svg viewBox="0 0 120 120" width={Math.round(size * 0.6)} height={Math.round(size * 0.6)} fill="none" aria-hidden="true">
+        <rect x="18" y="26" width="84" height="68" rx="10" stroke={tone} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="60" cy="72" r="10" fill={tone} />
       </svg>
     </div>
   );
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
-function Toast({ message, dark, bottom = 32 }) {
+// ─── Toast — token-driven colors
+function Toast({ message, bottom = 32 }) {
   return (
     <div style={{
       position: "fixed", bottom, left: "50%", transform: "translateX(-50%)",
       zIndex: 2400,
-      background: dark ? "#FFF7EF" : "#3A2A22",
-      color:      dark ? "#3A2A22" : "#FFF7EF",
+      background: palette.stone,
+      color: palette.surface,
       padding: "10px 20px", borderRadius: 18,
-      fontSize: 13, fontWeight: 800,
+      fontSize: 13, fontWeight: 700,
       maxWidth: "min(90vw, 420px)", textAlign: "center",
-      boxShadow: "0 4px 20px rgba(122,77,57,0.2)",
-    }}>
-      {message}
-    </div>
+      boxShadow: palette.shadowSoft,
+    }}>{message}</div>
   );
 }
 
-// ─── ScreenRenderer ───────────────────────────────────────────────────────────
-// Renders ONLY the active screen. All other screens are unmounted.
-// This is the core fix: one screen in the DOM at a time.
-
+// ─── ScreenRenderer ────────────────────────────────────────────────────────
 function ScreenRenderer({ activeScreen }) {
   switch (activeScreen) {
     case "today":    return <HomeRitualScreen />;
@@ -257,32 +181,18 @@ function ScreenRenderer({ activeScreen }) {
   }
 }
 
-// ─── AlwaysOnLayers ───────────────────────────────────────────────────────────
-// Components that must stay mounted regardless of which screen is active.
-// These are modals, toasts, and background utilities — not screens.
-
+// ─── AlwaysOnLayers ────────────────────────────────────────────────────────
 function AlwaysOnLayers() {
   return (
     <>
-      {/* Intro animation — renders once per session, then self-destructs */}
       <ZommyIntro />
-
-      {/* Modal overlays — triggered by window events from any screen */}
       <MemoryComposer />
       <MemorySavedToast />
       <ChildProfileCreator />
       <FirstRunExperience />
-
-      {/* Family sharing pill shown over Today screen */}
       <FamilyCircleHomeLayer />
-
-      {/* Bottom navigation bar */}
       <NavExperienceLayer />
-
-      {/* Settings injection layer for Family Sharing entry point */}
       <FamilySharingEntryLayer />
-
-      {/* Background utilities — render nothing, just run effects */}
       <NotificationControlsLayer />
       <AccessibilitySafetyLayer />
       <PWAExperienceLayer />
@@ -291,35 +201,27 @@ function AlwaysOnLayers() {
   );
 }
 
-// ─── Authenticated shell ──────────────────────────────────────────────────────
-
-function AuthenticatedApp({ user, prefs, onPrefsChange, onSignOut, saving, toast, dark }) {
+// ─── Authenticated shell — token-driven surfaces and header ────────────────
+function AuthenticatedApp({ user, prefs, onPrefsChange, onSignOut, saving, toast }) {
   const { activeScreen, hasPrimaryScreen } = useAppShell();
 
   const name   = user.user_metadata?.full_name || user.email || "";
   const avatar = user.user_metadata?.avatar_url;
 
-  const bg     = dark ? "#18120F" : palette.parchment;
-  const text   = dark ? "#FFF7EF" : palette.ink;
-  const sub    = dark ? "rgba(255,247,239,0.68)" : palette.inkMuted;
-  const border = dark ? "rgba(255,244,232,0.14)" : palette.border;
-
   return (
     <div style={{
       fontFamily: type.sans,
-      background: `radial-gradient(circle at 12% -8%, rgba(227,184,92,.22), transparent 32%),
-                   radial-gradient(circle at 100% 0%, rgba(127,169,149,.16), transparent 34%),
-                   ${bg}`,
-      color: text,
+      background: palette.milk,
+      color: palette.stone,
       minHeight: "100dvh",
       maxWidth: 480,
       margin: "0 auto",
       position: "relative",
       overflow: "hidden",
     }}>
-      {toast && <Toast message={toast} dark={dark} bottom={100} />}
+      {toast && <Toast message={toast} bottom={100} />}
 
-      {/* App header — fixed at top of the 480px column */}
+      {/* App header */}
       <header style={{
         position: "fixed",
         top: 0, left: "50%",
@@ -328,36 +230,31 @@ function AuthenticatedApp({ user, prefs, onPrefsChange, onSignOut, saving, toast
         width: "100%", maxWidth: 480,
         minHeight: 68,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 18px",
-        background: dark ? "rgba(24,18,15,.78)" : "rgba(255,253,248,.88)",
-        backdropFilter: "blur(18px)",
-        borderBottom: `1px solid ${border}`,
+        padding: "14px 20px",
+        background: palette.surface,
+        boxShadow: palette.shadow,
+        borderBottom: `1px solid ${palette.border}`,
       }}>
-        <div
-          aria-label="Zommy"
-          style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 24, fontWeight: 900, letterSpacing: "-.8px" }}
-        >
+        <div aria-label="Zommy" style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 20, fontWeight: 700 }}>
           <BrandMark size={38} />
-          <span>Zommy</span>
+          <span style={{ fontFamily: type.serif, fontSize: 18 }}>Zommy</span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
           {avatar
             ? <img src={avatar} alt="" referrerPolicy="no-referrer" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
-            : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(217,130,107,.16)", color: "#D9826B", display: "grid", placeItems: "center", fontWeight: 900 }}>
-                {name.slice(0, 1).toUpperCase()}
-              </div>
+            : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,0.04)", color: palette.accent, display: "grid", placeItems: "center", fontWeight: 700 }}>{name.slice(0, 1).toUpperCase()}</div>
           }
           <button
             className="b"
             disabled={saving}
             onClick={onSignOut}
             style={{
-              border: `1px solid ${border}`,
-              background: dark ? "rgba(255,244,232,.07)" : "rgba(255,255,255,.58)",
-              color: sub,
+              border: `1px solid ${palette.border}`,
+              background: "transparent",
+              color: palette.muted,
               borderRadius: 999, padding: "8px 10px",
-              fontSize: 12, fontWeight: 800,
+              fontSize: 12, fontWeight: 700,
               cursor: saving ? "wait" : "pointer",
             }}
           >
@@ -366,34 +263,27 @@ function AuthenticatedApp({ user, prefs, onPrefsChange, onSignOut, saving, toast
         </div>
       </header>
 
-      {/* Main content area — active screen renders here */}
+      {/* Main content area */}
       <main style={{ minHeight: "100dvh", paddingTop: 68, paddingBottom: 100 }}>
         {!hasPrimaryScreen && (
-          <div style={{
-            minHeight: "calc(100dvh - 168px)",
-            display: "grid", placeItems: "center",
-            padding: "24px", color: sub,
-            textAlign: "center", lineHeight: 1.55,
-          }}>
+          <div style={{ minHeight: "calc(100dvh - 168px)", display: "grid", placeItems: "center", padding: "24px", color: palette.muted, textAlign: "center", lineHeight: 1.55 }}>
             Choose a tab below or add a child to begin.
           </div>
         )}
-        {/* Only the active screen is rendered — this is the key change */}
         <ScreenRenderer activeScreen={activeScreen} />
       </main>
 
-      {/* Chapter screens — event-triggered overlays, not tab screens */}
+      {/* Chapter screens */}
       <ChapterScreen />
       <ChaptersLibrary />
 
-      {/* Overlays and utilities — always mounted */}
+      {/* Overlays */}
       <AlwaysOnLayers />
     </div>
   );
 }
 
-// ─── App root ─────────────────────────────────────────────────────────────────
-
+// ─── App root ──────────────────────────────────────────────────────────────
 export default function App() {
   const [prefs, setPrefs]   = useState(getPrefs);
   const [session, setSession] = useState(null);
@@ -405,7 +295,6 @@ export default function App() {
 
   const copy = COPY[prefs.lang === "pt" ? "pt" : "en"] ?? COPY.en;
   const user = session?.user ?? null;
-  const dark = prefs.theme === "night";
 
   // Inject global CSS once on mount
   useEffect(() => { injectGlobalStyles(); }, []);
@@ -432,50 +321,28 @@ export default function App() {
   }, []);
 
   // Open default screen when user logs in
-  useEffect(() => {
-    if (user) ensureDefaultPrimaryScreen();
-  }, [ensureDefaultPrimaryScreen, user]);
+  useEffect(() => { if (user) ensureDefaultPrimaryScreen(); }, [ensureDefaultPrimaryScreen, user]);
 
   // Toast helper
-  const showToast = (message) => {
-    setToast(message);
-    window.setTimeout(() => setToast(""), 2600);
-  };
+  const showToast = (message) => { setToast(message); window.setTimeout(() => setToast(""), 2600); };
 
-  const updatePrefs = (next) => {
-    setPrefs(next);
-    const saved = savePrefs(next);
-    dispatchPrefsChanged(saved);
-  };
+  const updatePrefs = (next) => { setPrefs(next); const saved = savePrefs(next); dispatchPrefsChanged(saved); };
 
   const signIn = async () => {
     setSaving(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin, queryParams: { prompt: "select_account" } },
-    });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin, queryParams: { prompt: "select_account" } }, });
     if (error) { showToast(authMessage(error, copy)); setSaving(false); }
   };
 
-  const signOut = async () => {
-    setSaving(true);
-    await supabase.auth.signOut();
-    setSession(null);
-    setSaving(false);
-  };
-
-  const bg     = dark ? "#18120F" : palette.parchment;
-  const text   = dark ? "#FFF7EF" : palette.ink;
-  const sub    = dark ? "rgba(255,247,239,0.68)" : palette.inkMuted;
-  const border = dark ? "rgba(255,244,232,0.14)" : palette.border;
+  const signOut = async () => { setSaving(true); await supabase.auth.signOut(); setSession(null); setSaving(false); };
 
   // ── Loading state ──
   if (loading) {
     return (
       <>
         <InviteAcceptanceLayer />
-        <div style={{ fontFamily: type.sans, background: bg, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}>
-          <div style={{ color: sub, fontFamily: type.serif, fontStyle: "italic" }}>{copy.loading}</div>
+        <div style={{ fontFamily: type.sans, background: palette.milk, color: palette.stone, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}>
+          <div style={{ color: palette.muted, fontFamily: type.serif, fontStyle: "italic" }}>{copy.loading}</div>
         </div>
       </>
     );
@@ -486,56 +353,24 @@ export default function App() {
     return (
       <>
         <InviteAcceptanceLayer />
-        <div style={{ fontFamily: type.sans, background: bg, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}>
-          {toast && <Toast message={toast} dark={dark} bottom={32} />}
+        <div style={{ fontFamily: type.sans, background: palette.milk, color: palette.stone, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}>
+          {toast && <Toast message={toast} bottom={32} />}
 
-          <div style={{ width: "100%", maxWidth: 370, display: "grid", gap: 22, textAlign: "center", padding: "32px 24px" }}>
-            <div style={{ justifySelf: "center" }}>
-              <BrandMark />
-            </div>
+          <div style={{ width: "100%", maxWidth: 370, display: "grid", gap: 22, textAlign: "center", padding: "32px 20px" }}>
+            <div style={{ justifySelf: "center" }}><BrandMark /></div>
 
             <div>
-              <h1 style={{ fontFamily: type.serif, fontSize: 32, lineHeight: 1.12, fontWeight: 650 }}>
-                {copy.title}
-              </h1>
-              <p style={{ color: sub, fontSize: 15, lineHeight: 1.7, marginTop: 10 }}>
-                {copy.body}
-              </p>
+              <h1 style={{ fontFamily: type.serif, fontSize: 32, lineHeight: 1.12, fontWeight: 700 }}>{copy.title}</h1>
+              <p style={{ color: palette.muted, fontSize: 15, lineHeight: 1.7, marginTop: 10 }}>{copy.body}</p>
             </div>
 
-            <button
-              className="b"
-              disabled={saving}
-              onClick={signIn}
-              style={{
-                border: `1px solid ${border}`,
-                background: "#D9826B", color: "#FFFDF7",
-                borderRadius: 18, padding: "16px 18px",
-                fontWeight: 900,
-                cursor: saving ? "wait" : "pointer",
-                boxShadow: "0 14px 34px rgba(217,130,107,0.22)",
-              }}
-            >
+            <button className="b" disabled={saving} onClick={signIn} style={{ border: `1px solid ${palette.border}`, background: palette.accent, color: palette.surface, borderRadius: 18, padding: "16px 18px", fontWeight: 700, cursor: saving ? "wait" : "pointer", boxShadow: palette.shadowSoft }}>
               {saving ? copy.signing : copy.cta}
             </button>
 
-            {/* Language switcher */}
             <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              {["en", "pt"].map((lang) => (
-                <button
-                  key={lang}
-                  className="b"
-                  onClick={() => updatePrefs({ ...prefs, lang })}
-                  style={{
-                    border: `1px solid ${prefs.lang === lang ? "#D9826B" : border}`,
-                    background: prefs.lang === lang ? "rgba(217,130,107,0.12)" : "transparent",
-                    color: prefs.lang === lang ? "#D9826B" : sub,
-                    borderRadius: 999, padding: "9px 13px",
-                    fontSize: 13, fontWeight: 800,
-                  }}
-                >
-                  {lang === "en" ? "English" : "Português"}
-                </button>
+              { ["en","pt"].map((lang) => (
+                <button key={lang} className="b" onClick={() => updatePrefs({ ...prefs, lang })} style={{ border: `1px solid ${prefs.lang === lang ? palette.accent : palette.border}`, background: prefs.lang === lang ? `${palette.accent}10` : "transparent", color: prefs.lang === lang ? palette.accent : palette.muted, borderRadius: 999, padding: "9px 13px", fontSize: 13, fontWeight: 700 }}>{lang === "en" ? "English" : "Português"}</button>
               ))}
             </div>
           </div>
@@ -548,15 +383,7 @@ export default function App() {
   return (
     <>
       <InviteAcceptanceLayer />
-      <AuthenticatedApp
-        user={user}
-        prefs={prefs}
-        onPrefsChange={updatePrefs}
-        onSignOut={signOut}
-        saving={saving}
-        toast={toast}
-        dark={dark}
-      />
+      <AuthenticatedApp user={user} prefs={prefs} onPrefsChange={updatePrefs} onSignOut={signOut} saving={saving} toast={toast} />
       <SpeedInsights />
       <Analytics />
     </>
