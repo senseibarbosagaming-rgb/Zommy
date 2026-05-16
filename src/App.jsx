@@ -20,6 +20,7 @@ import FamilySharingScreen from "./FamilySharingScreen";
 import InviteAcceptanceLayer from "./InviteAcceptanceLayer";
 import FamilySharingEntryLayer from "./FamilySharingEntryLayer";
 import FamilyCircleHomeLayer from "./FamilyCircleHomeLayer";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const DEFAULT_PREFS = { lang: "en", theme: "dream" };
 const COPY = {
@@ -192,6 +193,7 @@ export default function App() {
         </main>
       </div>
       <AuthedExperience />
+      <SpeedInsights />
     </>
   );
 }
