@@ -164,6 +164,48 @@ export default function TodayDashboardLayer() {
             {queuedCount > 0 && <StatusCard title={copy.queuedTitle} body={copy.queuedBody(queuedCount)} tone="#60A5FA" />}
           </section>
         )}
+
+        <section style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, overflow: "hidden", background: "rgba(255,255,255,0.045)" }}>
+          {featureEntry?.photoUrl ? (
+            <img src={featureEntry.photoUrl} alt={`${activeProfile.name} memory`} style={{ width: "100%", height: 238, objectFit: "cover", objectPosition: featureEntry.cover_position || "50% 50%", display: "block" }} />
+          ) : (
+            <div style={{ height: 186, display: "grid", placeItems: "center", color: "rgba(255,255,255,0.36)", fontSize: 36, background: "rgba(255,255,255,0.035)" }}>{activeProfile.emoji || "📷"}</div>
+          )}
+          <div style={{ padding: 15, display: "grid", gap: 8 }}>
+            <div style={{ color: anniversary ? "#A78BFA" : favoriteEntry ? "#FBBF24" : "rgba(255,255,255,0.54)", fontSize: 11, fontWeight: 950, letterSpacing: "0.8px", textTransform: "uppercase" }}>
+              {anniversary ? copy.onThisDay : favoriteEntry ? copy.favorite : copy.latest}
+            </div>
+            {featureEntry ? (
+              <>
+                <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 21, lineHeight: 1.22, fontWeight: 650 }}>
+                  {anniversary ? copy.yearsAgo(yearsBetween(anniversary.date, today)) : formatDate(featureEntry.date, lang)}
+                </h2>
+                {featureEntry.note && <p style={{ color: "rgba(255,255,255,0.72)", lineHeight: 1.55, fontSize: 14 }}>{featureEntry.note}</p>}
+              </>
+            ) : (
+              <p style={{ color: "rgba(255,255,255,0.62)", lineHeight: 1.55, fontSize: 14 }}>{copy.emptyLatest}</p>
+            )}
+          </div>
+        </section>
+
+        <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={metricCard()}>
+            <div style={{ fontSize: 24, fontWeight: 950 }}>{childEntries.length}</div>
+            <div style={{ color: "rgba(255,255,255,0.54)", fontSize: 12 }}>{copy.totalMemories}</div>
+          </div>
+          <div style={metricCard()}>
+            <div style={{ fontSize: 24, fontWeight: 950 }}>{weeklyCount}</div>
+            <div style={{ color: "rgba(255,255,255,0.54)", fontSize: 12 }}>{weeklyCount ? copy.weekCount(weeklyCount) : copy.noWeek}</div>
+          </div>
+        </section>
+
+        <section style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 22, padding: 15, background: "linear-gradient(180deg, rgba(52,211,153,0.12), rgba(255,255,255,0.035))", display: "grid", gap: 9 }}>
+          <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 22, fontWeight: 650 }}>{copy.promptTitle}</h2>
+          <p style={{ color: "rgba(255,255,255,0.66)", lineHeight: 1.58, fontSize: 14 }}>{copy.promptBody}</p>
+          <button onClick={openComposer} style={{ justifySelf: "start", border: "1px solid rgba(255,255,255,0.16)", background: "rgba(255,255,255,0.08)", color: "#fff", borderRadius: 999, padding: "10px 13px", fontSize: 13, fontWeight: 900, cursor: "pointer" }}>{copy.promptCta}</button>
+        </section>
+
+        {loading && <div style={{ color: "rgba(255,255,255,0.42)", textAlign: "center", padding: 18 }}>Loading…</div>}
       </div>
     </main>
   );
@@ -173,12 +215,30 @@ function secondaryButton() {
   return { border: "1px solid rgba(255,255,255,0.13)", background: "rgba(255,255,255,0.05)", color: "#fff", borderRadius: 16, minHeight: 49, padding: "12px", fontSize: 14, fontWeight: 900, cursor: "pointer" };
 }
 
+function metricCard() {
+  return { border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", borderRadius: 18, padding: 14, minHeight: 82, display: "grid", alignContent: "center", gap: 4 };
+}
+
 function StatusCard({ title, body, cta, onClick, tone = "#34D399" }) {
-  return (
-    <button onClick={onClick} style={{ width: "100%", textAlign: "left", border: `1px solid ${tone}55`, background: `${tone}16`, borderRadius: 18, padding: 14, display: "grid", gap: 7, cursor: onClick ? "pointer" : "default" }}>
+  const content = (
+    <>
       <div style={{ color: tone, fontSize: 13, fontWeight: 950 }}>{title}</div>
       <p style={{ color: "rgba(255,255,255,0.68)", fontSize: 13, lineHeight: 1.5 }}>{body}</p>
       {cta && <div style={{ justifySelf: "start", background: tone, color: "#101418", borderRadius: 999, padding: "8px 11px", fontSize: 12, fontWeight: 950 }}>{cta}</div>}
-    </button>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button onClick={onClick} style={{ width: "100%", textAlign: "left", border: `1px solid ${tone}55`, background: `${tone}16`, borderRadius: 18, padding: 14, display: "grid", gap: 7, cursor: "pointer" }}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <article style={{ border: `1px solid ${tone}55`, background: `${tone}16`, borderRadius: 18, padding: 14, display: "grid", gap: 7 }}>
+      {content}
+    </article>
   );
 }
