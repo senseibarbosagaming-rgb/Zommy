@@ -190,7 +190,7 @@ export default function MemoryComposer() {
 
   return (
     <main style={{ position: "fixed", inset: 0, zIndex: 1300, background: "#101418", color: "#fff", fontFamily: "Inter, system-ui, sans-serif", overflow: "hidden" }}>
-      <div style={{ width: "100%", maxWidth: 480, minHeight: "100dvh", margin: "0 auto", display: "flex", flexDirection: "column", background: "#101418" }}>
+      <div style={{ width: "100%", maxWidth: 480, minHeight: "100dvh", height: "var(--z-viewport-height, 100dvh)", margin: "0 auto", display: "flex", flexDirection: "column", background: "#101418" }}>
         <header style={{ flex: "0 0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "calc(14px + env(safe-area-inset-top, 0px)) 18px 13px", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(16,20,24,0.94)", backdropFilter: "blur(14px)" }}>
           <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 24, lineHeight: 1.16, fontWeight: 650 }}>
             {activeProfile ? copy.title(activeProfile.name) : copy.chooseChild}
@@ -198,7 +198,7 @@ export default function MemoryComposer() {
           <button onClick={close} disabled={saving} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.68)", borderRadius: 999, padding: "8px 12px", fontSize: 13, cursor: saving ? "wait" : "pointer" }}>{copy.cancel}</button>
         </header>
 
-        <div style={{ flex: "1 1 auto", overflowY: "auto", padding: "16px 18px calc(26px + env(safe-area-inset-bottom, 0px))" }}>
+        <div style={{ flex: "1 1 auto", overflowY: "auto", padding: "16px 18px calc(104px + env(safe-area-inset-bottom, 0px) + var(--z-keyboard-inset, 0px))", WebkitOverflowScrolling: "touch" }}>
           {profiles.length > 1 && (
             <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 16 }}>
               {profiles.map((profile) => (
@@ -266,9 +266,11 @@ export default function MemoryComposer() {
               </div>
             )}
 
-            <button type="button" onClick={saveMemory} disabled={saving} style={{ width: "100%", border: "none", background: activeProfile?.color || "#17d86f", color: "#fff", borderRadius: 16, padding: "16px 18px", fontSize: 16, fontWeight: 900, cursor: saving ? "wait" : "pointer", opacity: saving ? 0.75 : 1 }}>
-              {failed ? copy.retry : copy.save}
-            </button>
+            <div style={{ position: "sticky", bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 2, marginTop: 4, paddingTop: 8, background: "linear-gradient(180deg, rgba(16,20,24,0), #101418 35%)" }}>
+              <button type="button" onClick={saveMemory} disabled={saving} style={{ width: "100%", border: "none", background: activeProfile?.color || "#17d86f", color: "#fff", borderRadius: 16, padding: "16px 18px", fontSize: 16, fontWeight: 900, cursor: saving ? "wait" : "pointer", opacity: saving ? 0.75 : 1, boxShadow: "0 16px 38px rgba(0,0,0,0.34)" }}>
+                {failed ? copy.retry : copy.save}
+              </button>
+            </div>
           </div>
         </div>
       </div>
