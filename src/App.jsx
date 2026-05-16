@@ -21,6 +21,7 @@ import InviteAcceptanceLayer from "./InviteAcceptanceLayer";
 import FamilySharingEntryLayer from "./FamilySharingEntryLayer";
 import FamilyCircleHomeLayer from "./FamilyCircleHomeLayer";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { Analytics } from "@vercel/analytics/react";
 
 const DEFAULT_PREFS = { lang: "en", theme: "dream" };
 const COPY = {
@@ -194,6 +195,7 @@ export default function App() {
       </div>
       <AuthedExperience />
       <SpeedInsights />
+      <Analytics />
     </>
   );
 }
