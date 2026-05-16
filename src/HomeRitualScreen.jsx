@@ -6,7 +6,6 @@ const COPY = {
   en: {
     today: "Today",
     ageLine: (age) => age,
-    addMemory: "Save today’s memory",
     chapterTitle: (month) => `${month} chapter`,
     chapterBody: (count, name) => count > 0
       ? `${count} ${count === 1 ? "moment" : "moments"} from ${name} can become this month’s story.`
@@ -18,16 +17,10 @@ const COPY = {
     latest: "Latest saved moment",
     yearsAgo: (years) => `${years} year${years === 1 ? "" : "s"} ago today`,
     emptyReturn: "The memories you save now will come back here later, when they feel different.",
-    promptTitle: "Tiny thing worth saving",
-    promptBody: "A sentence is enough. Something they said. A face they made. A little chaos you’ll miss.",
-    promptCta: "Write it down",
     draftTitle: "Finish the almost-memory",
     draftBody: "You started saving something. Finish it before the details fade.",
     queuedTitle: "Waiting for connection",
     queuedBody: (count) => `${count} offline ${count === 1 ? "memory" : "memories"} will upload when connection returns.`,
-    timeline: "Timeline",
-    compare: "Compare",
-    settings: "Settings",
     totalMemories: "memories saved",
     thisWeek: "this week",
     noWeek: "none this week yet",
@@ -35,7 +28,6 @@ const COPY = {
   pt: {
     today: "Hoje",
     ageLine: (age) => age,
-    addMemory: "Guardar memória de hoje",
     chapterTitle: (month) => `Capítulo de ${month}`,
     chapterBody: (count, name) => count > 0
       ? `${count} ${count === 1 ? "momento" : "momentos"} de ${name} podem tornar-se na história deste mês.`
@@ -47,16 +39,10 @@ const COPY = {
     latest: "Último momento guardado",
     yearsAgo: (years) => `Há ${years} ano${years === 1 ? "" : "s"} neste dia`,
     emptyReturn: "As memórias que guardas agora vão voltar aqui mais tarde, quando souberem diferente.",
-    promptTitle: "Coisa pequena para guardar",
-    promptBody: "Uma frase chega. Algo que disse. Uma cara que fez. Um caos pequeno de que vais ter saudades.",
-    promptCta: "Guardar agora",
     draftTitle: "Termina a quase-memória",
     draftBody: "Começaste a guardar algo. Termina antes que os detalhes desapareçam.",
     queuedTitle: "À espera de ligação",
     queuedBody: (count) => `${count} ${count === 1 ? "memória offline" : "memórias offline"} vai carregar quando a ligação voltar.`,
-    timeline: "Timeline",
-    compare: "Comparar",
-    settings: "Definições",
     totalMemories: "memórias guardadas",
     thisWeek: "esta semana",
     noWeek: "ainda nenhuma esta semana",
@@ -150,11 +136,7 @@ export default function HomeRitualScreen() {
   const anniversary = childEntries.find((entry) => sameMonthDay(entry.date, today) && yearsBetween(entry.date, today) > 0);
   const returnEntry = anniversary || favorite || latest;
 
-  const openComposer = () => window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: profile.id } }));
   const openChapter = () => window.dispatchEvent(new CustomEvent("zommy:show-chapter", { detail: { profileId: profile.id } }));
-  const openTimeline = () => window.dispatchEvent(new CustomEvent("zommy:show-timeline", { detail: { profileId: profile.id } }));
-  const openCompare = () => window.dispatchEvent(new CustomEvent("zommy:show-compare"));
-  const openSettings = () => window.dispatchEvent(new CustomEvent("zommy:show-settings"));
 
   const returnLabel = anniversary ? copy.fromThisDay : favorite ? copy.favorite : copy.latest;
   const returnTitle = anniversary ? copy.yearsAgo(yearsBetween(anniversary.date, today)) : returnEntry ? formatDate(returnEntry.date, lang) : copy.returnTitle;
@@ -171,15 +153,11 @@ export default function HomeRitualScreen() {
             </div>
             <div style={{ width: 64, height: 64, borderRadius: 22, background: `${profile.color || "#34D399"}22`, color: profile.color || "#34D399", display: "grid", placeItems: "center", fontSize: 34, boxShadow: `0 16px 44px ${(profile.color || "#34D399")}1f` }}>{profile.emoji || "👶"}</div>
           </div>
-
-          <button onClick={openComposer} style={{ border: "none", background: profile.color || "#34D399", color: "#101418", borderRadius: 22, padding: "18px 18px", minHeight: 60, fontSize: 17, fontWeight: 950, textAlign: "center", boxShadow: `0 20px 52px ${(profile.color || "#34D399")}30`, cursor: "pointer" }}>
-            + {copy.addMemory}
-          </button>
         </header>
 
         {(draft || queuedCount > 0) && (
           <section style={{ display: "grid", gap: 10 }}>
-            {draft && <StatusCard title={copy.draftTitle} body={copy.draftBody} cta={copy.promptCta} onClick={openComposer} tone="#FBBF24" />}
+            {draft && <StatusCard title={copy.draftTitle} body={copy.draftBody} tone="#FBBF24" />}
             {queuedCount > 0 && <StatusCard title={copy.queuedTitle} body={copy.queuedBody(queuedCount)} tone="#60A5FA" />}
           </section>
         )}
@@ -208,21 +186,9 @@ export default function HomeRitualScreen() {
           </div>
         </section>
 
-        <section style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 22, padding: 15, background: "linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.03))", display: "grid", gap: 9 }}>
-          <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 23, fontWeight: 650 }}>{copy.promptTitle}</h2>
-          <p style={{ color: "rgba(255,255,255,0.66)", lineHeight: 1.58, fontSize: 14 }}>{copy.promptBody}</p>
-          <button onClick={openComposer} style={{ justifySelf: "start", border: "1px solid rgba(255,255,255,0.16)", background: "rgba(255,255,255,0.08)", color: "#fff", borderRadius: 999, padding: "10px 13px", fontSize: 13, fontWeight: 900, cursor: "pointer" }}>{copy.promptCta}</button>
-        </section>
-
         <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <MetricCard value={childEntries.length} label={copy.totalMemories} />
           <MetricCard value={weeklyCount} label={weeklyCount ? copy.thisWeek : copy.noWeek} />
-        </section>
-
-        <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-          <button onClick={openTimeline} style={quietButton()}>{copy.timeline}</button>
-          <button onClick={openCompare} style={quietButton()}>{copy.compare}</button>
-          <button onClick={openSettings} style={quietButton()}>{copy.settings}</button>
         </section>
 
         {loading && <div style={{ color: "rgba(255,255,255,0.42)", textAlign: "center", padding: 18 }}>Loading…</div>}
@@ -248,8 +214,4 @@ function StatusCard({ title, body, cta, onClick, tone = "#34D399" }) {
       {cta && <button onClick={onClick} style={{ justifySelf: "start", border: "none", background: tone, color: "#101418", borderRadius: 999, padding: "8px 11px", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>{cta}</button>}
     </article>
   );
-}
-
-function quietButton() {
-  return { border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", color: "rgba(255,255,255,0.78)", borderRadius: 15, minHeight: 46, padding: "10px", fontSize: 13, fontWeight: 900, cursor: "pointer" };
 }

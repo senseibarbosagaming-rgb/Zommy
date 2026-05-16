@@ -29,6 +29,7 @@ const COPY = {
     language: "Language",
     theme: "Theme",
     signOut: "Log out",
+    signingOut: "Logging out…",
     signedOut: "Logged out.",
     account: "Account",
     comingSoon: "Coming soon",
@@ -86,6 +87,7 @@ const COPY = {
     language: "Idioma",
     theme: "Tema",
     signOut: "Terminar sessão",
+    signingOut: "A terminar sessão…",
     signedOut: "Sessão terminada.",
     account: "Conta",
     comingSoon: "Em breve",
@@ -166,6 +168,12 @@ const downloadJson = (filename, data) => {
   URL.revokeObjectURL(url);
 };
 
+const hidePrimaryScreens = () => {
+  ["zommy:hide-today", "zommy:hide-timeline", "zommy:hide-compare", "zommy:hide-settings"].forEach((eventName) => {
+    window.dispatchEvent(new CustomEvent(eventName));
+  });
+};
+
 export default function SettingsScreen() {
   const [open, setOpen] = useState(false);
   const [section, setSection] = useState("menu");
@@ -235,13 +243,25 @@ export default function SettingsScreen() {
   };
 
   const signOut = async () => {
+    if (busy) return;
     setBusy(true);
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) {
+      showToast(copy.error);
+      setBusy(false);
+      return;
+    }
+
+    setUser(null);
+    setProfiles([]);
+    setEntries([]);
+    setEditing(null);
+    setConfirmChild(null);
+    setConfirmAll(false);
+    setConfirmText("");
     setBusy(false);
     setOpen(false);
-    window.dispatchEvent(new CustomEvent("zommy:hide-today"));
-    window.dispatchEvent(new CustomEvent("zommy:hide-timeline"));
-    window.dispatchEvent(new CustomEvent("zommy:hide-settings"));
+    hidePrimaryScreens();
   };
 
   const exportData = () => {
@@ -361,7 +381,7 @@ export default function SettingsScreen() {
             <InfoCard title={copy.privacy} meta={copy.privateAccountData} body={copy.privacyText} />
             <InfoCard title={copy.familySharing} meta={copy.comingSoon} body={copy.familySharingText} />
             <SettingRow title={copy.account} meta={user.email || ""}>
-              <button disabled={busy} onClick={signOut} style={inlineButton("#FBBF24")}>{copy.signOut}</button>
+              <button disabled={busy} onClick={signOut} style={inlineButton("#FBBF24")}>{busy ? copy.signingOut : copy.signOut}</button>
             </SettingRow>
             <SettingRow title={copy.deleteAccountData} meta={copy.permanent} danger onClick={() => setSection("delete")} />
           </section>
