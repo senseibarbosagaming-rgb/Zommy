@@ -20,6 +20,7 @@ const HIDE_TO_SCREEN = Object.entries(PRIMARY_SCREENS).reduce((events, [screen, 
 
 const AppShellContext = createContext(null);
 const dispatch = (eventName, detail) => window.dispatchEvent(new CustomEvent(eventName, { detail }));
+const isPrimaryScreen = (screen) => Boolean(PRIMARY_SCREENS[screen]);
 
 export function AppShellProvider({ children }) {
   const [activeScreen, setActiveScreenState] = useState(null);
@@ -27,20 +28,51 @@ export function AppShellProvider({ children }) {
   const activeScreenRef = useRef(null);
   const activeProfileIdRef = useRef("");
   const ensuringDefault = useRef(false);
+  const applyingHistory = useRef(false);
+  const switchingPrimaryScreen = useRef(false);
+
+  const writeHistoryEntry = useCallback((screen, profileId, replace = false) => {
+    if (!isPrimaryScreen(screen) || applyingHistory.current || typeof window === "undefined") return;
+
+    const nextState = {
+      ...(window.history.state || {}),
+      zommy: true,
+      screen,
+      profileId: profileId || "",
+    };
+
+    const currentState = window.history.state || {};
+    if (currentState.zommy && currentState.screen === screen && (currentState.profileId || "") === (profileId || "")) return;
+
+    if (replace) window.history.replaceState(nextState, "", window.location.href);
+    else window.history.pushState(nextState, "", window.location.href);
+  }, []);
 
   const publishPrimaryScreen = useCallback((screen, profileId = activeProfileIdRef.current) => {
+    const previousScreen = activeScreenRef.current;
+    const previousProfileId = activeProfileIdRef.current;
+    const nextProfileId = profileId || "";
+
     activeScreenRef.current = screen;
-    activeProfileIdRef.current = profileId || "";
+    activeProfileIdRef.current = nextProfileId;
     setActiveScreenState(screen);
-    setActiveProfileIdState(profileId || "");
-    dispatch("zommy:primary-screen-changed", { screen, profileId: profileId || "" });
-  }, []);
+    setActiveProfileIdState(nextProfileId);
+    dispatch("zommy:primary-screen-changed", { screen, profileId: nextProfileId });
+
+    if (screen && !applyingHistory.current) {
+      const replace = !previousScreen;
+      const changed = previousScreen !== screen || previousProfileId !== nextProfileId;
+      if (changed) writeHistoryEntry(screen, nextProfileId, replace);
+    }
+  }, [writeHistoryEntry]);
 
   const setActiveProfileId = useCallback((profileId) => {
-    activeProfileIdRef.current = profileId || "";
-    setActiveProfileIdState(profileId || "");
-    dispatch("zommy:active-profile-changed", { profileId: profileId || "", screen: activeScreenRef.current });
-  }, []);
+    const nextProfileId = profileId || "";
+    activeProfileIdRef.current = nextProfileId;
+    setActiveProfileIdState(nextProfileId);
+    dispatch("zommy:active-profile-changed", { profileId: nextProfileId, screen: activeScreenRef.current });
+    if (activeScreenRef.current && !applyingHistory.current) writeHistoryEntry(activeScreenRef.current, nextProfileId, true);
+  }, [writeHistoryEntry]);
 
   const hideOtherPrimaryScreens = useCallback((screenToKeep) => {
     Object.entries(PRIMARY_SCREENS).forEach(([screen, config]) => {
@@ -52,12 +84,15 @@ export function AppShellProvider({ children }) {
     const config = PRIMARY_SCREENS[screen];
     if (!config) return;
     const profileId = detail.profileId || activeProfileIdRef.current || "";
+    switchingPrimaryScreen.current = true;
     hideOtherPrimaryScreens(screen);
     publishPrimaryScreen(screen, profileId);
     dispatch(config.show, { ...detail, profileId });
+    window.setTimeout(() => { switchingPrimaryScreen.current = false; }, 0);
   }, [hideOtherPrimaryScreens, publishPrimaryScreen]);
 
   const clearPrimaryScreen = useCallback((screen = activeScreenRef.current) => {
+    if (switchingPrimaryScreen.current) return;
     if (screen && activeScreenRef.current !== screen) return;
     publishPrimaryScreen(null, activeProfileIdRef.current);
   }, [publishPrimaryScreen]);
@@ -86,8 +121,10 @@ export function AppShellProvider({ children }) {
     const showHandlers = Object.entries(SHOW_TO_SCREEN).map(([eventName, screen]) => {
       const handler = (event) => {
         const profileId = event.detail?.profileId || activeProfileIdRef.current || "";
+        switchingPrimaryScreen.current = true;
         hideOtherPrimaryScreens(screen);
         publishPrimaryScreen(screen, profileId);
+        window.setTimeout(() => { switchingPrimaryScreen.current = false; }, 0);
       };
       window.addEventListener(eventName, handler);
       return [eventName, handler];
@@ -100,8 +137,10 @@ export function AppShellProvider({ children }) {
     });
 
     const resetPrimaryScreens = () => {
+      switchingPrimaryScreen.current = true;
       Object.values(PRIMARY_SCREENS).forEach((config) => dispatch(config.hide));
       publishPrimaryScreen(null, "");
+      window.setTimeout(() => { switchingPrimaryScreen.current = false; }, 0);
     };
 
     const authListener = (_event, session) => {
@@ -116,9 +155,25 @@ export function AppShellProvider({ children }) {
       if (document.visibilityState !== "hidden") ensureDefaultPrimaryScreen();
     };
 
+    const historyListener = (event) => {
+      const state = event.state || {};
+      if (!state.zommy || !isPrimaryScreen(state.screen)) return;
+
+      applyingHistory.current = true;
+      switchingPrimaryScreen.current = true;
+      hideOtherPrimaryScreens(state.screen);
+      publishPrimaryScreen(state.screen, state.profileId || "");
+      dispatch(PRIMARY_SCREENS[state.screen].show, { profileId: state.profileId || "" });
+      window.setTimeout(() => {
+        applyingHistory.current = false;
+        switchingPrimaryScreen.current = false;
+      }, 0);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(authListener);
 
     ensureDefaultPrimaryScreen();
+    window.addEventListener("popstate", historyListener);
     window.addEventListener("zommy:ensure-primary-screen", ensureDefaultPrimaryScreen);
     window.addEventListener("zommy:profiles-changed", ensureDefaultPrimaryScreen);
     window.addEventListener("zommy:memories-synced", ensureDefaultPrimaryScreen);
@@ -129,6 +184,7 @@ export function AppShellProvider({ children }) {
     return () => {
       showHandlers.forEach(([eventName, handler]) => window.removeEventListener(eventName, handler));
       hideHandlers.forEach(([eventName, handler]) => window.removeEventListener(eventName, handler));
+      window.removeEventListener("popstate", historyListener);
       window.removeEventListener("zommy:ensure-primary-screen", ensureDefaultPrimaryScreen);
       window.removeEventListener("zommy:profiles-changed", ensureDefaultPrimaryScreen);
       window.removeEventListener("zommy:memories-synced", ensureDefaultPrimaryScreen);
