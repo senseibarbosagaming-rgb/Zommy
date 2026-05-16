@@ -4,7 +4,6 @@ import { useAppShell } from "./AppShellContext";
 import FirstRunExperience from "./FirstRunExperience";
 import NavExperienceLayer from "./NavExperienceLayer";
 import MemoryComposer from "./MemoryComposer";
-import CompareScreen from "./CompareScreen";
 import NotificationControlsLayer from "./NotificationControlsLayer";
 import AccessibilitySafetyLayer from "./AccessibilitySafetyLayer";
 import SettingsScreen from "./SettingsScreen";
@@ -23,6 +22,7 @@ import FamilyCircleHomeLayer from "./FamilyCircleHomeLayer";
 import ResumeRecoveryLayer from "./ResumeRecoveryLayer";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
+import { palette, type } from "./designSystem";
 
 const DEFAULT_PREFS = { lang: "en", theme: "dream" };
 const COPY = {
@@ -64,7 +64,6 @@ function AuthedExperience() {
       <TimelineScreen />
       <ChaptersLibrary />
       <ChapterScreen />
-      <CompareScreen />
       <SettingsScreen />
       <FamilySharingScreen />
       <FamilySharingEntryLayer />
@@ -92,10 +91,10 @@ export default function App() {
   const copy = COPY[prefs.lang === "pt" ? "pt" : "en"] || COPY.en;
   const user = session?.user || null;
   const dark = prefs.theme === "night";
-  const bg = dark ? "#18120F" : "#FFF4E8";
-  const text = dark ? "#FFF7EF" : "#3A2A22";
-  const sub = dark ? "rgba(255,247,239,0.68)" : "#80695B";
-  const border = dark ? "rgba(255,244,232,0.14)" : "rgba(122,77,57,0.18)";
+  const bg = dark ? "#18120F" : palette.parchment;
+  const text = dark ? "#FFF7EF" : palette.ink;
+  const sub = dark ? "rgba(255,247,239,0.68)" : palette.inkMuted;
+  const border = dark ? "rgba(255,244,232,0.14)" : palette.border;
 
   const showToast = (message) => {
     setToast(message);
@@ -146,7 +145,7 @@ export default function App() {
     button,input,textarea,select{font:inherit}
     .b{transition:transform .12s,opacity .12s}.b:active{transform:scale(.98);opacity:.86}
     .zommy-primary-screen{animation:zommy-screen-enter .22s cubic-bezier(.2,.8,.2,1) both;will-change:transform,opacity}
-    .zommy-elevated-card{transition:transform .16s ease,opacity .16s ease,box-shadow .16s ease}.zommy-elevated-card:active{transform:scale(.985);opacity:.92}
+    .zommy-elevated-card{transition:transform .16s ease,opacity .16s ease,box-shadow .16s ease}.zommy-elevated-card:active{transform:scale(.985);opacity:.92}.zommy-glass{background:rgba(255,253,248,.76);border:1px solid rgba(122,77,57,.14);box-shadow:0 16px 44px rgba(122,77,57,.10);backdrop-filter:blur(18px)}
     @keyframes zommy-screen-enter{from{opacity:.01;transform:translate3d(0,10px,0) scale(.992)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
     @media (prefers-reduced-motion: reduce){.b,.zommy-primary-screen,.zommy-elevated-card{transition:none!important;animation:none!important}}
   `;
@@ -156,7 +155,7 @@ export default function App() {
       <>
         <InviteAcceptanceLayer />
         <Shell bg={bg} text={text} css={css}>
-          <div style={{ color: sub, fontFamily: "Lora, Georgia, serif", fontStyle: "italic" }}>{copy.loading}</div>
+          <div style={{ color: sub, fontFamily: type.serif, fontStyle: "italic" }}>{copy.loading}</div>
         </Shell>
       </>
     );
@@ -170,7 +169,7 @@ export default function App() {
           {toast && <Toast message={toast} dark={dark} bottom={32} />}
           <div style={{ width: "100%", maxWidth: 370, display: "grid", gap: 22, textAlign: "center", padding: "32px 24px" }}>
             <div style={{ justifySelf: "center" }}><BrandMark /></div>
-            <div><h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 32, lineHeight: 1.12, fontWeight: 650 }}>{copy.title}</h1><p style={{ color: sub, fontSize: 15, lineHeight: 1.7, marginTop: 10 }}>{copy.body}</p></div>
+            <div><h1 style={{ fontFamily: type.serif, fontSize: 32, lineHeight: 1.12, fontWeight: 650 }}>{copy.title}</h1><p style={{ color: sub, fontSize: 15, lineHeight: 1.7, marginTop: 10 }}>{copy.body}</p></div>
             <button className="b" disabled={saving} onClick={signIn} style={{ border: `1px solid ${border}`, background: "#D9826B", color: "#FFFDF7", borderRadius: 18, padding: "16px 18px", fontWeight: 900, cursor: saving ? "wait" : "pointer", boxShadow: "0 14px 34px rgba(217,130,107,0.22)" }}>{saving ? copy.signing : copy.cta}</button>
             <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>{["en", "pt"].map((lang) => <button key={lang} className="b" onClick={() => updatePrefs({ ...prefs, lang })} style={{ border: `1px solid ${prefs.lang === lang ? "#D9826B" : border}`, background: prefs.lang === lang ? "rgba(217,130,107,0.12)" : "transparent", color: prefs.lang === lang ? "#D9826B" : sub, borderRadius: 999, padding: "9px 13px", fontSize: 13, fontWeight: 800 }}>{lang === "en" ? "English" : "Português"}</button>)}</div>
           </div>
@@ -185,10 +184,10 @@ export default function App() {
   return (
     <>
       <InviteAcceptanceLayer />
-      <div style={{ fontFamily: "Inter, system-ui, sans-serif", background: bg, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", position: "relative", overflow: "hidden" }}>
+      <div style={{ fontFamily: type.sans, background: `radial-gradient(circle at 12% -8%, rgba(227,184,92,.22), transparent 32%), radial-gradient(circle at 100% 0%, rgba(127,169,149,.16), transparent 34%), ${bg}`, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", position: "relative", overflow: "hidden" }}>
         <style>{css}</style>
         {toast && <Toast message={toast} dark={dark} bottom={100} />}
-        <header style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", zIndex: 120, width: "100%", maxWidth: 480, minHeight: 68, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: dark ? "rgba(24,18,15,.78)" : "rgba(255,244,232,.86)", backdropFilter: "blur(18px)", borderBottom: `1px solid ${border}` }}>
+        <header style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", zIndex: 120, width: "100%", maxWidth: 480, minHeight: 68, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: dark ? "rgba(24,18,15,.78)" : "rgba(255,253,248,.82)", backdropFilter: "blur(18px)", borderBottom: `1px solid ${border}` }}>
           <div aria-label="Zommy" style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 24, fontWeight: 900, letterSpacing: "-.8px" }}><BrandMark size={38} /><span>Zommy</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
             {avatar ? <img src={avatar} alt="" referrerPolicy="no-referrer" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} /> : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(217,130,107,.16)", color: "#D9826B", display: "grid", placeItems: "center", fontWeight: 900 }}>{name.slice(0,1).toUpperCase()}</div>}
@@ -207,7 +206,7 @@ export default function App() {
 }
 
 function Shell({ bg, text, css, children }) {
-  return <div style={{ fontFamily: "Inter, system-ui, sans-serif", background: bg, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}><style>{css}</style>{children}</div>;
+  return <div style={{ fontFamily: type.sans, background: bg, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}><style>{css}</style>{children}</div>;
 }
 
 function Toast({ message, dark, bottom }) {

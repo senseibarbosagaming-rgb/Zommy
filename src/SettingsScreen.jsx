@@ -169,7 +169,7 @@ const downloadJson = (filename, data) => {
 };
 
 const hidePrimaryScreens = () => {
-  ["zommy:hide-today", "zommy:hide-timeline", "zommy:hide-compare", "zommy:hide-settings"].forEach((eventName) => {
+  ["zommy:hide-today", "zommy:hide-timeline", "zommy:hide-settings"].forEach((eventName) => {
     window.dispatchEvent(new CustomEvent(eventName));
   });
 };
