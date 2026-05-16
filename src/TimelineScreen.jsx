@@ -19,6 +19,9 @@ const COPY = {
     allChildren: "All children",
     search: "Search memories",
     searchPlaceholder: "grandma, beach, first word…",
+    filters: "Search & filters",
+    hideFilters: "Hide filters",
+    activeFilters: (count) => `${count} active`,
     allYears: "All years",
     allAges: "All ages",
     allTags: "All tags",
@@ -49,6 +52,9 @@ const COPY = {
     allChildren: "Todas as crianças",
     search: "Pesquisar memórias",
     searchPlaceholder: "avó, praia, primeira palavra…",
+    filters: "Pesquisa e filtros",
+    hideFilters: "Esconder filtros",
+    activeFilters: (count) => `${count} ativo${count === 1 ? "" : "s"}`,
     allYears: "Todos os anos",
     allAges: "Todas as idades",
     allTags: "Todas as tags",
@@ -137,6 +143,7 @@ export default function TimelineScreen() {
   const [open, setOpen] = useState(false);
   const [profileId, setProfileId] = useState("all");
   const [query, setQuery] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [year, setYear] = useState("");
   const [age, setAge] = useState("");
   const [tag, setTag] = useState("");
@@ -226,6 +233,7 @@ export default function TimelineScreen() {
 
   const emptyText = viewMode === "calendar" ? copy.noCalendar : viewMode === "on-this-day" ? copy.noOnThisDay : copy.noResults;
   const countLabel = viewMode === "chapters" ? copy.chapters(filteredChapters.length) : copy.memories(visibleEntries.length);
+  const activeFilterCount = [normalizedQuery, year, age, tag, favoritesOnly].filter(Boolean).length;
 
   return (
     <main style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
@@ -257,30 +265,46 @@ export default function TimelineScreen() {
             </section>
 
             {viewMode !== "chapters" && (
-              <section style={{ display: "grid", gap: 9, padding: "0 4px" }}>
-                <label style={labelStyle()}>
-                  {copy.search}
-                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} style={inputStyle()} />
-                </label>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <select value={year} onChange={(event) => setYear(event.target.value)} style={selectStyle()}>
-                    <option value="">{copy.allYears}</option>
-                    {years.map((item) => <option key={item} value={item}>{item}</option>)}
-                  </select>
-                  <select value={age} onChange={(event) => setAge(event.target.value)} style={selectStyle()}>
-                    <option value="">{copy.allAges}</option>
-                    <option value="0-3m">{copy.age0to3}</option>
-                    <option value="first-year">{copy.firstYear}</option>
-                    <option value="age-1">{copy.age1}</option>
-                    <option value="age-2">{copy.age2}</option>
-                    <option value="age-3-plus">{copy.age3plus}</option>
-                  </select>
-                </div>
-                <select value={tag} onChange={(event) => setTag(event.target.value)} style={selectStyle()}>
-                  <option value="">{copy.allTags}</option>
-                  {TAGS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                </select>
-                <button onClick={() => setFavoritesOnly(!favoritesOnly)} style={toggleButton(favoritesOnly, "#FBBF24")}>★ {copy.favorites}</button>
+              <section style={{ display: "grid", gap: filtersOpen ? 9 : 0, padding: "0 4px" }}>
+                <button
+                  type="button"
+                  aria-expanded={filtersOpen}
+                  onClick={() => setFiltersOpen((current) => !current)}
+                  style={filterToggleButton(filtersOpen, activeFilterCount)}
+                >
+                  <span>{filtersOpen ? copy.hideFilters : copy.filters}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {activeFilterCount > 0 && <span style={filterCountBadge()}>{copy.activeFilters(activeFilterCount)}</span>}
+                    <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1 }}>{filtersOpen ? "-" : "+"}</span>
+                  </span>
+                </button>
+                {filtersOpen && (
+                  <div style={{ display: "grid", gap: 9 }}>
+                    <label style={labelStyle()}>
+                      {copy.search}
+                      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.searchPlaceholder} style={inputStyle()} />
+                    </label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <select value={year} onChange={(event) => setYear(event.target.value)} style={selectStyle()}>
+                        <option value="">{copy.allYears}</option>
+                        {years.map((item) => <option key={item} value={item}>{item}</option>)}
+                      </select>
+                      <select value={age} onChange={(event) => setAge(event.target.value)} style={selectStyle()}>
+                        <option value="">{copy.allAges}</option>
+                        <option value="0-3m">{copy.age0to3}</option>
+                        <option value="first-year">{copy.firstYear}</option>
+                        <option value="age-1">{copy.age1}</option>
+                        <option value="age-2">{copy.age2}</option>
+                        <option value="age-3-plus">{copy.age3plus}</option>
+                      </select>
+                    </div>
+                    <select value={tag} onChange={(event) => setTag(event.target.value)} style={selectStyle()}>
+                      <option value="">{copy.allTags}</option>
+                      {TAGS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                    </select>
+                    <button onClick={() => setFavoritesOnly(!favoritesOnly)} style={toggleButton(favoritesOnly, "#FBBF24")}>★ {copy.favorites}</button>
+                  </div>
+                )}
               </section>
             )}
 
@@ -398,6 +422,32 @@ function ModeTab({ active, tone = "#34D399", onClick, children }) {
 function FilterPill({ active, color = "#34D399", onClick, children }) {
   return <button onClick={onClick} style={{ flexShrink: 0, border: `1px solid ${active ? color : "rgba(255,255,255,0.14)"}`, background: active ? `${color}22` : "rgba(255,255,255,0.04)", color: active ? color : "rgba(255,255,255,0.72)", borderRadius: 999, padding: "9px 12px", minHeight: 42, fontSize: 13, fontWeight: 900, cursor: "pointer" }}>{children}</button>;
 }
+
+const filterToggleButton = (open, activeCount) => ({
+  border: `1px solid ${open || activeCount ? "#34D399" : "rgba(255,255,255,0.14)"}`,
+  background: open || activeCount ? "rgba(52,211,153,0.13)" : "rgba(255,255,255,0.04)",
+  color: open || activeCount ? "#34D399" : "rgba(255,255,255,0.76)",
+  borderRadius: 15,
+  minHeight: 48,
+  padding: "0 14px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  fontSize: 14,
+  fontWeight: 950,
+  cursor: "pointer",
+});
+
+const filterCountBadge = () => ({
+  border: "1px solid rgba(52,211,153,0.28)",
+  background: "rgba(52,211,153,0.14)",
+  color: "#34D399",
+  borderRadius: 999,
+  padding: "4px 8px",
+  fontSize: 11,
+  fontWeight: 900,
+});
 
 const labelStyle = () => ({ display: "grid", gap: 6, color: "rgba(255,255,255,0.58)", fontSize: 11, fontWeight: 850, textTransform: "uppercase", letterSpacing: "0.7px" });
 const inputStyle = () => ({ width: "100%", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 14, padding: "13px 14px", font: "inherit", fontSize: 15 });

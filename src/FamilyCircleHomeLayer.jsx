@@ -5,16 +5,12 @@ import { useZommyData } from "./useZommyData";
 
 const COPY = {
   en: {
-    privateLine: "Only you can see this for now",
     sharedWith: (name) => `Shared with ${name}`,
     sharedCount: (count) => `Shared with ${count} family members`,
-    invite: "Invite your partner when you're ready",
   },
   pt: {
-    privateLine: "Por agora, só tu consegues ver isto",
     sharedWith: (name) => `Partilhado com ${name}`,
     sharedCount: (count) => `Partilhado com ${count} familiares`,
-    invite: "Convida o teu parceiro quando fizer sentido",
   },
 };
 
@@ -42,13 +38,6 @@ const pillStyle = (color) => ({
   fontFamily: "Inter, system-ui, sans-serif",
   boxShadow: "0 14px 44px rgba(0,0,0,0.24)",
   backdropFilter: "blur(16px)",
-});
-
-const detailStyle = () => ({
-  color: "rgba(255,255,255,0.46)",
-  fontSize: "11px",
-  marginTop: "3px",
-  lineHeight: "1.35",
 });
 
 export default function FamilyCircleHomeLayer() {
@@ -85,16 +74,15 @@ export default function FamilyCircleHomeLayer() {
   if (!user || !profile || (activeScreen && activeScreen !== "today")) return null;
 
   const otherMembers = members.filter((member) => !member.is_current_user);
-  const mainLine = otherMembers.length === 0
-    ? copy.privateLine
-    : otherMembers.length === 1
-      ? copy.sharedWith(memberDisplayName(otherMembers[0]))
-      : copy.sharedCount(otherMembers.length);
+  if (otherMembers.length === 0) return null;
+
+  const mainLine = otherMembers.length === 1
+    ? copy.sharedWith(memberDisplayName(otherMembers[0]))
+    : copy.sharedCount(otherMembers.length);
 
   return (
     <aside aria-live="polite" style={pillStyle(profile.color || "#34D399")}>
       <div>{mainLine}</div>
-      {otherMembers.length === 0 && <div style={detailStyle()}>{copy.invite}</div>}
     </aside>
   );
 }

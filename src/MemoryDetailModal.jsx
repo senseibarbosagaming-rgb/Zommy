@@ -163,13 +163,11 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
   };
 
   const deleteMemory = async () => {
-    if (!user?.id || !entry?.id) return;
+    if (!user?.id || !entry?.id || busy) return;
     setBusy(true);
     setMessage(copy.deleting);
 
     const paths = storagePathsFor(entry);
-    if (paths.length) await supabase.storage.from("photos").remove(paths).catch(() => null);
-
     const { error } = await supabase.from("entries").delete().eq("id", entry.id).eq("user_id", user.id);
     if (error) {
       setMessage(copy.failed);
@@ -179,6 +177,10 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
 
     await refreshParent();
     onClose?.();
+
+    if (paths.length) {
+      supabase.storage.from("photos").remove(paths).catch(() => null);
+    }
   };
 
   return (
