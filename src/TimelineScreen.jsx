@@ -214,6 +214,7 @@ export default function TimelineScreen() {
     return true;
   });
 
+  const showProfileFilter = profiles.length > 1;
   const filteredChapters = chapters.filter((chapter) => profileId === "all" || chapter.profile_id === profileId);
   const onThisDayEntries = filtered.filter((entry) => sameMonthDay(entry.date, today) && entry.date.slice(0, 4) !== today.slice(0, 4));
   const calendarEntries = filtered.filter((entry) => entry.date.startsWith(calendarMonth));
@@ -237,10 +238,10 @@ export default function TimelineScreen() {
 
   return (
     <main style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
-      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100dvh", padding: "calc(12px + env(safe-area-inset-top, 0px)) 12px 124px", display: "grid", gap: 10 }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100dvh", padding: "calc(12px + env(safe-area-inset-top, 0px)) 12px calc(124px + var(--z-keyboard-inset, 0px))", display: "grid", gap: 10 }}>
         <header style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "-12px -12px 0", padding: "calc(12px + env(safe-area-inset-top, 0px)) 16px 8px", background: "rgba(16,20,24,0.9)", backdropFilter: "blur(16px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div>
-            <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 23, lineHeight: 1.08, fontWeight: 650 }}>{copy.title}</h1>
+            <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 24, lineHeight: 1.08, fontWeight: 650 }}>{copy.title}</h1>
             <p style={{ color: "rgba(255,255,255,0.46)", marginTop: 2, fontSize: 12 }}>{countLabel}</p>
           </div>
           {viewMode !== "chapters" && (
@@ -267,12 +268,14 @@ export default function TimelineScreen() {
               <ModeTab active={viewMode === "on-this-day"} tone="#FBBF24" onClick={() => setViewMode("on-this-day")}>{copy.onThisDay}</ModeTab>
             </section>
 
-            <section style={{ display: "flex", gap: 7, overflowX: "auto", padding: "0 4px 2px" }}>
-              <FilterPill active={profileId === "all"} onClick={() => setProfileId("all")}>{copy.allChildren}</FilterPill>
-              {profiles.map((profile) => (
-                <FilterPill key={profile.id} active={profileId === profile.id} color={profile.color} onClick={() => setProfileId(profile.id)}>{profile.emoji || "👶"} {profile.name}</FilterPill>
-              ))}
-            </section>
+            {showProfileFilter && (
+              <section style={{ display: "flex", gap: 7, overflowX: "auto", padding: "0 4px 2px" }}>
+                <FilterPill active={profileId === "all"} onClick={() => setProfileId("all")}>{copy.allChildren}</FilterPill>
+                {profiles.map((profile) => (
+                  <FilterPill key={profile.id} active={profileId === profile.id} color={profile.color} onClick={() => setProfileId(profile.id)}>{profile.emoji || "👶"} {profile.name}</FilterPill>
+                ))}
+              </section>
+            )}
 
             {viewMode !== "chapters" && filtersOpen && (
               <section style={{ display: "grid", gap: 8, padding: "8px 4px 3px" }}>
@@ -414,7 +417,7 @@ function MemoryCard({ entry, profile, lang, onClick }) {
 }
 
 function ModeTab({ active, tone = "#34D399", onClick, children }) {
-  return <button onClick={onClick} style={{ flex: "0 0 auto", border: `1px solid ${active ? tone : "rgba(255,255,255,0.1)"}`, background: active ? `${tone}18` : "rgba(255,255,255,0.028)", color: active ? tone : "rgba(255,255,255,0.58)", borderRadius: 999, minHeight: 33, padding: "7px 11px", fontSize: 12, fontWeight: 850, cursor: "pointer" }}>{children}</button>;
+  return <button onClick={onClick} style={{ flex: "0 0 auto", border: `1px solid ${active ? tone : "rgba(255,255,255,0.1)"}`, background: active ? `${tone}18` : "rgba(255,255,255,0.028)", color: active ? tone : "rgba(255,255,255,0.58)", borderRadius: 999, height: 33, padding: "0 11px", fontSize: 12, lineHeight: "33px", whiteSpace: "nowrap", fontWeight: 850, cursor: "pointer" }}>{children}</button>;
 }
 
 function FilterPill({ active, color = "#34D399", onClick, children }) {

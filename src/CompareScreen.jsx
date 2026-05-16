@@ -100,6 +100,9 @@ const COPY = {
 
 const AGE_MONTHS = [3, 6, 9, 12, 18, 24, 36, 48];
 const MODES = ["discoveries", "then-now", "same-age", "siblings", "same-date"];
+const singleChildModes = (profiles) => MODES.filter((mode) => mode !== "siblings" && (mode !== "same-age" || profiles.length > 1));
+const singleChildPrompts = (copy, lang) => copy.prompts.filter((prompt) => !/sibling|irmãos|irmãs/i.test(prompt));
+const singleChildSamples = (copy) => copy.sampleCards.filter((card) => !/sibling|irmão|irmã/i.test(`${card.title} ${card.caption}`));
 
 const today = () => {
   const date = new Date();
@@ -287,6 +290,10 @@ export default function CompareScreen() {
     if (profileId && !profiles.some((profile) => profile.id === profileId)) setProfileId(profiles[0]?.id || "");
   }, [profileId, profiles]);
 
+  useEffect(() => {
+    if (!singleChildModes(profiles).includes(mode)) setMode("discoveries");
+  }, [mode, profiles]);
+
   if (!open || !user) return null;
 
   const modeLabels = {
@@ -305,12 +312,14 @@ export default function CompareScreen() {
     siblings: copy.siblingHint,
   }[mode];
 
+  const availableModes = singleChildModes(profiles);
+  const hasMultipleProfiles = profiles.length > 1;
   const discoveryCards = buildDiscoveryCards({ entries, profiles, profileById, copy, lang });
   const sameAgeMatches = profiles.map((profile) => closestEntryAtAge(entries, profile, targetMonths)).filter(Boolean);
   const sameDateMatches = entries.filter((entry) => entry.date.slice(5, 10) === targetDate.slice(5, 10)).sort((a, b) => b.date.localeCompare(a.date));
   const selectedEntries = selectedProfile ? orderByDate(entries.filter((entry) => entry.profile_id === selectedProfile.id)) : [];
   const thenNowMatches = selectedEntries.length > 1 ? [selectedEntries[0], selectedEntries[selectedEntries.length - 1]] : selectedEntries;
-  const siblingMatches = profiles.map((profile) => closestEntryAtAge(entries, profile, targetMonths)).filter(Boolean);
+  const siblingMatches = hasMultipleProfiles ? profiles.map((profile) => closestEntryAtAge(entries, profile, targetMonths)).filter(Boolean) : [];
 
   const comparisonEntries = mode === "same-age" ? sameAgeMatches
     : mode === "same-date" ? sameDateMatches
@@ -320,7 +329,10 @@ export default function CompareScreen() {
 
   const hasComparison = mode === "discoveries" ? discoveryCards.length > 0 : comparisonEntries.length >= 2;
   const emptyTitle = profiles.length === 0 ? copy.noProfilesTitle : entries.length === 0 ? copy.noEntriesTitle : copy.notEnoughTitle;
-  const emptyMessage = profiles.length === 0 ? copy.noProfiles : entries.length === 0 ? copy.noEntries : copy.notEnough;
+  const singleChildNoEntries = lang === "pt"
+    ? "Guarda algumas memórias e isto transforma-se num feed de redescobertas — antes e agora, aniversários, crescimento e detalhes pequenos que esqueceste."
+    : "Save a few memories and this will become a feed of rediscovered moments — then vs now, birthdays, growth, and tiny details you forgot.";
+  const emptyMessage = profiles.length === 0 ? copy.noProfiles : entries.length === 0 ? (hasMultipleProfiles ? copy.noEntries : singleChildNoEntries) : copy.notEnough;
 
   const renderMemoryPanel = (entry, index, label) => {
     const profile = profileById[entry.profile_id];
@@ -379,7 +391,7 @@ export default function CompareScreen() {
       </div>
 
       <div style={{ display: "grid", gap: 10 }}>
-        {copy.sampleCards.map((card, index) => (
+        {(hasMultipleProfiles ? copy.sampleCards : singleChildSamples(copy)).map((card, index) => (
           <article key={card.title} style={{ minHeight: 122, borderRadius: 22, padding: 15, display: "grid", gridTemplateColumns: "74px 1fr", gap: 13, alignItems: "center", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
             <div style={{ height: 74, borderRadius: 20, display: "grid", placeItems: "center", fontSize: 30, background: `linear-gradient(145deg, rgba(242,200,121,${0.28 + index * 0.08}), rgba(143,185,168,0.22))` }}>{card.accent}</div>
             <div>
@@ -392,7 +404,7 @@ export default function CompareScreen() {
       </div>
 
       <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-        {copy.prompts.map((prompt) => (
+        {(hasMultipleProfiles ? copy.prompts : singleChildPrompts(copy, lang)).map((prompt) => (
           <button key={prompt} onClick={() => setMode(prompt.toLowerCase().includes("sibling") || prompt.toLowerCase().includes("irmãos") ? "siblings" : "then-now")} style={{ flexShrink: 0, border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.72)", borderRadius: 999, padding: "10px 12px", fontSize: 12, fontWeight: 850, cursor: "pointer" }}>
             {prompt}
           </button>
@@ -407,18 +419,18 @@ export default function CompareScreen() {
         <header style={{ display: "grid", gap: 8, marginBottom: 16 }}>
           <div style={{ color: "#F2C879", fontSize: 11, fontWeight: 950, textTransform: "uppercase", letterSpacing: "1px" }}>{copy.eyebrow}</div>
           <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 40, lineHeight: 1, fontWeight: 650, margin: 0 }}>{copy.title}</h1>
-          <p style={{ color: "rgba(255,255,255,0.62)", lineHeight: 1.5, fontSize: 13, margin: 0 }}>{mode === "discoveries" ? copy.subtitle : modeHint}</p>
+          <p style={{ color: "rgba(255,255,255,0.62)", lineHeight: 1.5, fontSize: 13, margin: 0 }}>{mode === "discoveries" ? (hasMultipleProfiles ? copy.subtitle : (lang === "pt" ? "Abre isto como uma pequena máquina do tempo. O Zommy procura momentos que tornam o tempo visível — primeiras vezes, repetições, estações, crescimento e aquela mesma expressão." : "Open this like a tiny time machine. Zommy looks for moments that make time visible — firsts, repeats, seasons, growth, and that same little expression.")) : modeHint}</p>
         </header>
 
         <nav aria-label="Rediscovery modes" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 10, marginBottom: 10 }}>
-          {MODES.map((item) => (
+          {availableModes.map((item) => (
             <button key={item} onClick={() => setMode(item)} style={{ flexShrink: 0, border: `1px solid ${mode === item ? "#F2C879" : "rgba(255,255,255,0.14)"}`, background: mode === item ? "rgba(242,200,121,0.16)" : "transparent", color: mode === item ? "#F2C879" : "rgba(255,255,255,0.7)", borderRadius: 999, padding: "9px 12px", fontSize: 12, fontWeight: 850, cursor: "pointer" }}>
               {modeLabels[item]}
             </button>
           ))}
         </nav>
 
-        {(mode === "same-age" || mode === "siblings") && (
+        {hasMultipleProfiles && (mode === "same-age" || mode === "siblings") && (
           <label style={fieldLabel()}>
             {copy.targetAge}
             <select value={targetMonths} onChange={(event) => setTargetMonths(Number(event.target.value))} style={controlStyle()}>

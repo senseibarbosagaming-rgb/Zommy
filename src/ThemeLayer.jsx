@@ -54,6 +54,15 @@ const loadPrefs = () => {
 
 const setVar = (name, value) => document.documentElement.style.setProperty(name, value);
 
+const updateViewportInsets = () => {
+  const viewport = window.visualViewport;
+  const keyboardInset = viewport
+    ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+    : 0;
+  setVar("--z-keyboard-inset", `${Math.round(keyboardInset)}px`);
+  setVar("--z-viewport-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
+};
+
 const applyTheme = (prefs = loadPrefs()) => {
   const themeName = normalizeTheme(prefs.theme);
   const theme = THEMES[themeName];
@@ -93,6 +102,7 @@ const applyTheme = (prefs = loadPrefs()) => {
 export default function ThemeLayer() {
   useEffect(() => {
     applyTheme();
+    updateViewportInsets();
 
     const onPrefsChanged = (event) => applyTheme(event.detail || loadPrefs());
     const onStorage = (event) => {
@@ -102,10 +112,16 @@ export default function ThemeLayer() {
 
     window.addEventListener("zommy:prefs-changed", onPrefsChanged);
     window.addEventListener("storage", onStorage);
+    window.addEventListener("resize", updateViewportInsets);
+    window.visualViewport?.addEventListener("resize", updateViewportInsets);
+    window.visualViewport?.addEventListener("scroll", updateViewportInsets);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("zommy:prefs-changed", onPrefsChanged);
       window.removeEventListener("storage", onStorage);
+      window.removeEventListener("resize", updateViewportInsets);
+      window.visualViewport?.removeEventListener("resize", updateViewportInsets);
+      window.visualViewport?.removeEventListener("scroll", updateViewportInsets);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
@@ -115,6 +131,11 @@ export default function ThemeLayer() {
       html, body, #root {
         background: var(--z-bg) !important;
         color: var(--z-text) !important;
+      }
+
+      :root {
+        --z-keyboard-inset: 0px;
+        --z-viewport-height: 100dvh;
       }
 
       body {
@@ -151,6 +172,8 @@ export default function ThemeLayer() {
         color: var(--z-text) !important;
       }
 
+      html[data-zommy-mode="light"] [style*="background: rgba(16,20,24"],
+      html[data-zommy-mode="light"] [style*="background: rgba(16, 20, 24"],
       html[data-zommy-mode="light"] [style*="background: #111820"],
       html[data-zommy-mode="light"] [style*="background:#111820"],
       html[data-zommy-mode="light"] [style*="background: rgb(17, 24, 32)"],
