@@ -145,6 +145,10 @@ export default function App() {
     html,body{background:#FFF4E8;overscroll-behavior:none}
     button,input,textarea,select{font:inherit}
     .b{transition:transform .12s,opacity .12s}.b:active{transform:scale(.98);opacity:.86}
+    .zommy-primary-screen{animation:zommy-screen-enter .22s cubic-bezier(.2,.8,.2,1) both;will-change:transform,opacity}
+    .zommy-elevated-card{transition:transform .16s ease,opacity .16s ease,box-shadow .16s ease}.zommy-elevated-card:active{transform:scale(.985);opacity:.92}
+    @keyframes zommy-screen-enter{from{opacity:.01;transform:translate3d(0,10px,0) scale(.992)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+    @media (prefers-reduced-motion: reduce){.b,.zommy-primary-screen,.zommy-elevated-card{transition:none!important;animation:none!important}}
   `;
 
   if (loading) {
