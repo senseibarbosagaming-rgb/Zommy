@@ -148,7 +148,6 @@ export const uploadMemoryPayload = async ({ userId, profileId, date, note, photo
   const cover = uploaded[coverIndex] || uploaded[0];
   onStatus({ stage: "saving" });
   const { error } = await supabase.from("entries").insert({
-    id: Date.now(),
     user_id: userId,
     profile_id: profileId,
     date,
