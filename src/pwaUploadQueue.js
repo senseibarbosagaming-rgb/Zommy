@@ -121,13 +121,29 @@ const ensureFreshSession = async () => {
   return data.session;
 };
 
+const fileFromWebPath = async (webPath, index = 0) => {
+  const response = await fetch(webPath);
+  if (!response.ok) throw new Error("Could not read native photo");
+  const blob = await response.blob();
+  const extension = blob.type?.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+  return new File([blob], `zommy-native-photo-${Date.now()}-${index}.${extension}`, {
+    type: blob.type || "image/jpeg",
+  });
+};
+
+const uploadableFileForPhoto = async (photo, index) => {
+  if (photo?.file || photo?.blob) return photo.file || photo.blob;
+  if (photo?.webPath) return fileFromWebPath(photo.webPath, index);
+  return photo;
+};
+
 export const uploadMemoryPayload = async ({ userId, profileId, date, note, photos, coverIndex, coverPosition, onStatus = () => {}, onProgress = () => {} }) => {
   await ensureFreshSession();
   const uploaded = [];
 
   for (let i = 0; i < photos.length; i += 1) {
     const photo = photos[i];
-    const file = photo.file || photo.blob || photo;
+    const file = await uploadableFileForPhoto(photo, i);
     onStatus({ stage: "compressing", index: i + 1, total: photos.length, pct: 0 });
     const compressed = await compressImageForUpload(file);
     const extension = (compressed.type || "").includes("png") ? "png" : (compressed.name || "").split(".").pop()?.toLowerCase() || "jpg";
