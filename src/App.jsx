@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './supabase';
@@ -175,6 +177,39 @@ export default function App() {
   useEffect(() => { injectGlobalStyles(); }, []);
 
   useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return undefined;
+
+    const handleOpenUrl = async ({ url }) => {
+      if (!url?.startsWith('app.zommy://login-callback')) return;
+
+      try {
+        await Browser.close().catch(() => null);
+        const parsed = new URL(url);
+        const errorDescription = parsed.searchParams.get('error_description') || parsed.searchParams.get('error');
+        if (errorDescription) throw new Error(errorDescription);
+
+        const code = parsed.searchParams.get('code');
+        if (!code) throw new Error('Missing auth code');
+
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) throw error;
+        setSession(data.session ?? null);
+        setSaving(false);
+      } catch (error) {
+        showToast(authMessage(error, copy));
+        setSaving(false);
+      }
+    };
+
+    let listener;
+    CapacitorApp.addListener('appUrlOpen', handleOpenUrl).then((handle) => { listener = handle; });
+
+    return () => {
+      listener?.remove();
+    };
+  }, [copy]);
+
+  useEffect(() => {
     let mounted = true;
 
     supabase.auth.getSession()
@@ -225,10 +260,11 @@ export default function App() {
       ? 'app.zommy://login-callback'
       : window.location.origin;
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
+        skipBrowserRedirect: Capacitor.isNativePlatform(),
         queryParams: { prompt: 'select_account' },
       },
     });
@@ -236,6 +272,12 @@ export default function App() {
     if (error) {
       showToast(authMessage(error, copy));
       setSaving(false);
+      return;
+    }
+
+    if (Capacitor.isNativePlatform()) {
+      if (data?.url) await Browser.open({ url: data.url });
+      else setSaving(false);
     }
   };
 
