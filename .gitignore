@@ -2,3 +2,15 @@ node_modules/
 dist/
 .env
 .env.local
+
+# Capacitor Android source project is safe to commit.
+# Commit android/ source files such as build.gradle, AndroidManifest.xml, Gradle wrapper files, and resource/config changes.
+# Do not commit local SDK paths, Gradle caches, generated build outputs, or local IDE state.
+android/.gradle/
+android/**/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/captures/
+android/app/release/
+android/app/debug/
