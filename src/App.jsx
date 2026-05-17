@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './supabase';
@@ -219,10 +220,19 @@ export default function App() {
 
   const signIn = async () => {
     setSaving(true);
+
+    const redirectTo = Capacitor.isNativePlatform()
+      ? 'app.zommy://login-callback'
+      : window.location.origin;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin, queryParams: { prompt: 'select_account' } },
+      options: {
+        redirectTo,
+        queryParams: { prompt: 'select_account' },
+      },
     });
+
     if (error) {
       showToast(authMessage(error, copy));
       setSaving(false);
