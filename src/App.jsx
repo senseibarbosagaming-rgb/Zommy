@@ -108,7 +108,7 @@ const authMessage = (error, copy) => {
 // on every render.
 
 const GLOBAL_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Inter:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -118,7 +118,7 @@ const GLOBAL_CSS = `
 }
 
 html, body {
-  background: #FBF7F0;
+  background: var(--z-bg);
   overscroll-behavior: none;
 }
 
@@ -135,7 +135,7 @@ button, input, textarea, select {
   opacity: .88;
 }
 .b:focus-visible {
-  outline: 3px solid rgba(185,120,95,.28);
+  outline: 3px solid var(--z-accent);
   outline-offset: 2px;
 }
 
@@ -156,9 +156,9 @@ button, input, textarea, select {
 
 /* Glass card style */
 .zommy-glass {
-  background: rgba(255,253,248,.76);
-  border: 1px solid rgba(122,77,57,.14);
-  box-shadow: 0 16px 44px rgba(122,77,57,.10);
+  background: var(--z-panel);
+  border: none;
+  box-shadow: var(--z-shadow);
   backdrop-filter: blur(18px);
 }
 
@@ -193,21 +193,14 @@ function BrandMark({ size = 92 }) {
       style={{
         width: size, height: size,
         borderRadius: r,
-        background: "linear-gradient(145deg,#FFFDF7,#FFE2D1)",
-        border: "1px solid rgba(122,77,57,0.14)",
-        boxShadow: "0 22px 54px rgba(122,77,57,0.18)",
+        background: palette.surface,
+        border: "none",
+        boxShadow: palette.shadow,
         display: "grid", placeItems: "center",
         position: "relative", overflow: "hidden",
         flexShrink: 0,
       }}
     >
-      <div style={{
-        position: "absolute",
-        width: size * 1.15, height: size * 1.15,
-        borderRadius: "50%",
-        background: "rgba(143,185,168,0.18)",
-        transform: `translate(${-size * 0.34}px, ${-size * 0.34}px)`,
-      }} />
       <svg
         viewBox="0 0 120 120"
         width={Math.round(size * 0.64)}
@@ -215,9 +208,9 @@ function BrandMark({ size = 92 }) {
         fill="none"
         style={{ position: "relative" }}
       >
-        <path d="M24 58L60 30L96 58"     stroke="#7A4D39" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M36 54V92H84V54"         stroke="#7A4D39" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M60 84C49 76 42 68 42 58C42 51 48 46 55 46C59 46 62 48 65 52C68 48 72 46 76 46C83 46 89 51 89 58C89 70 75 79 60 88" fill="#D9826B" />
+        <path d="M24 58L60 30L96 58"     stroke={palette.stone} strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M36 54V92H84V54"         stroke={palette.stone} strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M60 84C49 76 42 68 42 58C42 51 48 46 55 46C59 46 62 48 65 52C68 48 72 46 76 46C83 46 89 51 89 58C89 70 75 79 60 88" fill={palette.accent} />
       </svg>
     </div>
   );
@@ -225,17 +218,17 @@ function BrandMark({ size = 92 }) {
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
-function Toast({ message, dark, bottom = 32 }) {
+function Toast({ message, bottom = 32 }) {
   return (
     <div style={{
       position: "fixed", bottom, left: "50%", transform: "translateX(-50%)",
       zIndex: 2400,
-      background: dark ? "#FFF7EF" : "#3A2A22",
-      color:      dark ? "#3A2A22" : "#FFF7EF",
+      background: palette.stone,
+      color: palette.surface,
       padding: "10px 20px", borderRadius: 18,
-      fontSize: 13, fontWeight: 800,
+      fontSize: 13, fontWeight: type.weight.ui,
       maxWidth: "min(90vw, 420px)", textAlign: "center",
-      boxShadow: "0 4px 20px rgba(122,77,57,0.2)",
+      boxShadow: palette.shadow,
     }}>
       {message}
     </div>
@@ -293,23 +286,21 @@ function AlwaysOnLayers() {
 
 // ─── Authenticated shell ──────────────────────────────────────────────────────
 
-function AuthenticatedApp({ user, prefs, onPrefsChange, onSignOut, saving, toast, dark }) {
+function AuthenticatedApp({ user, prefs, onSignOut, saving, toast }) {
   const { activeScreen, hasPrimaryScreen } = useAppShell();
 
   const name   = user.user_metadata?.full_name || user.email || "";
   const avatar = user.user_metadata?.avatar_url;
 
-  const bg     = dark ? "#18120F" : palette.parchment;
-  const text   = dark ? "#FFF7EF" : palette.ink;
-  const sub    = dark ? "rgba(255,247,239,0.68)" : palette.inkMuted;
-  const border = dark ? "rgba(255,244,232,0.14)" : palette.border;
+  const bg = palette.milk;
+  const text = palette.stone;
+  const sub = palette.muted;
+  const border = palette.line;
 
   return (
-    <div style={{
+    <div className="zommy-app-frame" style={{
       fontFamily: type.sans,
-      background: `radial-gradient(circle at 12% -8%, rgba(227,184,92,.22), transparent 32%),
-                   radial-gradient(circle at 100% 0%, rgba(127,169,149,.16), transparent 34%),
-                   ${bg}`,
+      background: bg,
       color: text,
       minHeight: "100dvh",
       maxWidth: 480,
@@ -317,7 +308,7 @@ function AuthenticatedApp({ user, prefs, onPrefsChange, onSignOut, saving, toast
       position: "relative",
       overflow: "hidden",
     }}>
-      {toast && <Toast message={toast} dark={dark} bottom={100} />}
+      {toast && <Toast message={toast} bottom={100} />}
 
       {/* App header — fixed at top of the 480px column */}
       <header style={{
@@ -328,14 +319,14 @@ function AuthenticatedApp({ user, prefs, onPrefsChange, onSignOut, saving, toast
         width: "100%", maxWidth: 480,
         minHeight: 68,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 18px",
-        background: dark ? "rgba(24,18,15,.78)" : "rgba(255,253,248,.88)",
+        padding: "14px 20px",
+        background: palette.overlaySoft,
         backdropFilter: "blur(18px)",
         borderBottom: `1px solid ${border}`,
       }}>
         <div
           aria-label="Zommy"
-          style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 24, fontWeight: 900, letterSpacing: "-.8px" }}
+          style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 24, fontWeight: type.weight.heading, letterSpacing: 0 }}
         >
           <BrandMark size={38} />
           <span>Zommy</span>
@@ -344,7 +335,7 @@ function AuthenticatedApp({ user, prefs, onPrefsChange, onSignOut, saving, toast
         <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
           {avatar
             ? <img src={avatar} alt="" referrerPolicy="no-referrer" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
-            : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(217,130,107,.16)", color: "#D9826B", display: "grid", placeItems: "center", fontWeight: 900 }}>
+            : <div style={{ width: 34, height: 34, borderRadius: "50%", background: palette.accentSoft, color: palette.accent, display: "grid", placeItems: "center", fontWeight: type.weight.heading }}>
                 {name.slice(0, 1).toUpperCase()}
               </div>
           }
@@ -354,10 +345,10 @@ function AuthenticatedApp({ user, prefs, onPrefsChange, onSignOut, saving, toast
             onClick={onSignOut}
             style={{
               border: `1px solid ${border}`,
-              background: dark ? "rgba(255,244,232,.07)" : "rgba(255,255,255,.58)",
+              background: palette.surface,
               color: sub,
               borderRadius: 999, padding: "8px 10px",
-              fontSize: 12, fontWeight: 800,
+              fontSize: 12, fontWeight: type.weight.ui,
               cursor: saving ? "wait" : "pointer",
             }}
           >
@@ -405,8 +396,6 @@ export default function App() {
 
   const copy = COPY[prefs.lang === "pt" ? "pt" : "en"] ?? COPY.en;
   const user = session?.user ?? null;
-  const dark = prefs.theme === "night";
-
   // Inject global CSS once on mount
   useEffect(() => { injectGlobalStyles(); }, []);
 
@@ -464,17 +453,17 @@ export default function App() {
     setSaving(false);
   };
 
-  const bg     = dark ? "#18120F" : palette.parchment;
-  const text   = dark ? "#FFF7EF" : palette.ink;
-  const sub    = dark ? "rgba(255,247,239,0.68)" : palette.inkMuted;
-  const border = dark ? "rgba(255,244,232,0.14)" : palette.border;
+  const bg = palette.milk;
+  const text = palette.stone;
+  const sub = palette.muted;
+  const border = palette.line;
 
   // ── Loading state ──
   if (loading) {
     return (
       <>
         <InviteAcceptanceLayer />
-        <div style={{ fontFamily: type.sans, background: bg, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}>
+        <div className="zommy-app-frame" style={{ fontFamily: type.sans, background: bg, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}>
           <div style={{ color: sub, fontFamily: type.serif, fontStyle: "italic" }}>{copy.loading}</div>
         </div>
       </>
@@ -486,8 +475,8 @@ export default function App() {
     return (
       <>
         <InviteAcceptanceLayer />
-        <div style={{ fontFamily: type.sans, background: bg, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}>
-          {toast && <Toast message={toast} dark={dark} bottom={32} />}
+        <div className="zommy-app-frame" style={{ fontFamily: type.sans, background: bg, color: text, minHeight: "100dvh", maxWidth: 480, margin: "0 auto", display: "grid", placeItems: "center" }}>
+          {toast && <Toast message={toast} bottom={32} />}
 
           <div style={{ width: "100%", maxWidth: 370, display: "grid", gap: 22, textAlign: "center", padding: "32px 24px" }}>
             <div style={{ justifySelf: "center" }}>
@@ -495,7 +484,7 @@ export default function App() {
             </div>
 
             <div>
-              <h1 style={{ fontFamily: type.serif, fontSize: 32, lineHeight: 1.12, fontWeight: 650 }}>
+              <h1 style={{ fontFamily: type.serif, fontSize: 32, lineHeight: 1.12, fontWeight: type.weight.heading }}>
                 {copy.title}
               </h1>
               <p style={{ color: sub, fontSize: 15, lineHeight: 1.7, marginTop: 10 }}>
@@ -509,11 +498,11 @@ export default function App() {
               onClick={signIn}
               style={{
                 border: `1px solid ${border}`,
-                background: "#D9826B", color: "#FFFDF7",
+                background: palette.accent, color: palette.surface,
                 borderRadius: 18, padding: "16px 18px",
-                fontWeight: 900,
+                fontWeight: type.weight.heading,
                 cursor: saving ? "wait" : "pointer",
-                boxShadow: "0 14px 34px rgba(217,130,107,0.22)",
+                boxShadow: palette.shadow,
               }}
             >
               {saving ? copy.signing : copy.cta}
@@ -527,11 +516,11 @@ export default function App() {
                   className="b"
                   onClick={() => updatePrefs({ ...prefs, lang })}
                   style={{
-                    border: `1px solid ${prefs.lang === lang ? "#D9826B" : border}`,
-                    background: prefs.lang === lang ? "rgba(217,130,107,0.12)" : "transparent",
-                    color: prefs.lang === lang ? "#D9826B" : sub,
+                    border: `1px solid ${prefs.lang === lang ? palette.accentLine : border}`,
+                    background: prefs.lang === lang ? palette.accentSoft : "transparent",
+                    color: prefs.lang === lang ? palette.accent : sub,
                     borderRadius: 999, padding: "9px 13px",
-                    fontSize: 13, fontWeight: 800,
+                    fontSize: 13, fontWeight: type.weight.ui,
                   }}
                 >
                   {lang === "en" ? "English" : "Português"}
@@ -551,11 +540,9 @@ export default function App() {
       <AuthenticatedApp
         user={user}
         prefs={prefs}
-        onPrefsChange={updatePrefs}
         onSignOut={signOut}
         saving={saving}
         toast={toast}
-        dark={dark}
       />
       <SpeedInsights />
       <Analytics />

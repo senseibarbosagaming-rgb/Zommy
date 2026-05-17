@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { field, palette, type } from "./designSystem";
 import {
   buildNotificationPreview,
   DAYS,
@@ -42,14 +43,14 @@ export default function NotificationSettingsPanel({ profiles = [], entries = [] 
 
   return (
     <section style={{ display: "grid", gap: 15 }}>
-      <button onClick={() => updatePrefs({ ...prefs, enabled: !prefs.enabled })} style={{ border: `1px solid ${prefs.enabled ? "#34D399" : "rgba(255,255,255,0.14)"}`, background: prefs.enabled ? "rgba(52,211,153,0.16)" : "rgba(255,255,255,0.04)", color: prefs.enabled ? "#34D399" : "rgba(255,255,255,0.74)", borderRadius: 16, padding: 14, textAlign: "left", cursor: "pointer" }}>
-        <div style={{ fontSize: 15, fontWeight: 900 }}>{prefs.enabled ? "✓ " : ""}{copy.master}</div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.52)", lineHeight: 1.45, marginTop: 4 }}>{copy.masterHint}</div>
+      <button onClick={() => updatePrefs({ ...prefs, enabled: !prefs.enabled })} style={choiceButtonStyle(prefs.enabled, palette.accent)}>
+        <div style={{ fontSize: 15, fontWeight: type.weight.heading }}>{prefs.enabled ? "✓ " : ""}{copy.master}</div>
+        <div style={helpTextStyle}>{copy.masterHint}</div>
       </button>
 
       <div style={panelStyle()}>
         <div style={eyebrowStyle()}>{copy.permission}</div>
-        <button onClick={requestPermission} disabled={permission === "granted" || permission === "unsupported"} style={{ border: "1px solid rgba(255,255,255,0.14)", background: permission === "granted" ? "rgba(52,211,153,0.15)" : "transparent", color: permission === "granted" ? "#34D399" : "rgba(255,255,255,0.78)", borderRadius: 13, padding: 11, fontWeight: 850, cursor: permission === "default" ? "pointer" : "default" }}>
+        <button onClick={requestPermission} disabled={permission === "granted" || permission === "unsupported"} style={choiceButtonStyle(permission === "granted", palette.success)}>
           {permissionText}
         </button>
       </div>
@@ -70,7 +71,7 @@ export default function NotificationSettingsPanel({ profiles = [], entries = [] 
           ["birthdays", copy.birthdays],
           ["weeklyDigest", copy.weeklyDigest],
         ].map(([key, label]) => (
-          <button key={key} onClick={() => toggleType(key)} style={{ border: `1px solid ${prefs.types?.[key] ? "#60A5FA" : "rgba(255,255,255,0.14)"}`, background: prefs.types?.[key] ? "rgba(96,165,250,0.16)" : "transparent", color: prefs.types?.[key] ? "#60A5FA" : "rgba(255,255,255,0.72)", borderRadius: 13, padding: "11px 12px", textAlign: "left", fontWeight: 850, cursor: "pointer" }}>
+          <button key={key} onClick={() => toggleType(key)} style={choiceButtonStyle(Boolean(prefs.types?.[key]), palette.accent)}>
             {prefs.types?.[key] ? "✓ " : ""}{label}
           </button>
         ))}
@@ -79,12 +80,12 @@ export default function NotificationSettingsPanel({ profiles = [], entries = [] 
       <div style={{ display: "grid", gap: 8 }}>
         <div>
           <div style={eyebrowStyle()}>{copy.quietDays}</div>
-          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, marginTop: 3 }}>{copy.quietDaysHint}</div>
+          <div style={helpTextStyle}>{copy.quietDaysHint}</div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
           {DAYS.map((day) => {
             const selected = prefs.quietDays?.includes(day.id);
-            return <button key={day.id} onClick={() => toggleQuietDay(day.id)} style={{ border: `1px solid ${selected ? "#FB7185" : "rgba(255,255,255,0.12)"}`, background: selected ? "rgba(251,113,133,0.15)" : "rgba(255,255,255,0.035)", color: selected ? "#FB7185" : "rgba(255,255,255,0.56)", borderRadius: 11, padding: "9px 0", fontSize: 11, fontWeight: 850, cursor: "pointer" }}>{day[lang]}</button>;
+            return <button key={day.id} onClick={() => toggleQuietDay(day.id)} style={dayButtonStyle(selected)}>{day[lang]}</button>;
           })}
         </div>
       </div>
@@ -92,27 +93,32 @@ export default function NotificationSettingsPanel({ profiles = [], entries = [] 
       <div style={{ display: "grid", gap: 8 }}>
         <div>
           <div style={eyebrowStyle()}>{copy.children}</div>
-          <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, marginTop: 3 }}>{activeProfiles.length ? copy.childrenHint : copy.noChildren}</div>
+          <div style={helpTextStyle}>{activeProfiles.length ? copy.childrenHint : copy.noChildren}</div>
         </div>
         {activeProfiles.map((profile) => {
           const enabled = prefs.childIds?.[profile.id] !== false;
+          const color = profile.color || palette.accent;
           return (
-            <button key={profile.id} onClick={() => toggleChild(profile.id)} style={{ border: `1px solid ${enabled ? profile.color || "#34D399" : "rgba(255,255,255,0.14)"}`, background: enabled ? `${profile.color || "#34D399"}22` : "transparent", color: enabled ? profile.color || "#34D399" : "rgba(255,255,255,0.56)", borderRadius: 13, padding: "11px 12px", textAlign: "left", fontWeight: 850, cursor: "pointer" }}>
+            <button key={profile.id} onClick={() => toggleChild(profile.id)} style={choiceButtonStyle(enabled, color)}>
               {enabled ? "✓ " : ""}{profile.emoji || "👶"} {profile.name}
             </button>
           );
         })}
       </div>
 
-      <div style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, padding: 14, background: "linear-gradient(180deg, rgba(251,191,36,0.13), rgba(255,255,255,0.04))" }}>
-        <div style={{ color: "rgba(255,255,255,0.56)", fontSize: 11, fontWeight: 850, textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 8 }}>{copy.preview}</div>
-        <div style={{ fontSize: 14, lineHeight: 1.55 }}><span style={{ color: "rgba(255,255,255,0.55)" }}>{copy.previewPrefix}</span> “{preview}”.</div>
+      <div style={previewStyle}>
+        <div style={eyebrowStyle()}>{copy.preview}</div>
+        <div style={{ fontSize: 14, lineHeight: 1.55 }}><span style={{ color: palette.muted }}>{copy.previewPrefix}</span> “{preview}”.</div>
       </div>
     </section>
   );
 }
 
-const panelStyle = () => ({ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, padding: 14, display: "grid", gap: 10, background: "rgba(255,255,255,0.04)" });
-const eyebrowStyle = () => ({ color: "rgba(255,255,255,0.62)", fontSize: 11, fontWeight: 850, textTransform: "uppercase", letterSpacing: "0.7px" });
-const labelStyle = () => ({ display: "grid", gap: 7, color: "rgba(255,255,255,0.62)", fontSize: 11, fontWeight: 850, textTransform: "uppercase", letterSpacing: "0.7px" });
-const controlStyle = () => ({ border: "1px solid rgba(255,255,255,0.14)", background: "#151d25", color: "#fff", borderRadius: 12, padding: 12, font: "inherit" });
+const panelStyle = () => ({ border: "none", borderRadius: 20, padding: 16, display: "grid", gap: 10, background: palette.surface, boxShadow: palette.shadow });
+const eyebrowStyle = () => ({ color: palette.muted, fontSize: 11, fontWeight: type.weight.ui, textTransform: "uppercase", letterSpacing: 0 });
+const labelStyle = () => ({ display: "grid", gap: 7, color: palette.muted, fontSize: 11, fontWeight: type.weight.ui, textTransform: "uppercase", letterSpacing: 0 });
+const helpTextStyle = { color: palette.faint, fontSize: 12, lineHeight: 1.45, marginTop: 4 };
+const controlStyle = () => ({ ...field });
+const choiceButtonStyle = (active, color) => ({ border: `1px solid ${active ? palette.accentLine : palette.line}`, background: active ? palette.accentSoft : palette.surface, color: active ? color : palette.muted, borderRadius: 14, minHeight: 48, padding: "11px 12px", textAlign: "left", fontWeight: type.weight.ui, cursor: "pointer" });
+const dayButtonStyle = (selected) => ({ border: `1px solid ${selected ? palette.dangerSoft : palette.line}`, background: selected ? palette.dangerSoft : palette.surface, color: selected ? palette.danger : palette.muted, borderRadius: 11, minHeight: 48, padding: "9px 0", fontSize: 11, fontWeight: type.weight.ui, cursor: "pointer" });
+const previewStyle = { border: "none", borderRadius: 20, padding: 16, background: palette.surface, boxShadow: palette.shadow, display: "grid", gap: 8 };

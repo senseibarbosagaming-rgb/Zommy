@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { palette, type } from "./designSystem";
 import { getQueuedCount } from "./pwaStorage";
 import { flushQueuedUploads } from "./pwaUploadQueue";
 
@@ -147,24 +148,24 @@ export default function PWAExperienceLayer() {
   return (
     <>
       {(!online || queuedCount > 0 || message) && (
-        <div style={{ position: "fixed", top: "calc(10px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)", zIndex: 2100, maxWidth: "min(92vw, 430px)", background: online ? "#111820" : "#3b1d1d", color: "#fff", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 999, padding: "9px 13px", fontSize: 12, fontWeight: 850, boxShadow: "0 12px 34px rgba(0,0,0,0.28)", fontFamily: "Inter, system-ui, sans-serif" }}>
+        <div style={{ position: "fixed", top: "calc(10px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)", zIndex: 2100, maxWidth: "min(92vw, 430px)", background: online ? palette.surface : palette.dangerSoft, color: online ? palette.stone : palette.danger, border: "none", borderRadius: 999, padding: "9px 13px", fontSize: 12, fontWeight: type.weight.ui, boxShadow: palette.shadow, fontFamily: type.sans }}>
           {!online ? copy.offline : message || copy.queued(queuedCount)}
         </div>
       )}
 
       {showInstall && installEvent && (
-        <div style={{ position: "fixed", left: 14, right: 14, bottom: "calc(88px + env(safe-area-inset-bottom, 0px))", zIndex: 2100, display: "flex", justifyContent: "center", fontFamily: "Inter, system-ui, sans-serif" }}>
-          <section style={{ width: "100%", maxWidth: 452, background: "#111820", color: "#fff", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 22, padding: 16, boxShadow: "0 24px 70px rgba(0,0,0,0.42)", display: "grid", gap: 10 }}>
+        <div style={{ position: "fixed", left: 20, right: 20, bottom: "calc(88px + env(safe-area-inset-bottom, 0px))", zIndex: 2100, display: "flex", justifyContent: "center", fontFamily: type.sans }}>
+          <section style={{ width: "100%", maxWidth: 452, background: palette.surface, color: palette.stone, border: "none", borderRadius: 20, padding: 16, boxShadow: palette.sideShadow, display: "grid", gap: 10 }}>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <img src="/icons/icon.svg" alt="" style={{ width: 42, height: 42, borderRadius: 12 }} />
               <div>
-                <div style={{ fontSize: 16, fontWeight: 900 }}>{copy.installTitle}</div>
-                <div style={{ color: "rgba(255,255,255,0.58)", fontSize: 13, lineHeight: 1.45, marginTop: 2 }}>{copy.installBody}</div>
+                <div style={{ fontSize: 16, fontWeight: type.weight.heading }}>{copy.installTitle}</div>
+                <div style={{ color: palette.muted, fontSize: 13, lineHeight: 1.45, marginTop: 2 }}>{copy.installBody}</div>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
-              <button onClick={dismissInstall} style={{ border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.72)", borderRadius: 14, minHeight: 46, fontWeight: 850 }}>{copy.later}</button>
-              <button onClick={install} style={{ border: "none", background: "#34D399", color: "#111", borderRadius: 14, minHeight: 46, fontWeight: 950 }}>{copy.install}</button>
+              <button onClick={dismissInstall} style={{ border: `1px solid ${palette.line}`, background: palette.surface, color: palette.muted, borderRadius: 14, minHeight: 48, fontWeight: type.weight.ui }}>{copy.later}</button>
+              <button onClick={install} style={{ border: "none", background: palette.accent, color: palette.surface, borderRadius: 14, minHeight: 48, fontWeight: type.weight.heading }}>{copy.install}</button>
             </div>
           </section>
         </div>

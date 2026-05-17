@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import MemoryDetailModal from "./MemoryDetailModal";
 import { appSurface, card, contentFrame, emptyStateCard, palette, primaryButton, type } from "./designSystem";
 import { supabase } from "./supabase";
@@ -19,7 +19,7 @@ const COPY = {
     title: "Memories",
     allChildren: "All children",
     search: "Search memories",
-    searchPlaceholder: "grandma, beach, first word…",
+    searchPlaceholder: "grandma, beach, first wordâ€¦",
     filters: "Filters",
     hideFilters: "Hide",
     activeFilters: (count) => `${count} active`,
@@ -32,7 +32,7 @@ const COPY = {
     calendarTab: "Calendar",
     onThisDay: "On this day",
     noChildren: "Create a child profile first, then Zommy will start keeping their story here.",
-    noResults: "Start with today.|One photo. One sentence. That’s enough.",
+    noResults: "Start with today.|One photo. One sentence. Thatâ€™s enough.",
     noCalendar: "No memories in this month.",
     noOnThisDay: "No memories from this day in previous years yet.",
     noChapters: "Chapters will appear here as monthly stories are drafted or locked.",
@@ -42,17 +42,17 @@ const COPY = {
     openChapter: "Open chapter",
     locked: "Locked",
     draft: "Draft",
-    age0to3: "0–3 months",
+    age0to3: "0â€“3 months",
     firstYear: "First year",
     age1: "Age 1",
     age2: "Age 2",
     age3plus: "Age 3+",
   },
   pt: {
-    title: "Memórias",
-    allChildren: "Todas as crianças",
-    search: "Pesquisar memórias",
-    searchPlaceholder: "avó, praia, primeira palavra…",
+    title: "MemÃ³rias",
+    allChildren: "Todas as crianÃ§as",
+    search: "Pesquisar memÃ³rias",
+    searchPlaceholder: "avÃ³, praia, primeira palavraâ€¦",
     filters: "Filtros",
     hideFilters: "Esconder",
     activeFilters: (count) => `${count} ativo${count === 1 ? "" : "s"}`,
@@ -60,22 +60,22 @@ const COPY = {
     allAges: "Todas as idades",
     allTags: "Todas as tags",
     favorites: "Favoritas",
-    memoriesTab: "Memórias",
-    chaptersTab: "Capítulos",
-    calendarTab: "Calendário",
+    memoriesTab: "MemÃ³rias",
+    chaptersTab: "CapÃ­tulos",
+    calendarTab: "CalendÃ¡rio",
     onThisDay: "Neste dia",
-    noChildren: "Adiciona uma criança para criar uma timeline.",
-    noResults: "Ainda não há memórias com estes filtros.",
-    noCalendar: "Sem memórias neste mês.",
-    noOnThisDay: "Ainda não há memórias deste dia em anos anteriores.",
-    noChapters: "Os capítulos vão aparecer aqui como histórias mensais em rascunho ou fechadas.",
-    memories: (count) => `${count} ${count === 1 ? "memória" : "memórias"}`,
-    chapters: (count) => `${count} ${count === 1 ? "capítulo" : "capítulos"}`,
-    addMemory: "Adicionar memória",
-    openChapter: "Abrir capítulo",
+    noChildren: "Adiciona uma crianÃ§a para criar uma timeline.",
+    noResults: "Ainda nÃ£o hÃ¡ memÃ³rias com estes filtros.",
+    noCalendar: "Sem memÃ³rias neste mÃªs.",
+    noOnThisDay: "Ainda nÃ£o hÃ¡ memÃ³rias deste dia em anos anteriores.",
+    noChapters: "Os capÃ­tulos vÃ£o aparecer aqui como histÃ³rias mensais em rascunho ou fechadas.",
+    memories: (count) => `${count} ${count === 1 ? "memÃ³ria" : "memÃ³rias"}`,
+    chapters: (count) => `${count} ${count === 1 ? "capÃ­tulo" : "capÃ­tulos"}`,
+    addMemory: "Adicionar memÃ³ria",
+    openChapter: "Abrir capÃ­tulo",
     locked: "Fechado",
     draft: "Rascunho",
-    age0to3: "0–3 meses",
+    age0to3: "0â€“3 meses",
     firstYear: "Primeiro ano",
     age1: "1 ano",
     age2: "2 anos",
@@ -242,7 +242,7 @@ export default function TimelineScreen() {
       <div style={contentFrame(124)}>
         <header style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "-18px -16px 0", padding: "calc(18px + env(safe-area-inset-top, 0px)) 16px 10px", background: "rgba(255,253,248,0.82)", backdropFilter: "blur(18px)", borderBottom: `1px solid ${palette.border}` }}>
           <div>
-            <h1 style={{ fontFamily: type.serif, fontSize: 24, lineHeight: 1.08, fontWeight: 650 }}>{copy.title}</h1>
+            <h1 style={{ fontFamily: type.serif, fontSize: 24, lineHeight: 1.08, fontWeight: type.weight.heading }}>{copy.title}</h1>
             <p style={{ color: palette.inkFaint, marginTop: 2, fontSize: 12 }}>{countLabel}</p>
           </div>
           {viewMode !== "chapters" && (
@@ -273,7 +273,7 @@ export default function TimelineScreen() {
               <section style={{ display: "flex", gap: 7, overflowX: "auto", padding: "0 4px 2px" }}>
                 <FilterPill active={profileId === "all"} onClick={() => setProfileId("all")}>{copy.allChildren}</FilterPill>
                 {profiles.map((profile) => (
-                  <FilterPill key={profile.id} active={profileId === profile.id} color={profile.color} onClick={() => setProfileId(profile.id)}>{profile.emoji || "👶"} {profile.name}</FilterPill>
+                  <FilterPill key={profile.id} active={profileId === profile.id} color={profile.color} onClick={() => setProfileId(profile.id)}>{profile.emoji || "ðŸ‘¶"} {profile.name}</FilterPill>
                 ))}
               </section>
             )}
@@ -302,7 +302,7 @@ export default function TimelineScreen() {
                   <option value="">{copy.allTags}</option>
                   {TAGS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                 </select>
-                <button onClick={() => setFavoritesOnly(!favoritesOnly)} style={toggleButton(favoritesOnly, palette.honey)}>★ {copy.favorites}</button>
+                <button onClick={() => setFavoritesOnly(!favoritesOnly)} style={toggleButton(favoritesOnly, palette.honey)}>â˜… {copy.favorites}</button>
               </section>
             )}
 
@@ -313,7 +313,7 @@ export default function TimelineScreen() {
                   {monthDays(calendarMonth).map((day) => {
                     const count = calendarByDay.get(day)?.length || 0;
                     return (
-                      <button key={day} onClick={() => count && setYear(day.slice(0, 4))} style={{ minHeight: 39, border: `1px solid ${count ? palette.sage : palette.border}`, background: count ? "rgba(52,211,153,0.13)" : "rgba(255,253,248,0.54)", color: count ? palette.sage : palette.inkFaint, borderRadius: 10, fontSize: 12, fontWeight: 850, cursor: count ? "pointer" : "default" }}>
+                      <button key={day} onClick={() => count && setYear(day.slice(0, 4))} style={{ minHeight: 39, border: `1px solid ${count ? palette.sage : palette.border}`, background: count ? "rgba(52,211,153,0.13)" : "rgba(255,253,248,0.54)", color: count ? palette.sage : palette.inkFaint, borderRadius: 10, fontSize: 12, fontWeight: type.weight.ui, cursor: count ? "pointer" : "default" }}>
                         <div>{Number(day.slice(8, 10))}</div>
                         {count > 0 && <div style={{ fontSize: 9, marginTop: 1 }}>{count}</div>}
                       </button>
@@ -323,7 +323,7 @@ export default function TimelineScreen() {
               </section>
             )}
 
-            {(loading || chaptersLoading) && <div style={{ color: palette.inkFaint, textAlign: "center", padding: 12 }}>Loading…</div>}
+            {(loading || chaptersLoading) && <div style={{ color: palette.inkFaint, textAlign: "center", padding: 12 }}>Loadingâ€¦</div>}
 
             {viewMode === "chapters" ? (
               <ChaptersView chapters={filteredChapters} entries={entries} profiles={profiles} copy={copy} />
@@ -336,7 +336,7 @@ export default function TimelineScreen() {
                 <section style={{ display: "grid", gap: 16 }}>
                   {monthKeys.map((month) => (
                     <div key={month} style={{ display: "grid", gap: 8 }}>
-                      <h2 style={{ fontFamily: type.serif, color: palette.ink, fontSize: 25, lineHeight: 1.1, fontWeight: 650, padding: "8px 4px 2px" }}>{monthLabel(`${month}-01`, lang)}</h2>
+                      <h2 style={{ fontFamily: type.serif, color: palette.ink, fontSize: 25, lineHeight: 1.1, fontWeight: type.weight.heading, padding: "8px 4px 2px" }}>{monthLabel(`${month}-01`, lang)}</h2>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
                         {grouped[month].map((entry) => <MemoryCard key={entry.id} entry={entry} profile={profileById[entry.profile_id]} lang={lang} onClick={() => setSelectedEntry(entry)} />)}
                       </div>
@@ -350,7 +350,7 @@ export default function TimelineScreen() {
       </div>
 
       {profiles.length > 0 && (
-        <button onClick={openComposer} aria-label={copy.addMemory} style={{ position: "fixed", right: "calc(18px + env(safe-area-inset-right, 0px))", bottom: "calc(92px + env(safe-area-inset-bottom, 0px))", zIndex: 910, width: 54, height: 54, border: "none", borderRadius: 22, background: palette.clay, color: "#FFFDF8", fontSize: 30, fontWeight: 800, lineHeight: 1, boxShadow: palette.shadow, cursor: "pointer" }}>+</button>
+      <button onClick={openComposer} aria-label={copy.addMemory} style={{ position: "fixed", right: "calc(20px + env(safe-area-inset-right, 0px))", bottom: "calc(92px + env(safe-area-inset-bottom, 0px))", zIndex: 910, width: 54, height: 54, border: "none", borderRadius: 999, background: palette.accent, color: palette.surface, fontSize: 30, fontWeight: type.weight.heading, lineHeight: 1, boxShadow: palette.shadow, cursor: "pointer" }}>+</button>
       )}
 
       {selectedEntry && (
@@ -383,15 +383,15 @@ function ChaptersView({ chapters, entries, profiles, copy }) {
         const cover = chapterEntries.find((entry) => entry.photoUrl);
         return (
           <article key={chapter.id} style={{ border: `1px solid ${palette.border}`, borderRadius: 22, overflow: "hidden", background: "rgba(255,253,248,0.78)", boxShadow: palette.shadowSoft }}>
-            {cover?.photoUrl ? <img src={cover.photoUrl} alt={chapter.title} style={{ width: "100%", height: 186, objectFit: "cover", display: "block" }} /> : <div style={{ height: 150, display: "grid", placeItems: "center", fontSize: 38, background: "rgba(255,248,239,0.74)" }}>{profile?.emoji || "📖"}</div>}
+            {cover?.photoUrl ? <img src={cover.photoUrl} alt={chapter.title} style={{ width: "100%", height: 186, objectFit: "cover", display: "block" }} /> : <div style={{ height: 150, display: "grid", placeItems: "center", fontSize: 38, background: "rgba(255,248,239,0.74)" }}>{profile?.emoji || "ðŸ“–"}</div>}
             <div style={{ padding: 15, display: "grid", gap: 9 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                <div style={{ color: chapter.status === "locked" ? palette.honey : (profile?.color || palette.sage), fontSize: 10, fontWeight: 900, letterSpacing: "0.7px", textTransform: "uppercase" }}>{chapter.status === "locked" ? copy.locked : copy.draft}</div>
+                <div style={{ color: chapter.status === "locked" ? palette.honey : (profile?.color || palette.sage), fontSize: 10, fontWeight: type.weight.heading, letterSpacing: 0, textTransform: "uppercase" }}>{chapter.status === "locked" ? copy.locked : copy.draft}</div>
                 <div style={{ color: palette.inkFaint, fontSize: 12 }}>{copy.memories(chapterEntries.length)}</div>
               </div>
-              <h2 style={{ fontFamily: type.serif, fontSize: 24, lineHeight: 1.08, fontWeight: 650 }}>{chapter.title}</h2>
+              <h2 style={{ fontFamily: type.serif, fontSize: 24, lineHeight: 1.08, fontWeight: type.weight.heading }}>{chapter.title}</h2>
               {chapter.letter && <p style={{ color: palette.inkMuted, lineHeight: 1.6, fontSize: 14, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{chapter.letter}</p>}
-              <button onClick={() => window.dispatchEvent(new CustomEvent("zommy:show-chapter", { detail: { profileId: chapter.profile_id } }))} style={{ justifySelf: "start", border: "none", background: profile?.color || palette.sage, color: palette.ink, borderRadius: 999, padding: "9px 12px", fontSize: 12, fontWeight: 900, cursor: "pointer" }}>{copy.openChapter}</button>
+              <button onClick={() => window.dispatchEvent(new CustomEvent("zommy:show-chapter", { detail: { profileId: chapter.profile_id } }))} style={{ justifySelf: "start", border: "none", background: profile?.color || palette.sage, color: palette.ink, borderRadius: 999, padding: "9px 12px", fontSize: 12, fontWeight: type.weight.heading, cursor: "pointer" }}>{copy.openChapter}</button>
             </div>
           </article>
         );
@@ -402,27 +402,27 @@ function ChaptersView({ chapters, entries, profiles, copy }) {
 
 function MemoryCard({ entry, profile, lang, onClick }) {
   return (
-    <button className="zommy-elevated-card" aria-label={`${profile?.name || "Child"} memory from ${entry.date}`} onClick={onClick} style={{ border: `1px solid ${palette.border}`, background: palette.paper, color: palette.ink, borderRadius: 24, padding: 0, overflow: "hidden", textAlign: "left", cursor: "pointer", position: "relative", aspectRatio: "3 / 4.2", minWidth: 0, boxShadow: palette.shadowLift }}>
-      {entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} /> : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", background: "rgba(255,248,239,0.74)", fontSize: 24 }}>{profile?.emoji || "📷"}</div>}
+      <button className="zommy-elevated-card" aria-label={`${profile?.name || "Child"} memory from ${entry.date}`} onClick={onClick} style={{ border: `1px solid ${palette.border}`, background: palette.paper, color: palette.ink, borderRadius: 24, padding: 0, overflow: "hidden", textAlign: "left", cursor: "pointer", position: "relative", aspectRatio: "3 / 4.2", minWidth: 0, boxShadow: palette.shadow }}>
+      {entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} /> : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", background: "rgba(255,248,239,0.74)", fontSize: 24 }}>{profile?.emoji || "ðŸ“·"}</div>}
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(46,41,35,0.18), transparent 42%, rgba(46,41,35,0.58))", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: 6, left: 6, right: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, pointerEvents: "none" }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: profile?.color || palette.sage, boxShadow: "0 1px 6px rgba(0,0,0,0.35)" }} />
-        {entry.favorite && <span style={{ color: palette.honey, fontSize: 12, textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}>★</span>}
+        {entry.favorite && <span style={{ color: palette.honey, fontSize: 12, textShadow: "0 1px 8px rgba(0,0,0,0.45)" }}>â˜…</span>}
       </div>
       <div style={{ position: "absolute", left: 6, right: 6, bottom: 6, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 4, pointerEvents: "none" }}>
-        <span style={{ color: "rgba(255,255,255,0.92)", fontSize: 10, lineHeight: 1.05, fontWeight: 850, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.emoji || "👶"} {profile?.name || "Memory"}</span>
-        <span style={{ color: "rgba(255,255,255,0.80)", fontSize: 10, fontWeight: 800, whiteSpace: "nowrap" }}>{formatDate(entry.date, lang)}</span>
+        <span style={{ color: "rgba(255,255,255,0.92)", fontSize: 10, lineHeight: 1.05, fontWeight: type.weight.ui, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.emoji || "ðŸ‘¶"} {profile?.name || "Memory"}</span>
+        <span style={{ color: "rgba(255,255,255,0.80)", fontSize: 10, fontWeight: type.weight.ui, whiteSpace: "nowrap" }}>{formatDate(entry.date, lang)}</span>
       </div>
     </button>
   );
 }
 
 function ModeTab({ active, tone = palette.sage, onClick, children }) {
-  return <button onClick={onClick} style={{ flex: "0 0 auto", border: `1px solid ${active ? tone : palette.border}`, background: active ? `${tone}18` : "rgba(255,253,248,0.60)", color: active ? tone : palette.inkMuted, borderRadius: 999, height: 33, padding: "0 11px", fontSize: 12, lineHeight: "33px", whiteSpace: "nowrap", fontWeight: 850, cursor: "pointer" }}>{children}</button>;
+  return <button onClick={onClick} style={{ flex: "0 0 auto", border: `1px solid ${active ? tone : palette.border}`, background: active ? `${tone}18` : "rgba(255,253,248,0.60)", color: active ? tone : palette.inkMuted, borderRadius: 999, height: 33, padding: "0 11px", fontSize: 12, lineHeight: "33px", whiteSpace: "nowrap", fontWeight: type.weight.ui, cursor: "pointer" }}>{children}</button>;
 }
 
 function FilterPill({ active, color = palette.sage, onClick, children }) {
-  return <button onClick={onClick} style={{ flexShrink: 0, border: `1px solid ${active ? color : palette.border}`, background: active ? `${color}18` : "rgba(255,253,248,0.60)", color: active ? color : palette.inkMuted, borderRadius: 999, padding: "7px 10px", minHeight: 33, fontSize: 12, fontWeight: 800, cursor: "pointer" }}>{children}</button>;
+  return <button onClick={onClick} style={{ flexShrink: 0, border: `1px solid ${active ? color : palette.border}`, background: active ? `${color}18` : "rgba(255,253,248,0.60)", color: active ? color : palette.inkMuted, borderRadius: 999, padding: "7px 10px", minHeight: 33, fontSize: 12, fontWeight: type.weight.ui, cursor: "pointer" }}>{children}</button>;
 }
 
 const filterToggleButton = (open, activeCount) => ({
@@ -437,7 +437,7 @@ const filterToggleButton = (open, activeCount) => ({
   justifyContent: "center",
   gap: 7,
   fontSize: 12,
-  fontWeight: 850,
+  fontWeight: type.weight.ui,
   cursor: "pointer",
 });
 
@@ -450,13 +450,13 @@ const filterCountBadge = () => ({
   color: palette.sage,
   borderRadius: 999,
   fontSize: 10,
-  fontWeight: 900,
+  fontWeight: type.weight.heading,
 });
 
-const labelStyle = () => ({ display: "grid", gap: 5, color: palette.inkFaint, fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.6px" });
+const labelStyle = () => ({ display: "grid", gap: 5, color: palette.inkFaint, fontSize: 10, fontWeight: type.weight.ui, textTransform: "uppercase", letterSpacing: 0 });
 const inputStyle = () => ({ width: "100%", border: `1px solid ${palette.border}`, background: "rgba(255,253,248,0.74)", color: palette.ink, borderRadius: 20, padding: "11px 12px", font: "inherit", fontSize: 15 });
 const selectStyle = () => ({ border: `1px solid ${palette.border}`, background: palette.paper, color: palette.ink, borderRadius: 20, padding: "10px 11px", font: "inherit", minWidth: 0, fontSize: 13 });
-const toggleButton = (active, color) => ({ border: `1px solid ${active ? color : palette.border}`, background: active ? `${color}22` : "rgba(255,253,248,0.70)", color: active ? color : palette.inkMuted, borderRadius: 20, minHeight: 39, fontSize: 13, fontWeight: 850, cursor: "pointer" });
+const toggleButton = (active, color) => ({ border: `1px solid ${active ? color : palette.border}`, background: active ? `${color}22` : "rgba(255,253,248,0.70)", color: active ? color : palette.inkMuted, borderRadius: 20, minHeight: 39, fontSize: 13, fontWeight: type.weight.ui, cursor: "pointer" });
 
 
 function EmptyTimeline({ copy, onClick }) {
@@ -468,3 +468,4 @@ function EmptyTimeline({ copy, onClick }) {
     </section>
   );
 }
+

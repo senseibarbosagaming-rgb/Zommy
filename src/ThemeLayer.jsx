@@ -1,47 +1,10 @@
 import { useEffect } from "react";
+import { palette, type } from "./designSystem";
 
 const DEFAULT_PREFS = { lang: "en", theme: "dream" };
+const STYLE_ID = "zommy-theme-css";
 
-const THEMES = {
-  dream: {
-    mode: "light",
-    bg: "#FFF4E8",
-    page: "#FFFDF7",
-    panel: "#FFFFFF",
-    soft: "#F8E9DC",
-    text: "#3A2A22",
-    muted: "#80695B",
-    faint: "#A69082",
-    border: "rgba(122, 77, 57, 0.18)",
-    accent: "#D9826B",
-    accent2: "#8FB9A8",
-    accent3: "#F2C879",
-    nav: "#F2DDCC",
-    overlay: "rgba(255, 253, 247, 0.93)",
-  },
-  night: {
-    mode: "dark",
-    bg: "#18120F",
-    page: "#18120F",
-    panel: "#241A16",
-    soft: "rgba(255,244,232,0.07)",
-    text: "#FFF7EF",
-    muted: "rgba(255,247,239,0.68)",
-    faint: "rgba(255,247,239,0.46)",
-    border: "rgba(255,244,232,0.14)",
-    accent: "#E59A83",
-    accent2: "#9FC8B8",
-    accent3: "#F2C879",
-    nav: "#3A2A22",
-    overlay: "rgba(24,18,15,0.91)",
-  },
-};
-
-const normalizeTheme = (value) => {
-  if (value === "light") return "dream";
-  if (value === "dark") return "night";
-  return THEMES[value] ? value : DEFAULT_PREFS.theme;
-};
+const normalizeTheme = () => DEFAULT_PREFS.theme;
 
 const loadPrefs = () => {
   try {
@@ -63,35 +26,106 @@ const updateViewportInsets = () => {
   setVar("--z-viewport-height", `${Math.round(viewport?.height || window.innerHeight)}px`);
 };
 
+const themeCss = `
+  :root {
+    --z-bg: ${palette.milk};
+    --z-page: ${palette.milk};
+    --z-panel: ${palette.surface};
+    --z-soft: ${palette.wash};
+    --z-text: ${palette.stone};
+    --z-muted: ${palette.muted};
+    --z-faint: ${palette.faint};
+    --z-border: ${palette.line};
+    --z-accent: ${palette.accent};
+    --z-overlay: ${palette.overlay};
+    --z-shadow: ${palette.shadow};
+    --z-radius-card: 20px;
+    --z-radius-button: 999px;
+    --z-keyboard-inset: 0px;
+    --z-viewport-height: 100dvh;
+  }
+
+  html,
+  body,
+  #root {
+    background: var(--z-bg) !important;
+    color: var(--z-text) !important;
+    font-family: ${type.sans};
+  }
+
+  body {
+    color-scheme: light;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background: var(--z-bg);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font-family: ${type.sans};
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--z-faint);
+  }
+
+  @media (min-width: 720px) {
+    body {
+      background: var(--z-bg);
+    }
+
+    .zommy-app-frame {
+      box-shadow: ${palette.sideShadow};
+    }
+  }
+`;
+
+const ensureThemeStyle = () => {
+  let style = document.getElementById(STYLE_ID);
+  if (!style) {
+    style = document.createElement("style");
+    style.id = STYLE_ID;
+    document.head.appendChild(style);
+  }
+  if (style.textContent !== themeCss) style.textContent = themeCss;
+};
+
 const applyTheme = (prefs = loadPrefs()) => {
   const themeName = normalizeTheme(prefs.theme);
-  const theme = THEMES[themeName];
 
   document.documentElement.dataset.zommyTheme = themeName;
-  document.documentElement.dataset.zommyMode = theme.mode;
-  document.documentElement.style.colorScheme = theme.mode;
+  document.documentElement.dataset.zommyMode = "light";
+  document.documentElement.style.colorScheme = "light";
   document.body.dataset.zommyTheme = themeName;
-  document.body.dataset.zommyMode = theme.mode;
+  document.body.dataset.zommyMode = "light";
 
-  setVar("--z-bg", theme.bg);
-  setVar("--z-page", theme.page);
-  setVar("--z-panel", theme.panel);
-  setVar("--z-soft", theme.soft);
-  setVar("--z-text", theme.text);
-  setVar("--z-muted", theme.muted);
-  setVar("--z-faint", theme.faint);
-  setVar("--z-border", theme.border);
-  setVar("--z-accent", theme.accent);
-  setVar("--z-accent-2", theme.accent2);
-  setVar("--z-accent-3", theme.accent3);
-  setVar("--z-nav", theme.nav);
-  setVar("--z-overlay", theme.overlay);
-  setVar("--z-radius-card", "26px");
-  setVar("--z-radius-button", "18px");
+  setVar("--z-bg", palette.milk);
+  setVar("--z-page", palette.milk);
+  setVar("--z-panel", palette.surface);
+  setVar("--z-soft", palette.wash);
+  setVar("--z-text", palette.stone);
+  setVar("--z-muted", palette.muted);
+  setVar("--z-faint", palette.faint);
+  setVar("--z-border", palette.line);
+  setVar("--z-accent", palette.accent);
+  setVar("--z-overlay", palette.overlay);
+  setVar("--z-shadow", palette.shadow);
+  setVar("--z-radius-card", "20px");
+  setVar("--z-radius-button", "999px");
 
-  document.body.style.background = theme.bg;
-  document.body.style.color = theme.text;
-  document.querySelector("meta[name='theme-color']")?.setAttribute("content", theme.bg);
+  document.body.style.background = palette.milk;
+  document.body.style.color = palette.stone;
+  document.querySelector("meta[name='theme-color']")?.setAttribute("content", palette.milk);
 
   try {
     const current = JSON.parse(localStorage.getItem("zommy_prefs") || "{}");
@@ -101,6 +135,7 @@ const applyTheme = (prefs = loadPrefs()) => {
 
 export default function ThemeLayer() {
   useEffect(() => {
+    ensureThemeStyle();
     applyTheme();
     updateViewportInsets();
 
@@ -126,132 +161,5 @@ export default function ThemeLayer() {
     };
   }, []);
 
-  return (
-    <style>{`
-      html, body, #root {
-        background: var(--z-bg) !important;
-        color: var(--z-text) !important;
-      }
-
-      :root {
-        --z-keyboard-inset: 0px;
-        --z-viewport-height: 100dvh;
-      }
-
-      body {
-        transition: background-color 180ms ease, color 180ms ease;
-      }
-
-      .zommy-brand-mark {
-        width: 42px;
-        height: 42px;
-        border-radius: 16px;
-        background: linear-gradient(145deg, #FFFDF7, #FFE2D1);
-        border: 1px solid rgba(122,77,57,0.14);
-        display: inline-grid;
-        place-items: center;
-        box-shadow: 0 12px 30px rgba(122,77,57,0.16);
-      }
-
-      .zommy-brand-mark::before {
-        content: "♡";
-        color: var(--z-accent);
-        font-size: 24px;
-        line-height: 1;
-        transform: translateY(-1px);
-      }
-
-      html[data-zommy-mode="light"] main,
-      html[data-zommy-mode="light"] [style*="background: #101418"],
-      html[data-zommy-mode="light"] [style*="background:#101418"],
-      html[data-zommy-mode="light"] [style*="background: rgb(16, 20, 24)"],
-      html[data-zommy-mode="light"] [style*="background-color: rgb(16, 20, 24)"],
-      html[data-zommy-mode="light"] [style*="background: #0d0d0d"],
-      html[data-zommy-mode="light"] [style*="background: rgb(13, 13, 13)"] {
-        background: radial-gradient(circle at top left, #FFF1E5 0, var(--z-page) 42%, #FFF8EE 100%) !important;
-        color: var(--z-text) !important;
-      }
-
-      html[data-zommy-mode="light"] [style*="background: rgba(16,20,24"],
-      html[data-zommy-mode="light"] [style*="background: rgba(16, 20, 24"],
-      html[data-zommy-mode="light"] [style*="background: #111820"],
-      html[data-zommy-mode="light"] [style*="background:#111820"],
-      html[data-zommy-mode="light"] [style*="background: rgb(17, 24, 32)"],
-      html[data-zommy-mode="light"] [style*="background: #151d25"],
-      html[data-zommy-mode="light"] [style*="background:#151d25"],
-      html[data-zommy-mode="light"] [style*="background: rgb(21, 29, 37)"] {
-        background: var(--z-panel) !important;
-        color: var(--z-text) !important;
-      }
-
-      html[data-zommy-mode="light"] [style*="background: rgba(255,255,255,0.045)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255, 255, 255, 0.045)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255,255,255,0.04)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255, 255, 255, 0.04)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255,255,255,0.035)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255, 255, 255, 0.035)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255,255,255,0.05)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255, 255, 255, 0.05)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255,255,255,0.06)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255, 255, 255, 0.06)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255,255,255,0.08)"],
-      html[data-zommy-mode="light"] [style*="background: rgba(255, 255, 255, 0.08)"] {
-        background: var(--z-soft) !important;
-      }
-
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255,255,255,0.09)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.09)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255,255,255,0.1)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.1)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255,255,255,0.12)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.12)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255,255,255,0.13)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.13)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255,255,255,0.14)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.14)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255,255,255,0.16)"],
-      html[data-zommy-mode="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.16)"] {
-        border-color: var(--z-border) !important;
-      }
-
-      html[data-zommy-mode="light"] [style*="color: #fff"],
-      html[data-zommy-mode="light"] [style*="color:#fff"],
-      html[data-zommy-mode="light"] [style*="color: rgb(255, 255, 255)"] {
-        color: var(--z-text) !important;
-      }
-
-      html[data-zommy-mode="light"] [style*="color: rgba(255,255,255"],
-      html[data-zommy-mode="light"] [style*="color: rgba(255, 255, 255"] {
-        color: var(--z-muted) !important;
-      }
-
-      html[data-zommy-mode="light"] input,
-      html[data-zommy-mode="light"] textarea,
-      html[data-zommy-mode="light"] select {
-        background: var(--z-panel) !important;
-        color: var(--z-text) !important;
-        border-color: var(--z-border) !important;
-      }
-
-      html[data-zommy-mode="light"] input::placeholder,
-      html[data-zommy-mode="light"] textarea::placeholder {
-        color: var(--z-faint) !important;
-      }
-
-      html[data-zommy-mode="light"] select option {
-        background: var(--z-panel);
-        color: var(--z-text);
-      }
-
-      html[data-zommy-mode="light"] nav[style] {
-        background: var(--z-nav) !important;
-      }
-
-      html[data-zommy-mode="light"] button[style*="background: transparent"],
-      html[data-zommy-mode="light"] button[style*="background: rgba(255,255,255"],
-      html[data-zommy-mode="light"] button[style*="background: rgba(255, 255, 255"] {
-        color: var(--z-text) !important;
-      }
-    `}</style>
-  );
+  return null;
 }

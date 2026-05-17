@@ -3,8 +3,7 @@ import { field, memoryTones, palette, type } from "./designSystem";
 import { supabase } from "./supabase";
 
 const PALETTE = memoryTones;
-
-const EMOJIS = ["👶", "👦", "👧", "🧒", "🐣", "⭐"];
+const EMOJIS = ["👶", "👦", "👧", "🧒", "★", "○"];
 
 const COPY = {
   en: {
@@ -16,7 +15,7 @@ const COPY = {
     color: "Memory tone",
     cancel: "Cancel",
     save: "Start story",
-    saving: "Creating…",
+    saving: "Creating...",
     nameError: "Add a name first.",
     birthError: "Add a birth date first.",
     error: "Could not create the profile. Try again.",
@@ -31,7 +30,7 @@ const COPY = {
     color: "Cor",
     cancel: "Cancelar",
     save: "Criar perfil",
-    saving: "A criar…",
+    saving: "A criar...",
     nameError: "Adiciona primeiro um nome.",
     birthError: "Adiciona primeiro a data de nascimento.",
     error: "Não foi possível criar o perfil. Tenta de novo.",
@@ -121,14 +120,14 @@ export default function ChildProfileCreator() {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1750, background: "rgba(46,41,35,0.42)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14, fontFamily: type.sans }} onClick={close}>
-      <section role="dialog" aria-modal="true" aria-labelledby="zommy-child-profile-title" style={{ width: "100%", maxWidth: 452, background: palette.paper, color: palette.ink, border: `1px solid ${palette.border}`, borderRadius: 28, padding: 18, boxShadow: "0 24px 90px rgba(122,77,57,0.22)", display: "grid", gap: 15 }} onClick={(event) => event.stopPropagation()}>
+    <div style={scrimStyle} onClick={close}>
+      <section role="dialog" aria-modal="true" aria-labelledby="zommy-child-profile-title" style={dialogStyle} onClick={(event) => event.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
           <div>
-            <h2 id="zommy-child-profile-title" style={{ fontFamily: type.serif, fontSize: 27, lineHeight: 1.12 }}>{copy.title}</h2>
-            <p style={{ color: palette.inkMuted, fontSize: 14, lineHeight: 1.5, marginTop: 6 }}>{copy.body}</p>
+            <h2 id="zommy-child-profile-title" style={titleStyle}>{copy.title}</h2>
+            <p style={bodyStyle}>{copy.body}</p>
           </div>
-          <button onClick={close} disabled={saving} aria-label={copy.cancel} style={{ border: `1px solid ${palette.border}`, background: palette.paperSoft, color: palette.ink, borderRadius: 999, minWidth: 44, minHeight: 44, cursor: saving ? "wait" : "pointer", fontSize: 20 }}>×</button>
+          <button onClick={close} disabled={saving} aria-label={copy.cancel} style={closeButtonStyle}>×</button>
         </div>
 
         <label style={labelStyle()}>{copy.name}<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Tommy" autoFocus style={inputStyle()} /></label>
@@ -137,27 +136,34 @@ export default function ChildProfileCreator() {
         <div style={labelStyle()}>
           {copy.emoji}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{EMOJIS.map((item) => (
-            <button key={item} onClick={() => setEmoji(item)} disabled={saving} style={{ width: 44, height: 44, borderRadius: 14, border: `1px solid ${emoji === item ? palette.clay : "rgba(122,77,57,0.16)"}`, background: emoji === item ? "rgba(217,130,107,0.12)" : "#F8E9DC", fontSize: 21, cursor: "pointer" }}>{item}</button>
+            <button key={item} onClick={() => setEmoji(item)} disabled={saving} style={{ width: 44, height: 44, borderRadius: 14, border: `1px solid ${emoji === item ? palette.accentLine : palette.line}`, background: emoji === item ? palette.accentSoft : palette.wash, fontSize: 21, cursor: "pointer" }}>{item}</button>
           ))}</div>
         </div>
 
         <div style={labelStyle()}>
           {copy.color}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>{PALETTE.map((item, index) => (
-            <button key={item.color} onClick={() => setPaletteIndex(index)} disabled={saving} aria-label={`${copy.color} ${index + 1}`} style={{ width: 34, height: 34, borderRadius: "50%", border: "1px solid rgba(122,77,57,0.12)", background: item.color, outline: paletteIndex === index ? `3px solid ${item.bg}` : "none", outlineOffset: 4, cursor: "pointer" }} />
+            <button key={item.color} onClick={() => setPaletteIndex(index)} disabled={saving} aria-label={`${copy.color} ${index + 1}`} style={{ width: 34, height: 34, borderRadius: "50%", border: `1px solid ${palette.line}`, background: item.color, outline: paletteIndex === index ? `3px solid ${item.bg}` : "none", outlineOffset: 4, cursor: "pointer" }} />
           ))}</div>
         </div>
 
-        {message && <div role="status" style={{ color: message === copy.done ? palette.sage : palette.clay, fontSize: 13, fontWeight: 850 }}>{message}</div>}
+        {message && <div role="status" style={{ color: message === copy.done ? palette.success : palette.accent, fontSize: 13, fontWeight: type.weight.ui }}>{message}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
-          <button onClick={close} disabled={saving} style={{ border: `1px solid ${palette.border}`, background: palette.paperSoft, color: palette.ink, borderRadius: 16, minHeight: 50, fontSize: 14, fontWeight: 900, cursor: saving ? "wait" : "pointer" }}>{copy.cancel}</button>
-          <button onClick={createProfile} disabled={saving} style={{ border: "none", background: selectedPalette.color, color: palette.paper, borderRadius: 16, minHeight: 50, fontSize: 14, fontWeight: 950, cursor: saving ? "wait" : "pointer", boxShadow: `0 12px 28px ${selectedPalette.color}33` }}>{saving ? copy.saving : copy.save}</button>
+          <button onClick={close} disabled={saving} style={secondaryButtonStyle}>{copy.cancel}</button>
+          <button onClick={createProfile} disabled={saving} style={primaryButtonStyle}>{saving ? copy.saving : copy.save}</button>
         </div>
       </section>
     </div>
   );
 }
 
-const labelStyle = () => ({ display: "grid", gap: 7, color: palette.inkMuted, fontSize: 11, fontWeight: 850, textTransform: "uppercase", letterSpacing: "0.7px" });
-const inputStyle = () => ({ width: "100%", border: `1px solid ${palette.border}`, background: "#FFFFFF", color: "#3A2A22", borderRadius: 14, padding: "12px 13px", font: "inherit", fontSize: 15 });
+const scrimStyle = { position: "fixed", inset: 0, zIndex: 1750, background: palette.overlay, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 20, fontFamily: type.sans };
+const dialogStyle = { width: "100%", maxWidth: 452, background: palette.surface, color: palette.stone, border: "none", borderRadius: 20, padding: 20, boxShadow: palette.sideShadow, display: "grid", gap: 15 };
+const titleStyle = { fontFamily: type.serif, fontSize: 27, lineHeight: 1.12, fontWeight: type.weight.heading };
+const bodyStyle = { color: palette.muted, fontSize: 14, lineHeight: 1.5, marginTop: 6 };
+const closeButtonStyle = { border: `1px solid ${palette.line}`, background: palette.surface, color: palette.stone, borderRadius: 999, minWidth: 48, minHeight: 48, cursor: "pointer", fontSize: 20 };
+const secondaryButtonStyle = { border: `1px solid ${palette.line}`, background: palette.surface, color: palette.stone, borderRadius: 16, minHeight: 50, fontSize: 14, fontWeight: type.weight.ui, cursor: "pointer" };
+const primaryButtonStyle = { border: "none", background: palette.accent, color: palette.surface, borderRadius: 16, minHeight: 50, fontSize: 14, fontWeight: type.weight.heading, cursor: "pointer", boxShadow: palette.shadow };
+const labelStyle = () => ({ display: "grid", gap: 7, color: palette.muted, fontSize: 11, fontWeight: type.weight.ui, textTransform: "uppercase", letterSpacing: 0 });
+const inputStyle = () => ({ ...field });

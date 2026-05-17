@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useAppShell } from "./AppShellContext";
 import { appSurface, card, contentFrame, emptyStateCard, label, palette, primaryButton, secondaryButton, softCard, type } from "./designSystem";
 import { useZommyData } from "./useZommyData";
@@ -28,23 +28,23 @@ const COPY = {
   pt: {
     title: "Comparar",
     subtitle: "O tempo, lado a lado com calma.",
-    emptyHeadline: "Vê como mudam.",
-    emptyBody: "Escolhe dois momentos e coloca-os lado a lado. Recém-nascido e hoje. Primeiros passos e agora. O mesmo sofá, outro mês.",
-    emptyCta: "Criar primeira comparação",
-    suggested: "Sugestões para ti",
-    manual: "Criar comparação",
-    saved: "Comparações guardadas",
-    noSaved: "Os momentos antes-e-agora guardados vão viver aqui.",
+    emptyHeadline: "VÃª como mudam.",
+    emptyBody: "Escolhe dois momentos e coloca-os lado a lado. RecÃ©m-nascido e hoje. Primeiros passos e agora. O mesmo sofÃ¡, outro mÃªs.",
+    emptyCta: "Criar primeira comparaÃ§Ã£o",
+    suggested: "SugestÃµes para ti",
+    manual: "Criar comparaÃ§Ã£o",
+    saved: "ComparaÃ§Ãµes guardadas",
+    noSaved: "Os momentos antes-e-agora guardados vÃ£o viver aqui.",
     then: "Antes",
     now: "Agora",
-    firstLatest: "Primeira vez / última vez",
-    samePlace: "Mesmo lugar, outro mês",
-    newborn: "Recém-nascido e hoje",
+    firstLatest: "Primeira vez / Ãºltima vez",
+    samePlace: "Mesmo lugar, outro mÃªs",
+    newborn: "RecÃ©m-nascido e hoje",
     note: "Adicionar nota",
-    share: "Partilhar com família",
+    share: "Partilhar com famÃ­lia",
     save: "Guardar na timeline",
-    private: "Só familiares convidados podem ver isto",
-    addMore: "Adiciona mais memórias para desbloquear comparações mais ricas.",
+    private: "SÃ³ familiares convidados podem ver isto",
+    addMore: "Adiciona mais memÃ³rias para desbloquear comparaÃ§Ãµes mais ricas.",
   },
 };
 const getPrefs = () => { try { return JSON.parse(localStorage.getItem("zommy_prefs") || "{}"); } catch { return {}; } };
@@ -90,9 +90,9 @@ export default function CompareScreen() {
       <div style={contentFrame(124)}>
         <header style={{ ...softCard({ borderColor: `${palette.deep}30`, background: "rgba(255,253,248,.88)" }) }}>
           <div style={{ ...label, color: palette.deep }}>{profile?.name || copy.title}</div>
-          <h1 style={{ fontFamily: type.serif, fontSize: 34, lineHeight: 1.06, fontWeight: 650, marginTop: 5 }}>{copy.title}</h1>
+          <h1 style={{ fontFamily: type.serif, fontSize: 34, lineHeight: 1.06, fontWeight: type.weight.heading, marginTop: 5 }}>{copy.title}</h1>
           <p style={{ color: palette.inkMuted, lineHeight: 1.55, marginTop: 6 }}>{copy.subtitle}</p>
-          <div style={{ display: "inline-flex", marginTop: 12, border: `1px solid ${palette.border}`, borderRadius: 999, padding: "7px 10px", color: palette.inkMuted, fontSize: 12, fontWeight: 850 }}>● {copy.private}</div>
+          <div style={{ display: "inline-flex", marginTop: 12, border: `1px solid ${palette.border}`, borderRadius: 999, padding: "7px 10px", color: palette.inkMuted, fontSize: 12, fontWeight: type.weight.ui }}>â— {copy.private}</div>
         </header>
 
         {!profile || profileEntries.length < 2 ? (
@@ -126,7 +126,7 @@ export default function CompareScreen() {
             </section>
           </>
         )}
-        {loading && <div style={{ color: palette.inkFaint, textAlign: "center", padding: 12 }}>Loading…</div>}
+        {loading && <div style={{ color: palette.inkFaint, textAlign: "center", padding: 12 }}>Loadingâ€¦</div>}
       </div>
     </main>
   );
@@ -136,12 +136,12 @@ function CompareCard({ title, left, right, profile, lang, copy }) {
   return (
     <article className="zommy-elevated-card" style={{ ...card, overflow: "hidden" }}>
       <div style={{ padding: 15, display: "grid", gap: 12 }}>
-        <h2 style={{ fontFamily: type.serif, fontSize: 25, lineHeight: 1.12, fontWeight: 650 }}>{title}</h2>
+        <h2 style={{ fontFamily: type.serif, fontSize: 25, lineHeight: 1.12, fontWeight: type.weight.heading }}>{title}</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <MomentTile label={copy.then} entry={left} profile={profile} lang={lang} />
           <MomentTile label={copy.now} entry={right} profile={profile} lang={lang} />
         </div>
-        <p style={{ color: palette.inkMuted, fontSize: 14, lineHeight: 1.55 }}>From {formatDate(left.date, lang)} to {formatDate(right.date, lang)} — the same story, further along.</p>
+        <p style={{ color: palette.inkMuted, fontSize: 14, lineHeight: 1.55 }}>From {formatDate(left.date, lang)} to {formatDate(right.date, lang)} â€” the same story, further along.</p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button style={secondaryButton(palette.deep)}>{copy.save}</button>
           <button style={secondaryButton(profile.color || palette.sage)}>{copy.share}</button>
@@ -151,5 +151,6 @@ function CompareCard({ title, left, right, profile, lang, copy }) {
     </article>
   );
 }
-function MomentTile({ label: tileLabel, entry, profile, lang }) { return <div style={{ border: `1px solid ${palette.border}`, borderRadius: 22, overflow: "hidden", background: palette.paperSoft }}><div style={{ aspectRatio: "1 / 1.15" }}>{entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile.name} ${tileLabel.toLowerCase()} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%" }} /> : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: 32 }}>{profile.emoji || "◌"}</div>}</div><div style={{ padding: 10, display: "grid", gap: 3 }}><div style={{ ...label, color: profile.color || palette.clay, fontSize: 10 }}>{tileLabel}</div><div style={{ color: palette.ink, fontSize: 12, fontWeight: 850 }}>{formatDate(entry.date, lang)}</div><div style={{ color: palette.inkMuted, fontSize: 11 }}>{ageAt(profile.birthdate, entry.date, lang)}</div></div></div>; }
-function PreviewCard({ title, tone = palette.clay }) { return <article style={{ ...softCard({ borderColor: `${tone}35`, background: `linear-gradient(135deg, ${tone}18, rgba(255,253,248,.88))` }), display: "grid", gap: 10 }}><h3 style={{ fontFamily: type.serif, fontSize: 23, fontWeight: 650 }}>{title}</h3><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}><div style={{ height: 116, borderRadius: 20, background: `${tone}1f`, border: `1px solid ${tone}25` }} /><div style={{ height: 116, borderRadius: 20, background: "rgba(255,253,248,.78)", border: `1px solid ${palette.border}` }} /></div></article>; }
+function MomentTile({ label: tileLabel, entry, profile, lang }) { return <div style={{ border: `1px solid ${palette.border}`, borderRadius: 22, overflow: "hidden", background: palette.paperSoft }}><div style={{ aspectRatio: "1 / 1.15" }}>{entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile.name} ${tileLabel.toLowerCase()} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%" }} /> : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: 32 }}>{profile.emoji || "â—Œ"}</div>}</div><div style={{ padding: 10, display: "grid", gap: 3 }}><div style={{ ...label, color: profile.color || palette.clay, fontSize: 10 }}>{tileLabel}</div><div style={{ color: palette.ink, fontSize: 12, fontWeight: type.weight.ui }}>{formatDate(entry.date, lang)}</div><div style={{ color: palette.inkMuted, fontSize: 11 }}>{ageAt(profile.birthdate, entry.date, lang)}</div></div></div>; }
+function PreviewCard({ title, tone = palette.clay }) { return <article style={{ ...softCard({ background: palette.surface }), display: "grid", gap: 10 }}><h3 style={{ fontFamily: type.serif, fontSize: 23, fontWeight: type.weight.heading }}>{title}</h3><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}><div style={{ height: 116, borderRadius: 20, background: `${tone}1f` }} /><div style={{ height: 116, borderRadius: 20, background: palette.wash }} /></div></article>; }
+

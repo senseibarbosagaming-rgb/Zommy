@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
+import { palette, type } from "./designSystem";
 import { supabase } from "./supabase";
 
 const COPY = {
   en: {
-    joining: "Joining this family circle…",
-    success: "You’re now part of this child’s family circle.",
-    login: "Sign in to join this child’s family circle. Use the email the invite was sent to.",
+    joining: "Joining this family circle...",
+    success: "You're now part of this child's family circle.",
+    login: "Sign in to join this child's family circle. Use the email the invite was sent to.",
     mismatch: "This invite was sent to another email. Ask for a new invite or sign in with the invited Google account.",
     expired: "This invite is no longer active. Ask the owner to send a new one.",
-    alreadyMember: "You’re already part of this child’s family circle.",
+    alreadyMember: "You're already part of this child's family circle.",
     error: "Could not accept this invite.",
   },
   pt: {
-    joining: "A juntar ao círculo familiar…",
+    joining: "A juntar ao círculo familiar...",
     success: "Já fazes parte do círculo familiar desta criança.",
     login: "Inicia sessão para entrar no círculo familiar desta criança. Usa o email para onde o convite foi enviado.",
     mismatch: "Este convite foi enviado para outro email. Pede um novo convite ou entra com a conta Google convidada.",
@@ -110,9 +111,13 @@ export default function InviteAcceptanceLayer() {
   if (!visible || !message) return null;
 
   return (
-    <div role="status" style={{ position: "fixed", left: "50%", top: "calc(18px + env(safe-area-inset-top, 0px))", transform: "translateX(-50%)", width: "min(420px, calc(100vw - 28px))", zIndex: 2800, border: "1px solid rgba(167,139,250,0.45)", background: "rgba(16,20,24,0.94)", color: "#fff", borderRadius: 22, padding: "14px 15px", boxShadow: "0 22px 80px rgba(0,0,0,0.42)", display: "grid", gridTemplateColumns: "44px 1fr", gap: 12, alignItems: "center", backdropFilter: "blur(18px)", fontFamily: "Inter, system-ui, sans-serif" }}>
-      <div style={{ width: 44, height: 44, borderRadius: 16, background: "rgba(167,139,250,0.18)", color: "#C4B5FD", display: "grid", placeItems: "center", fontSize: 23 }}>👪</div>
-      <div style={{ color: "rgba(255,255,255,0.82)", fontSize: 14, lineHeight: 1.45, fontWeight: 850 }}>{message}</div>
+    <div role="status" style={toastStyle}>
+      <div style={iconStyle}>👪</div>
+      <div style={messageStyle}>{message}</div>
     </div>
   );
 }
+
+const toastStyle = { position: "fixed", left: "50%", top: "calc(18px + env(safe-area-inset-top, 0px))", transform: "translateX(-50%)", width: "min(420px, calc(100vw - 40px))", zIndex: 2800, border: "none", background: palette.surface, color: palette.stone, borderRadius: 20, padding: "14px 15px", boxShadow: palette.sideShadow, display: "grid", gridTemplateColumns: "44px 1fr", gap: 12, alignItems: "center", fontFamily: type.sans };
+const iconStyle = { width: 44, height: 44, borderRadius: 16, background: palette.accentSoft, color: palette.accent, display: "grid", placeItems: "center", fontSize: 23 };
+const messageStyle = { color: palette.stone, fontSize: 14, lineHeight: 1.45, fontWeight: type.weight.ui };

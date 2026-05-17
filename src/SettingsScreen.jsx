@@ -2,18 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import NotificationSettingsPanel from "./NotificationSettingsPanel";
 import { loadNotificationPrefs, saveNotificationPrefs } from "./notificationCore";
 import { supabase } from "./supabase";
+import { appSurface, contentFrame, field, palette, profileTones, type } from "./designSystem";
 
-const PALETTE = [
-  { color: "#60A5FA", bg: "#1e3a5f" },
-  { color: "#F472B6", bg: "#5f1e3a" },
-  { color: "#34D399", bg: "#1e5f3a" },
-  { color: "#FBBF24", bg: "#5f4a1e" },
-  { color: "#A78BFA", bg: "#3a1e5f" },
-  { color: "#FB7185", bg: "#5f1e2a" },
-];
-
-const EMOJIS = ["👶", "👦", "👧", "🧒", "🐣", "⭐"];
-const normalizeTheme = (theme) => theme === "light" ? "dream" : theme === "dark" ? "night" : theme || "dream";
+const PALETTE = profileTones;
+const EMOJIS = ["👶", "👦", "👧", "🧒", "★", "○"];
+const normalizeTheme = () => "dream";
 
 const COPY = {
   en: {
@@ -27,9 +20,8 @@ const COPY = {
     notificationSchedule: "Notification schedule",
     notifications: "Notifications",
     language: "Language",
-    theme: "Theme",
     signOut: "Log out",
-    signingOut: "Logging out…",
+    signingOut: "Logging out...",
     signedOut: "Logged out.",
     account: "Account",
     comingSoon: "Coming soon",
@@ -62,8 +54,6 @@ const COPY = {
     error: "Something went wrong.",
     english: "English",
     portuguese: "Português",
-    night: "Night",
-    dream: "Dream",
     memories: "memories",
     permanent: "Permanent",
     openControls: "Details",
@@ -85,9 +75,8 @@ const COPY = {
     notificationSchedule: "Horário de notificações",
     notifications: "Notificações",
     language: "Idioma",
-    theme: "Tema",
     signOut: "Terminar sessão",
-    signingOut: "A terminar sessão…",
+    signingOut: "A terminar sessão...",
     signedOut: "Sessão terminada.",
     account: "Conta",
     comingSoon: "Em breve",
@@ -120,8 +109,6 @@ const COPY = {
     error: "Algo correu mal.",
     english: "English",
     portuguese: "Português",
-    night: "Noite",
-    dream: "Sonho",
     memories: "memórias",
     permanent: "Permanente",
     openControls: "Detalhes",
@@ -320,42 +307,40 @@ export default function SettingsScreen() {
 
   const activeProfiles = profiles.filter((profile) => !profile.archived_at);
   const archivedProfiles = profiles.filter((profile) => profile.archived_at);
-  const activeTheme = normalizeTheme(prefs.theme);
-
   const sectionTitle = section === "children" ? copy.manageChildren : section === "notifications" ? copy.notificationSchedule : section === "delete" ? copy.deleteAccountData : copy.title;
 
   const renderProfile = (profile) => (
-    <article key={profile.id} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", borderRadius: 18, padding: 14, display: "grid", gap: 11, opacity: profile.archived_at ? 0.72 : 1 }}>
+    <article key={profile.id} style={{ ...cardStyle, opacity: profile.archived_at ? 0.72 : 1 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
         <div style={{ display: "flex", gap: 11, alignItems: "center", minWidth: 0 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 14, background: `${profile.color || "#34D399"}22`, color: profile.color || "#34D399", display: "grid", placeItems: "center", fontSize: 22, flexShrink: 0 }}>{profile.emoji || "👶"}</div>
+          <div style={{ width: 42, height: 42, borderRadius: 14, background: profile.bg || palette.accentSoft, color: profile.color || palette.accent, display: "grid", placeItems: "center", fontSize: 22, flexShrink: 0 }}>{profile.emoji || "👶"}</div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.name}</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.52)", marginTop: 2 }}>{profile.birthdate} · {entryCountByProfile[profile.id] || 0} {copy.memories}</div>
+            <div style={profileNameStyle}>{profile.name}</div>
+            <div style={metaStyle}>{profile.birthdate} · {entryCountByProfile[profile.id] || 0} {copy.memories}</div>
           </div>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 900, color: profile.archived_at ? "#FBBF24" : "#34D399" }}>{profile.archived_at ? copy.archived : copy.active}</span>
+        <span style={{ ...statusStyle, color: profile.archived_at ? palette.warning : palette.success }}>{profile.archived_at ? copy.archived : copy.active}</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
         <button disabled={busy} onClick={() => setEditing(profile)} style={smallButton()}>{copy.edit}</button>
-        <button disabled={busy} onClick={() => archiveProfile(profile, !profile.archived_at)} style={smallButton(profile.archived_at ? "#34D399" : "#FBBF24")}>{profile.archived_at ? copy.restore : copy.archive}</button>
-        <button disabled={busy} onClick={() => { setConfirmChild(profile); setConfirmText(""); }} style={smallButton("#FB7185")}>{copy.delete}</button>
+        <button disabled={busy} onClick={() => archiveProfile(profile, !profile.archived_at)} style={smallButton(profile.archived_at ? palette.success : palette.warning)}>{profile.archived_at ? copy.restore : copy.archive}</button>
+        <button disabled={busy} onClick={() => { setConfirmChild(profile); setConfirmText(""); }} style={smallButton(palette.danger)}>{copy.delete}</button>
       </div>
     </article>
   );
 
   return (
-    <main style={{ position: "fixed", inset: 0, zIndex: 900, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
-      <div style={{ maxWidth: 480, minHeight: "100dvh", margin: "0 auto", padding: "20px 16px 112px" }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
-          <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 34, lineHeight: 1.08, fontWeight: 650 }}>{sectionTitle}</h1>
+    <main style={appSurface}>
+      <div style={contentFrame(112)}>
+        <header style={headerStyle}>
+          <h1 style={titleStyle}>{sectionTitle}</h1>
           {section !== "menu" && <button aria-label={copy.back} onClick={() => setSection("menu")} style={ghostButton()}>←</button>}
         </header>
 
-        {toast && <div role="status" style={{ background: "#fff", color: "#111", borderRadius: 14, padding: "10px 12px", fontSize: 13, fontWeight: 800, marginBottom: 12 }}>{toast}</div>}
+        {toast && <div role="status" style={toastStyle}>{toast}</div>}
 
         {section === "menu" && (
-          <section style={{ display: "grid", gap: 10 }}>
+          <section style={{ display: "grid", gap: 12 }}>
             <SettingRow title={copy.manageChildren} meta={`${activeProfiles.length} ${copy.active.toLowerCase()}`} onClick={() => setSection("children")} />
 
             <SettingRow title={copy.notifications} meta={notificationPrefs.enabled ? copy.enabled : copy.disabled}>
@@ -369,68 +354,111 @@ export default function SettingsScreen() {
               <SegmentedControl options={[["en", copy.english], ["pt", copy.portuguese]]} value={prefs.lang === "pt" ? "pt" : "en"} onChange={(lang) => updatePrefs({ ...prefs, lang })} />
             </SettingRow>
 
-            <SettingRow title={copy.theme} meta={activeTheme === "dream" ? copy.dream : copy.night}>
-              <SegmentedControl options={[["night", copy.night], ["dream", copy.dream]]} value={activeTheme} onChange={(theme) => updatePrefs({ ...prefs, theme })} />
-            </SettingRow>
-
             <SettingRow title={copy.exportData} meta={copy.directExport(entries.length, profiles.length)}>
-              <button onClick={exportData} style={inlineButton("#34D399")}>{copy.exportData}</button>
+              <button onClick={exportData} style={inlineButton(palette.success)}>{copy.exportData}</button>
             </SettingRow>
 
             <InfoCard title={copy.storageUsage} meta={formatBytes(estimatedStorage)} body={copy.storageHint} />
             <InfoCard title={copy.privacy} meta={copy.privateAccountData} body={copy.privacyText} />
             <InfoCard title={copy.familySharing} meta={copy.comingSoon} body={copy.familySharingText} />
             <SettingRow title={copy.account} meta={user.email || ""}>
-              <button disabled={busy} onClick={signOut} style={inlineButton("#FBBF24")}>{busy ? copy.signingOut : copy.signOut}</button>
+              <button disabled={busy} onClick={signOut} style={inlineButton(palette.warning)}>{busy ? copy.signingOut : copy.signOut}</button>
             </SettingRow>
             <SettingRow title={copy.deleteAccountData} meta={copy.permanent} danger onClick={() => setSection("delete")} />
           </section>
         )}
 
-        {section === "children" && <section style={{ display: "grid", gap: 14 }}><p style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.55, fontSize: 13 }}>{copy.archiveHint}</p>{activeProfiles.length ? activeProfiles.map(renderProfile) : <p style={{ color: "rgba(255,255,255,0.48)", padding: 24, textAlign: "center" }}>{copy.noChildren}</p>}{archivedProfiles.length > 0 && <h2 style={{ color: "rgba(255,255,255,0.62)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 8 }}>{copy.archived}</h2>}{archivedProfiles.map(renderProfile)}</section>}
+        {section === "children" && (
+          <section style={{ display: "grid", gap: 14 }}>
+            <p style={bodyCopyStyle}>{copy.archiveHint}</p>
+            {activeProfiles.length ? activeProfiles.map(renderProfile) : <p style={emptyTextStyle}>{copy.noChildren}</p>}
+            {archivedProfiles.length > 0 && <h2 style={eyebrowStyle}>{copy.archived}</h2>}
+            {archivedProfiles.map(renderProfile)}
+          </section>
+        )}
         {section === "delete" && <Panel><p>{copy.deleteAccountBody}</p><button onClick={() => { setConfirmAll(true); setConfirmText(""); }} style={dangerButton()}>{copy.deleteAccountData}</button></Panel>}
         {section === "notifications" && <NotificationSettingsPanel profiles={profiles} entries={entries} />}
 
-        {editing && <Dialog title={copy.manageChildren} onClose={() => setEditing(null)}><label style={labelStyle()}>{copy.name}<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} style={inputStyle()} /></label><label style={labelStyle()}>{copy.birthDate}<input type="date" value={editing.birthdate} max={today()} onChange={(e) => setEditing({ ...editing, birthdate: e.target.value })} style={inputStyle()} /></label><div style={labelStyle()}>{copy.emoji}<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{EMOJIS.map((emoji) => <button key={emoji} onClick={() => setEditing({ ...editing, emoji })} style={{ width: 44, height: 44, borderRadius: 13, border: `1px solid ${editing.emoji === emoji ? "#fff" : "rgba(255,255,255,0.14)"}`, background: "rgba(255,255,255,0.05)", fontSize: 21 }}>{emoji}</button>)}</div></div><div style={labelStyle()}>{copy.color}<div style={{ display: "flex", gap: 12 }}>{PALETTE.map((item) => <button key={item.color} onClick={() => setEditing({ ...editing, color: item.color, bg: item.bg })} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: item.color, outline: editing.color === item.color ? `3px solid ${item.color}` : "none", outlineOffset: 4 }} />)}</div></div><button disabled={busy} onClick={saveProfile} style={primaryButton()}>{copy.save}</button></Dialog>}
-        {confirmChild && <Dialog title={copy.deleteChildTitle(confirmChild.name)} onClose={() => setConfirmChild(null)}><p style={{ color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>{copy.deleteChildBody(confirmChild.name, entryCountByProfile[confirmChild.id] || 0)}</p><label style={labelStyle()}>{copy.typeName(confirmChild.name)}<input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle()} /></label><button disabled={busy || confirmText !== confirmChild.name} onClick={deleteProfile} style={dangerButton(confirmText === confirmChild.name)}>{copy.deleteChildConfirm}</button></Dialog>}
-        {confirmAll && <Dialog title={copy.deleteAccountTitle} onClose={() => setConfirmAll(false)}><p style={{ color: "rgba(255,255,255,0.68)", lineHeight: 1.6 }}>{copy.deleteAccountBody}</p><label style={labelStyle()}>{copy.typeDelete}<input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle()} /></label><button disabled={busy || confirmText !== "DELETE"} onClick={deleteAllData} style={dangerButton(confirmText === "DELETE")}>{copy.deleteAll}</button></Dialog>}
+        {editing && (
+          <Dialog title={copy.manageChildren} onClose={() => setEditing(null)}>
+            <label style={labelStyle()}>{copy.name}<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} style={inputStyle()} /></label>
+            <label style={labelStyle()}>{copy.birthDate}<input type="date" value={editing.birthdate} max={today()} onChange={(e) => setEditing({ ...editing, birthdate: e.target.value })} style={inputStyle()} /></label>
+            <div style={labelStyle()}>{copy.emoji}<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{EMOJIS.map((emoji) => <button key={emoji} onClick={() => setEditing({ ...editing, emoji })} style={{ width: 44, height: 44, borderRadius: 14, border: `1px solid ${editing.emoji === emoji ? palette.accentLine : palette.line}`, background: editing.emoji === emoji ? palette.accentSoft : palette.surface, fontSize: 21 }}>{emoji}</button>)}</div></div>
+            <div style={labelStyle()}>{copy.color}<div style={{ display: "flex", gap: 12 }}>{PALETTE.map((item) => <button key={item.color} onClick={() => setEditing({ ...editing, color: item.color, bg: item.bg })} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: item.color, outline: editing.color === item.color ? `3px solid ${item.color}` : "none", outlineOffset: 4 }} />)}</div></div>
+            <button disabled={busy} onClick={saveProfile} style={primaryButton()}>{copy.save}</button>
+          </Dialog>
+        )}
+        {confirmChild && (
+          <Dialog title={copy.deleteChildTitle(confirmChild.name)} onClose={() => setConfirmChild(null)}>
+            <p style={bodyCopyStyle}>{copy.deleteChildBody(confirmChild.name, entryCountByProfile[confirmChild.id] || 0)}</p>
+            <label style={labelStyle()}>{copy.typeName(confirmChild.name)}<input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle()} /></label>
+            <button disabled={busy || confirmText !== confirmChild.name} onClick={deleteProfile} style={dangerButton(confirmText === confirmChild.name)}>{copy.deleteChildConfirm}</button>
+          </Dialog>
+        )}
+        {confirmAll && (
+          <Dialog title={copy.deleteAccountTitle} onClose={() => setConfirmAll(false)}>
+            <p style={bodyCopyStyle}>{copy.deleteAccountBody}</p>
+            <label style={labelStyle()}>{copy.typeDelete}<input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle()} /></label>
+            <button disabled={busy || confirmText !== "DELETE"} onClick={deleteAllData} style={dangerButton(confirmText === "DELETE")}>{copy.deleteAll}</button>
+          </Dialog>
+        )}
       </div>
     </main>
   );
 }
 
 function Panel({ children }) {
-  return <section style={{ display: "grid", gap: 13, border: "1px solid rgba(255,255,255,0.12)", borderRadius: 18, padding: 16, background: "rgba(255,255,255,0.045)", color: "rgba(255,255,255,0.72)", lineHeight: 1.6 }}>{children}</section>;
+  return <section style={{ ...cardStyle, color: palette.faint, lineHeight: 1.6 }}>{children}</section>;
 }
 
 function SettingRow({ title, meta, children, danger = false, onClick }) {
   const clickable = Boolean(onClick);
-  const content = <><div style={{ minWidth: 0 }}><div style={{ color: danger ? "#fca5a5" : "#fff", fontSize: 15, fontWeight: 900 }}>{title}</div>{meta && <div style={{ color: danger ? "rgba(252,165,165,0.62)" : "rgba(255,255,255,0.52)", fontSize: 12, marginTop: 3, fontWeight: 750, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 225 }}>{meta}</div>}</div>{children || <span style={{ color: danger ? "#fca5a5" : "rgba(255,255,255,0.42)", fontSize: 20 }}>›</span>}</>;
-  if (clickable) return <button onClick={onClick} style={{ ...rowStyle(), color: "#fff", textAlign: "left", cursor: "pointer" }}>{content}</button>;
+  const content = (
+    <>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ color: danger ? palette.danger : palette.stone, fontSize: 15, fontWeight: type.weight.heading }}>{title}</div>
+        {meta && <div style={{ color: danger ? palette.danger : palette.muted, fontSize: 12, marginTop: 3, fontWeight: type.weight.ui, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 225 }}>{meta}</div>}
+      </div>
+      {children || <span style={{ color: danger ? palette.danger : palette.muted, fontSize: 20 }}>›</span>}
+    </>
+  );
+  if (clickable) return <button onClick={onClick} style={{ ...rowStyle(), textAlign: "left", cursor: "pointer" }}>{content}</button>;
   return <div style={rowStyle()}>{content}</div>;
 }
 
 function InfoCard({ title, meta, body }) {
-  return <article style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.035)", borderRadius: 16, padding: 14, display: "grid", gap: 5 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}><h2 style={{ fontSize: 15, fontWeight: 900 }}>{title}</h2><span style={{ color: "rgba(255,255,255,0.52)", fontSize: 12, fontWeight: 850 }}>{meta}</span></div><p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.5 }}>{body}</p></article>;
+  return <article style={infoCardStyle}><div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}><h2 style={{ fontSize: 15, fontWeight: type.weight.heading }}>{title}</h2><span style={metaStyle}>{meta}</span></div><p style={bodyCopyStyle}>{body}</p></article>;
 }
 
 function SegmentedControl({ options, value, onChange }) {
-  return <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>{options.map(([id, label]) => { const active = value === id; return <button key={id} onClick={() => onChange(id)} style={{ border: `1px solid ${active ? "#34D399" : "rgba(255,255,255,0.14)"}`, background: active ? "rgba(52,211,153,0.18)" : "rgba(255,255,255,0.04)", color: active ? "#34D399" : "rgba(255,255,255,0.68)", borderRadius: 999, padding: "9px 11px", fontSize: 12, fontWeight: 900, cursor: "pointer" }}>{label}</button>; })}</div>;
+  return <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>{options.map(([id, label]) => { const active = value === id; return <button key={id} onClick={() => onChange(id)} style={{ border: `1px solid ${active ? palette.accentLine : palette.line}`, background: active ? palette.accentSoft : palette.surface, color: active ? palette.accent : palette.muted, borderRadius: 999, minHeight: 48, padding: "9px 11px", fontSize: 12, fontWeight: type.weight.ui, cursor: "pointer" }}>{label}</button>; })}</div>;
 }
 
 function SwitchButton({ active, onClick }) {
-  return <button aria-pressed={active} onClick={onClick} style={{ width: 44, height: 26, minHeight: 26, border: `1px solid ${active ? "#34D399" : "rgba(255,255,255,0.18)"}`, borderRadius: 999, background: active ? "rgba(52,211,153,0.24)" : "rgba(255,255,255,0.06)", padding: 3, display: "flex", justifyContent: active ? "flex-end" : "flex-start", cursor: "pointer" }}><span style={{ width: 18, height: 18, borderRadius: "50%", background: active ? "#34D399" : "rgba(255,255,255,0.58)", display: "block" }} /></button>;
+  return <button aria-pressed={active} onClick={onClick} style={{ width: 48, height: 28, minHeight: 28, border: `1px solid ${active ? palette.accentLine : palette.line}`, borderRadius: 999, background: active ? palette.accentSoft : palette.wash, padding: 3, display: "flex", justifyContent: active ? "flex-end" : "flex-start", cursor: "pointer" }}><span style={{ width: 20, height: 20, borderRadius: "50%", background: active ? palette.accent : palette.muted, display: "block" }} /></button>;
 }
 
 function Dialog({ title, children, onClose }) {
-  return <div style={{ position: "fixed", inset: 0, zIndex: 1700, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }}><section role="dialog" aria-modal="true" style={{ width: "100%", maxWidth: 452, background: "#111820", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: 18, display: "grid", gap: 14, boxShadow: "0 24px 90px rgba(0,0,0,0.45)" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}><h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 23, lineHeight: 1.15 }}>{title}</h2><button onClick={onClose} style={ghostButton()}>×</button></div>{children}</section></div>;
+  return <div style={{ position: "fixed", inset: 0, zIndex: 1700, background: palette.overlay, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 20 }}><section role="dialog" aria-modal="true" style={{ width: "100%", maxWidth: 452, background: palette.surface, border: "none", borderRadius: 20, padding: 20, display: "grid", gap: 14, boxShadow: palette.sideShadow }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}><h2 style={{ fontFamily: type.serif, fontSize: 24, lineHeight: 1.15, fontWeight: type.weight.heading }}>{title}</h2><button onClick={onClose} style={ghostButton()}>×</button></div>{children}</section></div>;
 }
 
-const rowStyle = () => ({ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.045)", borderRadius: 16, padding: "14px", minHeight: 70, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" });
-const inlineButton = (color = "#fff") => ({ border: `1px solid ${color === "#fff" ? "rgba(255,255,255,0.14)" : color + "66"}`, background: color === "#fff" ? "rgba(255,255,255,0.055)" : color + "22", color: color === "#fff" ? "rgba(255,255,255,0.78)" : color, borderRadius: 999, padding: "9px 11px", fontSize: 12, fontWeight: 900, whiteSpace: "nowrap", cursor: "pointer" });
-const labelStyle = () => ({ display: "grid", gap: 7, color: "rgba(255,255,255,0.64)", fontSize: 11, fontWeight: 850, textTransform: "uppercase", letterSpacing: "0.7px" });
-const inputStyle = () => ({ width: "100%", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 13, padding: "12px 13px", font: "inherit", fontSize: 15 });
-const ghostButton = () => ({ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.72)", borderRadius: 999, minWidth: 44, minHeight: 44, padding: "8px 12px", fontSize: 14, cursor: "pointer" });
-const smallButton = (color = "#fff") => ({ border: `1px solid ${color === "#fff" ? "rgba(255,255,255,0.14)" : color + "66"}`, background: color === "#fff" ? "rgba(255,255,255,0.05)" : color + "1f", color, borderRadius: 12, padding: "9px 8px", fontSize: 12, fontWeight: 850, cursor: "pointer" });
-const primaryButton = (active = true) => ({ width: "100%", border: `1px solid ${active ? "#34D399" : "rgba(255,255,255,0.14)"}`, background: active ? "#34D399" : "transparent", color: active ? "#111" : "rgba(255,255,255,0.72)", borderRadius: 14, padding: "13px", fontSize: 14, fontWeight: 900, cursor: "pointer" });
-const dangerButton = (active = true) => ({ width: "100%", border: "1px solid rgba(248,113,113,0.45)", background: active ? "rgba(248,113,113,0.18)" : "rgba(248,113,113,0.06)", color: active ? "#fca5a5" : "rgba(252,165,165,0.45)", borderRadius: 14, padding: "13px", fontSize: 14, fontWeight: 900, cursor: active ? "pointer" : "not-allowed" });
+const headerStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 };
+const titleStyle = { fontFamily: type.serif, fontSize: 34, lineHeight: 1.08, fontWeight: type.weight.heading, letterSpacing: 0 };
+const toastStyle = { background: palette.surface, color: palette.stone, borderRadius: 14, padding: "10px 12px", fontSize: 13, fontWeight: type.weight.ui, boxShadow: palette.shadow };
+const cardStyle = { border: "none", background: palette.surface, borderRadius: 20, padding: 16, display: "grid", gap: 13, boxShadow: palette.shadow };
+const infoCardStyle = { ...cardStyle, gap: 5 };
+const profileNameStyle = { fontSize: 16, fontWeight: type.weight.heading, color: palette.stone, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+const metaStyle = { fontSize: 12, color: palette.muted, marginTop: 2, fontWeight: type.weight.ui };
+const statusStyle = { fontSize: 11, fontWeight: type.weight.ui };
+const bodyCopyStyle = { color: palette.faint, lineHeight: 1.6, fontSize: 14 };
+const emptyTextStyle = { color: palette.muted, padding: 24, textAlign: "center" };
+const eyebrowStyle = { color: palette.muted, fontSize: 12, textTransform: "uppercase", letterSpacing: 0, fontWeight: type.weight.ui, marginTop: 8 };
+
+const rowStyle = () => ({ ...cardStyle, minHeight: 70, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" });
+const inlineButton = (color = palette.accent) => ({ border: `1px solid ${palette.line}`, background: palette.surface, color, borderRadius: 999, minHeight: 48, padding: "9px 12px", fontSize: 12, fontWeight: type.weight.ui, whiteSpace: "nowrap", cursor: "pointer" });
+const labelStyle = () => ({ display: "grid", gap: 7, color: palette.muted, fontSize: 11, fontWeight: type.weight.ui, textTransform: "uppercase", letterSpacing: 0 });
+const inputStyle = () => ({ ...field });
+const ghostButton = () => ({ border: `1px solid ${palette.line}`, background: palette.surface, color: palette.stone, borderRadius: 999, minWidth: 48, minHeight: 48, padding: "8px 12px", fontSize: 14, cursor: "pointer" });
+const smallButton = (color = palette.stone) => ({ border: `1px solid ${palette.line}`, background: palette.surface, color, borderRadius: 12, minHeight: 48, padding: "9px 8px", fontSize: 12, fontWeight: type.weight.ui, cursor: "pointer" });
+const primaryButton = (active = true) => ({ width: "100%", border: "none", background: active ? palette.accent : palette.wash, color: active ? palette.surface : palette.muted, borderRadius: 14, minHeight: 48, padding: "13px", fontSize: 14, fontWeight: type.weight.heading, cursor: "pointer" });
+const dangerButton = (active = true) => ({ width: "100%", border: `1px solid ${palette.dangerSoft}`, background: active ? palette.dangerSoft : palette.wash, color: active ? palette.danger : palette.muted, borderRadius: 14, minHeight: 48, padding: "13px", fontSize: 14, fontWeight: type.weight.heading, cursor: active ? "pointer" : "not-allowed" });

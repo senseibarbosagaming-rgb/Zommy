@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { palette, type } from "./designSystem";
 
 const COPY = {
   en: {
     title: "Family circle",
-    body: "Invite another trusted parent to add memories, view the timeline, and help keep this child’s story.",
+    body: "Invite another trusted parent to add memories, view the timeline, and help keep this child's story.",
   },
   pt: {
     title: "Círculo familiar",
@@ -17,8 +18,8 @@ const getPrefs = () => {
 };
 
 const rowStyle = () => ({
-  border: "1px solid rgba(255,255,255,0.12)",
-  background: "rgba(255,255,255,0.045)",
+  border: "none",
+  background: palette.surface,
   borderRadius: "16px",
   padding: "14px",
   minHeight: "70px",
@@ -26,11 +27,12 @@ const rowStyle = () => ({
   justifyContent: "space-between",
   gap: "12px",
   alignItems: "center",
-  color: "#fff",
+  color: palette.stone,
   textAlign: "left",
   cursor: "pointer",
-  fontFamily: "Inter, system-ui, sans-serif",
+  fontFamily: type.sans,
   width: "100%",
+  boxShadow: palette.shadow,
 });
 
 const addIntegratedRow = (copy) => {
@@ -44,13 +46,24 @@ const addIntegratedRow = (copy) => {
   row.id = "zommy-family-sharing-settings-row";
   row.type = "button";
   Object.assign(row.style, rowStyle());
-  row.innerHTML = `
-    <span style="min-width:0;display:block;">
-      <span style="display:block;color:#fff;font-size:15px;font-weight:900;">${copy.title}</span>
-      <span style="display:block;color:rgba(255,255,255,0.52);font-size:12px;margin-top:3px;font-weight:750;line-height:1.35;">${copy.body}</span>
-    </span>
-    <span style="color:rgba(255,255,255,0.42);font-size:20px;">›</span>
-  `;
+
+  const text = document.createElement("span");
+  Object.assign(text.style, { minWidth: 0, display: "block" });
+
+  const title = document.createElement("span");
+  title.textContent = copy.title;
+  Object.assign(title.style, { display: "block", color: palette.stone, fontSize: "15px", fontWeight: type.weight.heading });
+
+  const body = document.createElement("span");
+  body.textContent = copy.body;
+  Object.assign(body.style, { display: "block", color: palette.muted, fontSize: "12px", marginTop: "3px", fontWeight: type.weight.ui, lineHeight: 1.35 });
+
+  const arrow = document.createElement("span");
+  arrow.textContent = "›";
+  Object.assign(arrow.style, { color: palette.muted, fontSize: "20px" });
+
+  text.append(title, body);
+  row.append(text, arrow);
   row.addEventListener("click", () => window.dispatchEvent(new CustomEvent("zommy:show-family-sharing")));
 
   const rows = Array.from(container.children);

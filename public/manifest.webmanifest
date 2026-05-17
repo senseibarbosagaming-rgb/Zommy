@@ -9,8 +9,8 @@
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#101418",
-  "theme_color": "#43596a",
+  "background_color": "#FAFAF8",
+  "theme_color": "#FAFAF8",
   "orientation": "portrait-primary",
   "categories": ["lifestyle", "photo"],
   "icons": [

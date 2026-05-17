@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useAppShell } from "./AppShellContext";
 import { monthBounds } from "./capsuleCore";
 import { appSurface, card, contentFrame, emptyStateCard, label, palette, primaryButton, secondaryButton, softCard, type } from "./designSystem";
@@ -8,7 +8,7 @@ const COPY = {
   en: {
     today: "Today",
     private: "Private to your family",
-    prompt: "What’s one tiny thing you don’t want to forget today?",
+    prompt: "Whatâ€™s one tiny thing you donâ€™t want to forget today?",
     addMoment: "Add photo or note",
     latest: "Latest saved memory",
     returnTitle: "Worth coming back to",
@@ -18,10 +18,10 @@ const COPY = {
     compareBody: "Place the earliest and latest moments side by side and feel the time between them.",
     compareCta: "Compare then and now",
     chapterTitle: (month) => `${month} chapter`,
-    chapterBody: (count, name) => count > 0 ? `${count} ${count === 1 ? "moment" : "moments"} can become ${name}’s month story.` : `A few small memories will turn ${name}’s month into a story.`,
+    chapterBody: (count, name) => count > 0 ? `${count} ${count === 1 ? "moment" : "moments"} can become ${name}â€™s month story.` : `A few small memories will turn ${name}â€™s month into a story.`,
     chapterCta: "Open month story",
     emptyHeadline: "Start with today.",
-    emptyBody: "One photo. One sentence. That’s enough.",
+    emptyBody: "One photo. One sentence. Thatâ€™s enough.",
     emptyCta: "Add first memory",
     draftTitle: "Finish the almost-memory",
     draftBody: "You started saving something. Finish it before the details fade.",
@@ -31,27 +31,27 @@ const COPY = {
   },
   pt: {
     today: "Hoje",
-    private: "Privado para a tua família",
-    prompt: "Qual é uma coisa pequenina que não queres esquecer hoje?",
+    private: "Privado para a tua famÃ­lia",
+    prompt: "Qual Ã© uma coisa pequenina que nÃ£o queres esquecer hoje?",
     addMoment: "Adicionar foto ou nota",
-    latest: "Última memória guardada",
+    latest: "Ãšltima memÃ³ria guardada",
     returnTitle: "Para voltar mais tarde",
     fromThisDay: "Deste dia",
     favorite: "Vale a pena guardar",
-    compare: "Comparação sugerida",
-    compareBody: "Coloca o primeiro e o último momento lado a lado e sente o tempo entre eles.",
+    compare: "ComparaÃ§Ã£o sugerida",
+    compareBody: "Coloca o primeiro e o Ãºltimo momento lado a lado e sente o tempo entre eles.",
     compareCta: "Comparar antes e agora",
-    chapterTitle: (month) => `Capítulo de ${month}`,
-    chapterBody: (count, name) => count > 0 ? `${count} ${count === 1 ? "momento" : "momentos"} podem tornar-se na história do mês de ${name}.` : `Algumas memórias pequenas vão transformar o mês de ${name} numa história.`,
-    chapterCta: "Abrir história do mês",
-    emptyHeadline: "Começa por hoje.",
-    emptyBody: "Uma foto. Uma frase. É suficiente.",
-    emptyCta: "Adicionar primeira memória",
-    draftTitle: "Termina a quase-memória",
-    draftBody: "Começaste a guardar algo. Termina antes que os detalhes desapareçam.",
+    chapterTitle: (month) => `CapÃ­tulo de ${month}`,
+    chapterBody: (count, name) => count > 0 ? `${count} ${count === 1 ? "momento" : "momentos"} podem tornar-se na histÃ³ria do mÃªs de ${name}.` : `Algumas memÃ³rias pequenas vÃ£o transformar o mÃªs de ${name} numa histÃ³ria.`,
+    chapterCta: "Abrir histÃ³ria do mÃªs",
+    emptyHeadline: "ComeÃ§a por hoje.",
+    emptyBody: "Uma foto. Uma frase. Ã‰ suficiente.",
+    emptyCta: "Adicionar primeira memÃ³ria",
+    draftTitle: "Termina a quase-memÃ³ria",
+    draftBody: "ComeÃ§aste a guardar algo. Termina antes que os detalhes desapareÃ§am.",
     draftCta: "Continuar",
-    queuedTitle: "À espera de ligação",
-    queuedBody: (count) => `${count} ${count === 1 ? "memória offline" : "memórias offline"} vai carregar quando a ligação voltar.`,
+    queuedTitle: "Ã€ espera de ligaÃ§Ã£o",
+    queuedBody: (count) => `${count} ${count === 1 ? "memÃ³ria offline" : "memÃ³rias offline"} vai carregar quando a ligaÃ§Ã£o voltar.`,
   },
 };
 
@@ -109,23 +109,23 @@ export default function HomeRitualScreen() {
   return (
     <main className="zommy-primary-screen" style={appSurface}>
       <div style={contentFrame()}>
-        <header style={{ ...softCard({ padding: 18, overflow: "hidden", borderColor: `${tone}44`, background: `linear-gradient(140deg, ${tone}1f, rgba(255,253,248,.90) 62%)` }), position: "relative" }}>
+        <header style={{ ...softCard({ padding: 18, overflow: "hidden", background: palette.surface }), position: "relative" }}>
           <div style={{ position: "absolute", right: -28, top: -22, width: 130, height: 130, borderRadius: "50%", background: `${tone}18` }} />
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, position: "relative" }}>
             <div>
               <div style={{ ...label, color: tone }}>{copy.today}</div>
-              <h1 style={{ fontFamily: type.serif, fontSize: 39, lineHeight: 1.02, fontWeight: 650, marginTop: 5 }}>{profile.name}</h1>
+              <h1 style={{ fontFamily: type.serif, fontSize: 39, lineHeight: 1.02, fontWeight: type.weight.heading, marginTop: 5 }}>{profile.name}</h1>
               <p style={{ color: palette.inkMuted, marginTop: 6, fontSize: 14 }}>{childAge(profile.birthdate, lang)}</p>
             </div>
-            <div style={{ width: 66, height: 66, borderRadius: 24, background: `linear-gradient(145deg, ${tone}22, ${palette.paper})`, color: tone, display: "grid", placeItems: "center", fontSize: 34, boxShadow: palette.shadowLift }}>{profile.emoji || "◌"}</div>
+            <div style={{ width: 66, height: 66, borderRadius: 24, background: profile.bg || palette.accentSoft, color: tone, display: "grid", placeItems: "center", fontSize: 34, boxShadow: palette.shadow }}>{profile.emoji || "â—Œ"}</div>
           </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 16, color: palette.deep, background: "rgba(255,253,248,.64)", border: `1px solid ${palette.border}`, borderRadius: 999, padding: "7px 10px", fontSize: 12, fontWeight: 850 }}>● {copy.private}</div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 16, color: palette.deep, background: "rgba(255,253,248,.64)", border: `1px solid ${palette.border}`, borderRadius: 999, padding: "7px 10px", fontSize: 12, fontWeight: type.weight.ui }}>â— {copy.private}</div>
         </header>
 
         {(draft || queuedCount > 0) && <section style={{ display: "grid", gap: 10 }}>{draft && <StatusCard title={copy.draftTitle} body={copy.draftBody} cta={copy.draftCta} onClick={openDraft} tone={palette.honey} />}{queuedCount > 0 && <StatusCard title={copy.queuedTitle} body={copy.queuedBody(queuedCount)} tone={palette.softBlue} />}</section>}
 
         <section style={{ ...softCard({ display: "grid", gap: 14 }) }}>
-          <h2 style={{ fontFamily: type.serif, fontSize: 26, lineHeight: 1.15, fontWeight: 650 }}>{copy.prompt}</h2>
+          <h2 style={{ fontFamily: type.serif, fontSize: 26, lineHeight: 1.15, fontWeight: type.weight.heading }}>{copy.prompt}</h2>
           <button className="b" onClick={openComposer} style={{ ...primaryButton(tone), justifySelf: "start" }}>{copy.addMoment}</button>
         </section>
 
@@ -142,9 +142,9 @@ export default function HomeRitualScreen() {
           </section>
         )}
 
-        <section className="zommy-elevated-card" style={{ ...card, border: `1px solid ${tone}35`, padding: 18, background: `linear-gradient(145deg, ${tone}14, rgba(255,253,248,0.88))`, display: "grid", gap: 12 }}>
+            <section className="zommy-elevated-card" style={{ ...card, padding: 18, background: palette.surface, display: "grid", gap: 12 }}>
           <div style={{ ...label, color: tone }}>Monthly story</div>
-          <h2 style={{ fontFamily: type.serif, fontSize: 27, lineHeight: 1.08, fontWeight: 650 }}>{copy.chapterTitle(monthName(period.start, lang))}</h2>
+          <h2 style={{ fontFamily: type.serif, fontSize: 27, lineHeight: 1.08, fontWeight: type.weight.heading }}>{copy.chapterTitle(monthName(period.start, lang))}</h2>
           <p style={{ color: palette.inkMuted, lineHeight: 1.55, fontSize: 14 }}>{copy.chapterBody(monthEntries.length, profile.name)}</p>
           <button className="b" onClick={openChapter} style={{ ...secondaryButton(tone), justifySelf: "start" }}>{copy.chapterCta}</button>
         </section>
@@ -156,7 +156,8 @@ export default function HomeRitualScreen() {
 }
 
 function EmptyStart({ copy, onClick }) { return <section style={emptyStateCard}><h2 style={{ fontFamily: type.serif, fontSize: 27, lineHeight: 1.12 }}>{copy.emptyHeadline}</h2><p style={{ color: palette.inkMuted, lineHeight: 1.55 }}>{copy.emptyBody}</p><button className="b" onClick={onClick} style={{ ...primaryButton(), justifySelf: "center" }}>{copy.emptyCta}</button></section>; }
-function MiniPhoto({ entry, profile }) { return <div style={{ borderRadius: 20, overflow: "hidden", aspectRatio: "1 / 1.18", background: palette.paperSoft }}>{entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile.name} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%" }} /> : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: 28 }}>{profile.emoji || "◌"}</div>}</div>; }
-function MemoryFeature({ label: title, entry, profile, lang, quiet = false }) { return <article className="zommy-elevated-card" style={{ ...card, overflow: "hidden" }}>{entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile.name} memory from ${entry.date}`} style={{ width: "100%", height: quiet ? 196 : 252, objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} /> : <div style={{ height: quiet ? 156 : 190, display: "grid", placeItems: "center", color: palette.inkFaint, fontSize: 42, background: palette.paperSoft }}>{profile.emoji || "📷"}</div>}<div style={{ padding: 16, display: "grid", gap: 8 }}><div style={{ ...label, color: quiet ? palette.sage : profile.color || palette.clay }}>{title}</div><h2 style={{ fontFamily: type.serif, fontSize: 23, lineHeight: 1.2, fontWeight: 650 }}>{formatDate(entry.date, lang)}</h2>{entry.note && <p style={{ color: palette.inkMuted, lineHeight: 1.62, fontSize: 14 }}>{entry.note}</p>}</div></article>; }
-function StatusCard({ title, body, cta, onClick, tone }) { const content = <><div style={{ color: tone, fontSize: 13, fontWeight: 900 }}>{title}</div><p style={{ color: palette.inkMuted, fontSize: 13, lineHeight: 1.5 }}>{body}</p>{cta && <div style={{ justifySelf: "start", ...secondaryButton(tone), padding: "8px 11px", fontSize: 12 }}>{cta}</div>}</>; return onClick ? <button className="zommy-elevated-card" onClick={onClick} style={{ textAlign: "left", ...softCard({ borderColor: `${tone}55`, background: `linear-gradient(145deg, ${tone}18, rgba(255,253,248,.84))`, display: "grid", gap: 7, cursor: "pointer" }) }}>{content}</button> : <article className="zommy-elevated-card" style={{ ...softCard({ borderColor: `${tone}55`, background: `linear-gradient(145deg, ${tone}18, rgba(255,253,248,.84))`, display: "grid", gap: 7 }) }}>{content}</article>; }
-function SkeletonCard() { return <div aria-hidden="true" style={{ ...card, height: 180, background: "linear-gradient(100deg, rgba(255,253,248,.72), rgba(244,223,167,.20), rgba(255,253,248,.72))" }} />; }
+function MiniPhoto({ entry, profile }) { return <div style={{ borderRadius: 20, overflow: "hidden", aspectRatio: "1 / 1.18", background: palette.paperSoft }}>{entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile.name} memory`} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: entry.cover_position || "50% 50%" }} /> : <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: 28 }}>{profile.emoji || "â—Œ"}</div>}</div>; }
+function MemoryFeature({ label: title, entry, profile, lang, quiet = false }) { return <article className="zommy-elevated-card" style={{ ...card, overflow: "hidden" }}>{entry.photoUrl ? <img src={entry.photoUrl} alt={`${profile.name} memory from ${entry.date}`} style={{ width: "100%", height: quiet ? 196 : 252, objectFit: "cover", objectPosition: entry.cover_position || "50% 50%", display: "block" }} /> : <div style={{ height: quiet ? 156 : 190, display: "grid", placeItems: "center", color: palette.inkFaint, fontSize: 42, background: palette.paperSoft }}>{profile.emoji || "ðŸ“·"}</div>}<div style={{ padding: 16, display: "grid", gap: 8 }}><div style={{ ...label, color: quiet ? palette.sage : profile.color || palette.clay }}>{title}</div><h2 style={{ fontFamily: type.serif, fontSize: 23, lineHeight: 1.2, fontWeight: type.weight.heading }}>{formatDate(entry.date, lang)}</h2>{entry.note && <p style={{ color: palette.inkMuted, lineHeight: 1.62, fontSize: 14 }}>{entry.note}</p>}</div></article>; }
+function StatusCard({ title, body, cta, onClick, tone }) { const content = <><div style={{ color: tone, fontSize: 13, fontWeight: type.weight.heading }}>{title}</div><p style={{ color: palette.inkMuted, fontSize: 13, lineHeight: 1.5 }}>{body}</p>{cta && <div style={{ justifySelf: "start", ...secondaryButton(tone), padding: "8px 11px", fontSize: 12 }}>{cta}</div>}</>; return onClick ? <button className="zommy-elevated-card" onClick={onClick} style={{ textAlign: "left", ...softCard({ background: palette.surface, display: "grid", gap: 7, cursor: "pointer" }) }}>{content}</button> : <article className="zommy-elevated-card" style={{ ...softCard({ background: palette.surface, display: "grid", gap: 7 }) }}>{content}</article>; }
+function SkeletonCard() { return <div aria-hidden="true" style={{ ...card, height: 180, background: palette.surface }} />; }
+

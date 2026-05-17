@@ -4,8 +4,7 @@
 const KEY = "zommy_prefs";
 const DEFAULT_PREFS = { lang: "en", theme: "dream" };
 
-const normalizeTheme = (theme) =>
-  theme === "dark" ? "night" : theme === "light" ? "dream" : theme || DEFAULT_PREFS.theme;
+const normalizeTheme = () => DEFAULT_PREFS.theme;
 
 export const getPrefs = () => {
   try {
