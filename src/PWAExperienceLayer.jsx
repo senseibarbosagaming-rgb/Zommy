@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { palette, type } from "./designSystem";
 import { getQueuedCount } from "./pwaStorage";
 import { flushQueuedUploads } from "./pwaUploadQueue";
@@ -66,6 +67,7 @@ export default function PWAExperienceLayer() {
   };
 
   useEffect(() => {
+    const isNative = Capacitor.isNativePlatform();
     const splash = document.getElementById("zommy-splash");
     if (splash) {
       splash.style.opacity = "0";
@@ -73,7 +75,7 @@ export default function PWAExperienceLayer() {
       window.setTimeout(() => splash.remove(), 260);
     }
 
-    if ("serviceWorker" in navigator) {
+    if (!isNative && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch((error) => console.warn("Service worker registration failed", error));
     }
 
@@ -89,8 +91,10 @@ export default function PWAExperienceLayer() {
       localStorage.setItem("zommy_install_dismissed", "1");
     };
 
-    window.addEventListener("beforeinstallprompt", beforeInstall);
-    window.addEventListener("appinstalled", installed);
+    if (!isNative) {
+      window.addEventListener("beforeinstallprompt", beforeInstall);
+      window.addEventListener("appinstalled", installed);
+    }
 
     const onOnline = () => {
       setOnline(true);
@@ -121,8 +125,10 @@ export default function PWAExperienceLayer() {
     }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", beforeInstall);
-      window.removeEventListener("appinstalled", installed);
+      if (!isNative) {
+        window.removeEventListener("beforeinstallprompt", beforeInstall);
+        window.removeEventListener("appinstalled", installed);
+      }
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
       window.removeEventListener("focus", onResume);
@@ -148,23 +154,23 @@ export default function PWAExperienceLayer() {
   return (
     <>
       {(!online || queuedCount > 0 || message) && (
-        <div style={{ position: "fixed", top: "calc(10px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)", zIndex: 2100, maxWidth: "min(92vw, 430px)", background: online ? palette.surface : palette.dangerSoft, color: online ? palette.stone : palette.danger, border: "none", borderRadius: 999, padding: "9px 13px", fontSize: 12, fontWeight: type.weight.ui, boxShadow: palette.shadow, fontFamily: type.sans }}>
+        <div style={{ position: "fixed", top: "calc(10px + env(safe-area-inset-top, 0px))", left: "50%", transform: "translateX(-50%)", zIndex: 2100, maxWidth: "min(92vw, 430px)", background: online ? palette.surface : palette.dangerBg, color: online ? palette.ink : palette.danger, border: "none", borderRadius: 999, padding: "9px 13px", fontSize: 12, fontWeight: type.weight.ui, boxShadow: palette.shadow, fontFamily: type.sans }}>
           {!online ? copy.offline : message || copy.queued(queuedCount)}
         </div>
       )}
 
       {showInstall && installEvent && (
         <div style={{ position: "fixed", left: 20, right: 20, bottom: "calc(88px + env(safe-area-inset-bottom, 0px))", zIndex: 2100, display: "flex", justifyContent: "center", fontFamily: type.sans }}>
-          <section style={{ width: "100%", maxWidth: 452, background: palette.surface, color: palette.stone, border: "none", borderRadius: 20, padding: 16, boxShadow: palette.sideShadow, display: "grid", gap: 10 }}>
+          <section style={{ width: "100%", maxWidth: 452, background: palette.surface, color: palette.ink, border: "none", borderRadius: 20, padding: 16, boxShadow: palette.shadowMd, display: "grid", gap: 10 }}>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <img src="/icons/icon.svg" alt="" style={{ width: 42, height: 42, borderRadius: 12 }} />
               <div>
                 <div style={{ fontSize: 16, fontWeight: type.weight.heading }}>{copy.installTitle}</div>
-                <div style={{ color: palette.muted, fontSize: 13, lineHeight: 1.45, marginTop: 2 }}>{copy.installBody}</div>
+                <div style={{ color: palette.inkSub, fontSize: 13, lineHeight: 1.45, marginTop: 2 }}>{copy.installBody}</div>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
-              <button onClick={dismissInstall} style={{ border: `1px solid ${palette.line}`, background: palette.surface, color: palette.muted, borderRadius: 14, minHeight: 48, fontWeight: type.weight.ui }}>{copy.later}</button>
+              <button onClick={dismissInstall} style={{ border: `1px solid ${palette.border}`, background: palette.surface, color: palette.inkSub, borderRadius: 14, minHeight: 48, fontWeight: type.weight.ui }}>{copy.later}</button>
               <button onClick={install} style={{ border: "none", background: palette.accent, color: palette.surface, borderRadius: 14, minHeight: 48, fontWeight: type.weight.heading }}>{copy.install}</button>
             </div>
           </section>
