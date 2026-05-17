@@ -30,6 +30,36 @@ const COPY = {
   },
 };
 
+const NAV_ICONS = {
+  today: (
+    <>
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5.5 9.5V21h13V9.5" />
+      <path d="M9.5 21v-6h5v6" />
+    </>
+  ),
+  timeline: (
+    <>
+      <path d="M5 7h14" />
+      <path d="M5 12h14" />
+      <path d="M5 17h14" />
+      <path d="M8 7v10" />
+      <path d="M16 7v10" />
+    </>
+  ),
+  compare: (
+    <>
+      <path d="M7 7h11l-3-3" />
+      <path d="M18 7l-3 3" />
+      <path d="M17 17H6l3 3" />
+      <path d="M6 17l3-3" />
+    </>
+  ),
+  family: (
+    <path d="M20.5 8.7c0 5.1-8.5 10-8.5 10S3.5 13.8 3.5 8.7A4.7 4.7 0 0 1 12 6a4.7 4.7 0 0 1 8.5 2.7Z" />
+  ),
+};
+
 const getPrefs = () => {
   try { return JSON.parse(localStorage.getItem("zommy_prefs") || "{}"); }
   catch { return {}; }
@@ -40,7 +70,7 @@ const openProfileCreator = () => window.dispatchEvent(new CustomEvent("zommy:ope
 const openComposer = (profile) => window.dispatchEvent(new CustomEvent("zommy:open-memory-composer", { detail: { profileId: profile?.id || "" } }));
 
 export default function NavExperienceLayer() {
-  const { user, profiles, memoryCount, refresh } = useZommyData({ includeEntries: false, includeLocal: false });
+  const { user, profiles, refresh } = useZommyData({ includeEntries: false, includeLocal: false });
   const { activeProfileId, activeScreen, openPrimaryScreen, setActiveProfileId } = useAppShell();
   const [chooserMode, setChooserMode] = useState(null);
 
@@ -82,10 +112,10 @@ export default function NavExperienceLayer() {
 
   const plusLabel = !profiles.length ? copy.addChildFirst : activeProfile ? copy.addNamedMemory(activeProfile.name) : copy.addMemory;
   const navItems = [
-    { id: "today", icon: "⌂", label: copy.today, color: palette.clay },
-    { id: "timeline", icon: "◌", label: copy.timeline, color: palette.sage },
-    { id: "compare", icon: "↔", label: copy.compare, color: palette.deep },
-    { id: "family", icon: "♡", label: copy.family, color: palette.roseBeige },
+    { id: "today", label: copy.today },
+    { id: "timeline", label: copy.timeline },
+    { id: "compare", label: copy.compare },
+    { id: "family", label: copy.family },
   ];
 
   const chooseProfile = (profile) => {
@@ -99,25 +129,25 @@ export default function NavExperienceLayer() {
   return (
     <>
       {chooserMode && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 1200, background: "rgba(46,41,35,0.38)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 14 }} onClick={() => setChooserMode(null)}>
-          <div style={{ width: "100%", maxWidth: 452, background: palette.paper, color: palette.ink, border: `1px solid ${palette.border}`, borderRadius: 28, padding: 18, boxShadow: palette.shadow }} onClick={(event) => event.stopPropagation()}>
-            <div style={{ fontFamily: type.serif, fontSize: 23, fontWeight: 650, marginBottom: 14 }}>{chooserMode === "memory" ? copy.chooseChild : copy.chooseTimeline}</div>
+        <div style={chooserScrimStyle} onClick={() => setChooserMode(null)}>
+          <div style={chooserCardStyle} onClick={(event) => event.stopPropagation()}>
+            <div style={chooserTitleStyle}>{chooserMode === "memory" ? copy.chooseChild : copy.chooseTimeline}</div>
             <div style={{ display: "grid", gap: 10 }}>
               {profiles.map((profile) => (
-                <button key={profile.id} className="b" onClick={() => chooseProfile(profile)} style={{ border: `1px solid ${palette.border}`, background: "rgba(255,247,240,.72)", color: palette.ink, borderRadius: 20, minHeight: 58, padding: "10px 12px", display: "flex", alignItems: "center", gap: 11, fontWeight: 850, cursor: "pointer", textAlign: "left" }}>
-                  <span style={{ width: 38, height: 38, borderRadius: 14, background: `${profile.color || palette.clay}20`, display: "grid", placeItems: "center", fontSize: 20 }}>{profile.emoji || "◌"}</span>
+                <button key={profile.id} className="b" onClick={() => chooseProfile(profile)} style={profileButtonStyle}>
+                  <span style={{ ...profileAvatarStyle, background: profile.bg || palette.accentSoft, color: profile.color || palette.accent }}>{profile.emoji || "○"}</span>
                   <span>{profile.name}</span>
                 </button>
               ))}
-              <button onClick={() => setChooserMode(null)} style={{ border: "none", background: "transparent", color: palette.inkMuted, padding: 10, fontWeight: 850 }}>{copy.cancel}</button>
+              <button onClick={() => setChooserMode(null)} style={cancelStyle}>{copy.cancel}</button>
             </div>
           </div>
         </div>
       )}
 
-      <nav aria-label="Primary" style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", bottom: "calc(12px + env(safe-area-inset-bottom, 0px))", zIndex: 1000, width: "min(452px, calc(100vw - 24px))", display: "grid", gridTemplateColumns: "1fr 1fr 66px 1fr 1fr", alignItems: "center", gap: 7, padding: 8, border: `1px solid ${palette.border}`, borderRadius: 28, background: "rgba(255,253,248,0.90)", boxShadow: "0 18px 46px rgba(91,67,48,0.16)", backdropFilter: "blur(20px)" }}>
+      <nav aria-label="Primary" style={navStyle}>
         {navItems.slice(0, 2).map((item) => <NavButton key={item.id} item={item} active={activeTab === item.id} onClick={() => handleTab(item.id)} />)}
-        <button aria-label={plusLabel} title={plusLabel} onClick={handlePlus} className="b" style={{ width: 58, height: 58, border: "none", borderRadius: 22, background: palette.clay, color: "#FFFDF8", fontSize: 28, lineHeight: 1, boxShadow: `0 15px 32px ${palette.clay}38`, cursor: "pointer" }}>+</button>
+        <button aria-label={plusLabel} title={plusLabel} onClick={handlePlus} className="b" style={plusButtonStyle}>+</button>
         {navItems.slice(2).map((item) => <NavButton key={item.id} item={item} active={activeTab === item.id} onClick={() => handleTab(item.id)} />)}
       </nav>
     </>
@@ -126,9 +156,147 @@ export default function NavExperienceLayer() {
 
 function NavButton({ item, active, onClick }) {
   return (
-    <button aria-label={item.label} onClick={onClick} className="b" style={{ minWidth: 0, height: 54, border: "none", borderRadius: 20, background: active ? `${item.color}16` : "transparent", color: active ? item.color : palette.inkMuted, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, fontFamily: type.sans, cursor: "pointer" }}>
-      <span style={{ fontSize: 21, lineHeight: 1 }}>{item.icon}</span>
-      <span style={{ fontSize: 10, lineHeight: 1, fontWeight: 850, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
+    <button aria-label={item.label} onClick={onClick} className="b" style={navButtonStyle}>
+      <span style={{ ...navIconPillStyle, background: active ? palette.accentSoft : "transparent" }}>
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {NAV_ICONS[item.id]}
+        </svg>
+      </span>
+      <span style={navLabelStyle}>{item.label}</span>
     </button>
   );
 }
+
+const chooserScrimStyle = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 1200,
+  background: palette.overlay,
+  display: "flex",
+  alignItems: "flex-end",
+  justifyContent: "center",
+  padding: 20,
+};
+
+const chooserCardStyle = {
+  width: "100%",
+  maxWidth: 452,
+  background: palette.surface,
+  color: palette.stone,
+  border: "none",
+  borderRadius: 20,
+  padding: 20,
+  boxShadow: palette.sideShadow,
+};
+
+const chooserTitleStyle = {
+  fontFamily: type.serif,
+  fontSize: 24,
+  lineHeight: 1.15,
+  fontWeight: type.weight.heading,
+  marginBottom: 16,
+};
+
+const profileButtonStyle = {
+  border: `1px solid ${palette.line}`,
+  background: palette.surface,
+  color: palette.stone,
+  borderRadius: 18,
+  minHeight: 58,
+  padding: "10px 12px",
+  display: "flex",
+  alignItems: "center",
+  gap: 11,
+  fontWeight: type.weight.ui,
+  cursor: "pointer",
+  textAlign: "left",
+};
+
+const profileAvatarStyle = {
+  width: 38,
+  height: 38,
+  borderRadius: 14,
+  display: "grid",
+  placeItems: "center",
+  fontSize: 20,
+};
+
+const cancelStyle = {
+  border: "none",
+  background: "transparent",
+  color: palette.muted,
+  minHeight: 48,
+  padding: 10,
+  fontWeight: type.weight.ui,
+};
+
+const navStyle = {
+  position: "fixed",
+  left: "50%",
+  transform: "translateX(-50%)",
+  bottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
+  zIndex: 1000,
+  width: "min(452px, calc(100vw - 40px))",
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr 56px 1fr 1fr",
+  alignItems: "center",
+  gap: 6,
+  padding: 8,
+  border: "none",
+  borderRadius: 999,
+  background: palette.overlaySoft,
+  boxShadow: palette.sideShadow,
+  backdropFilter: "blur(20px)",
+};
+
+const plusButtonStyle = {
+  width: 56,
+  height: 56,
+  minHeight: 56,
+  border: "none",
+  borderRadius: 999,
+  background: palette.accent,
+  color: palette.surface,
+  fontSize: 27,
+  lineHeight: 1,
+  fontWeight: type.weight.heading,
+  boxShadow: palette.shadow,
+  cursor: "pointer",
+};
+
+const navButtonStyle = {
+  minWidth: 0,
+  height: 56,
+  minHeight: 56,
+  border: "none",
+  borderRadius: 999,
+  background: "transparent",
+  color: palette.stone,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 3,
+  fontFamily: type.sans,
+  cursor: "pointer",
+};
+
+const navIconPillStyle = {
+  width: 32,
+  height: 24,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  color: palette.stone,
+};
+
+const navLabelStyle = {
+  fontSize: 10,
+  lineHeight: 1,
+  fontWeight: type.weight.ui,
+  color: palette.muted,
+  maxWidth: "100%",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppShell } from "./AppShellContext";
+import { palette, type } from "./designSystem";
 import { listFamilyMembers, memberDisplayName } from "./familyCircle";
 import { useZommyData } from "./useZommyData";
 
@@ -27,16 +28,16 @@ const pillStyle = (color) => ({
   zIndex: 905,
   width: "min(448px, calc(100vw - 32px))",
   pointerEvents: "none",
-  border: `1px solid ${color}55`,
-  background: "rgba(16,20,24,0.86)",
-  color: "rgba(255,255,255,0.78)",
+  border: `1px solid ${palette.line}`,
+  background: palette.overlaySoft,
+  color,
   borderRadius: "999px",
   padding: "8px 12px",
   fontSize: "12px",
-  fontWeight: "850",
+  fontWeight: type.weight.ui,
   lineHeight: "1.25",
-  fontFamily: "Inter, system-ui, sans-serif",
-  boxShadow: "0 14px 44px rgba(0,0,0,0.24)",
+  fontFamily: type.sans,
+  boxShadow: palette.shadow,
   backdropFilter: "blur(16px)",
 });
 
@@ -81,7 +82,7 @@ export default function FamilyCircleHomeLayer() {
     : copy.sharedCount(otherMembers.length);
 
   return (
-    <aside aria-live="polite" style={pillStyle(profile.color || "#34D399")}>
+    <aside aria-live="polite" style={pillStyle(profile.color || palette.accent)}>
       <div>{mainLine}</div>
     </aside>
   );

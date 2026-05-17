@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { appSurface, contentFrame, emptyStateCard, palette, type } from "./designSystem";
 import { supabase } from "./supabase";
 import { useZommyData } from "./useZommyData";
 
@@ -9,6 +10,7 @@ const COPY = {
     draft: "Draft chapter",
     locked: "Locked chapter",
     empty: "Monthly chapters will appear here as you save memories.",
+    loading: "Loading...",
     open: "Open chapter",
     memories: (count) => `${count} ${count === 1 ? "memory" : "memories"}`,
   },
@@ -18,6 +20,7 @@ const COPY = {
     draft: "Capítulo em rascunho",
     locked: "Capítulo fechado",
     empty: "Os capítulos mensais vão aparecer aqui à medida que guardas memórias.",
+    loading: "A carregar...",
     open: "Abrir capítulo",
     memories: (count) => `${count} ${count === 1 ? "memória" : "memórias"}`,
   },
@@ -63,52 +66,53 @@ export default function ChaptersLibrary() {
   if (!open || !user) return null;
 
   return (
-    <main style={{ position: "fixed", inset: 0, zIndex: 920, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
-      <div style={{ maxWidth: 480, margin: "0 auto", minHeight: "100dvh", padding: "22px 16px 120px", display: "grid", gap: 16 }}>
+    <main style={{ ...appSurface, zIndex: 920 }}>
+      <div style={contentFrame(120)}>
         <header>
-          <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 38, lineHeight: 1.05, fontWeight: 650 }}>{copy.title}</h1>
-          <p style={{ color: "rgba(255,255,255,0.62)", marginTop: 6, fontSize: 14 }}>{copy.subtitle}</p>
+          <h1 style={titleStyle}>{copy.title}</h1>
+          <p style={subtitleStyle}>{copy.subtitle}</p>
         </header>
 
-        {loading && <div style={{ color: "rgba(255,255,255,0.46)" }}>Loading…</div>}
+        {loading && <div style={{ color: palette.muted }}>{copy.loading}</div>}
 
         {!loading && chapters.length === 0 && (
-          <section style={{ border: "1px dashed rgba(255,255,255,0.14)", borderRadius: 24, padding: 26, textAlign: "center", color: "rgba(255,255,255,0.58)", lineHeight: 1.6 }}>
+          <section style={emptyStateCard}>
             {copy.empty}
           </section>
         )}
 
-        <section style={{ display: "grid", gap: 14 }}>
+        <section style={{ display: "grid", gap: 24 }}>
           {chapters.map((chapter) => {
             const profile = profiles.find((item) => item.id === chapter.profile_id);
             const chapterEntries = entries.filter((entry) => entry.profile_id === chapter.profile_id && entry.date >= chapter.period_start && entry.date <= chapter.period_end);
             const cover = chapterEntries.find((entry) => entry.photoUrl);
+            const tone = profile?.color || palette.accent;
 
             return (
-              <article key={chapter.id} style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 28, overflow: "hidden", background: "rgba(255,255,255,0.04)", boxShadow: "0 18px 50px rgba(0,0,0,0.22)" }}>
+              <article key={chapter.id} style={chapterCardStyle}>
                 {cover?.photoUrl ? (
                   <img src={cover.photoUrl} alt={chapter.title} style={{ width: "100%", height: 220, objectFit: "cover", display: "block" }} />
                 ) : (
-                  <div style={{ height: 180, display: "grid", placeItems: "center", fontSize: 42, background: "rgba(255,255,255,0.03)" }}>{profile?.emoji || "📖"}</div>
+                  <div style={{ height: 180, display: "grid", placeItems: "center", fontSize: 42, background: profile?.bg || palette.accentSoft, color: tone }}>{profile?.emoji || "○"}</div>
                 )}
 
-                <div style={{ padding: 18, display: "grid", gap: 10 }}>
+                <div style={{ padding: 20, display: "grid", gap: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                    <div style={{ color: chapter.status === "locked" ? "#FBBF24" : (profile?.color || "#34D399"), fontSize: 11, fontWeight: 950, letterSpacing: "0.8px", textTransform: "uppercase" }}>
+                    <div style={{ color: chapter.status === "locked" ? palette.warning : tone, fontSize: 11, fontWeight: type.weight.ui, letterSpacing: 0, textTransform: "uppercase" }}>
                       {chapter.status === "locked" ? copy.locked : copy.draft}
                     </div>
-                    <div style={{ color: "rgba(255,255,255,0.48)", fontSize: 12 }}>{copy.memories(chapterEntries.length)}</div>
+                    <div style={{ color: palette.muted, fontSize: 12 }}>{copy.memories(chapterEntries.length)}</div>
                   </div>
 
-                  <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 28, lineHeight: 1.08, fontWeight: 650 }}>{chapter.title}</h2>
+                  <h2 style={chapterTitleStyle}>{chapter.title}</h2>
 
-                  <p style={{ color: "rgba(255,255,255,0.7)", lineHeight: 1.65, fontSize: 14, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  <p style={chapterBodyStyle}>
                     {chapter.letter}
                   </p>
 
                   <button
                     onClick={() => window.dispatchEvent(new CustomEvent("zommy:show-chapter", { detail: { profileId: chapter.profile_id } }))}
-                    style={{ justifySelf: "start", border: "none", background: profile?.color || "#34D399", color: "#101418", borderRadius: 999, padding: "11px 14px", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>
+                    style={{ justifySelf: "start", border: "none", background: palette.accent, color: palette.surface, borderRadius: 999, minHeight: 48, padding: "11px 16px", fontSize: 13, fontWeight: type.weight.heading, cursor: "pointer" }}>
                     {copy.open}
                   </button>
                 </div>
@@ -120,3 +124,9 @@ export default function ChaptersLibrary() {
     </main>
   );
 }
+
+const titleStyle = { fontFamily: type.serif, fontSize: 38, lineHeight: 1.05, fontWeight: type.weight.heading, letterSpacing: 0 };
+const subtitleStyle = { color: palette.muted, marginTop: 8, fontSize: 14, lineHeight: 1.5 };
+const chapterCardStyle = { border: "none", borderRadius: 20, overflow: "hidden", background: palette.surface, boxShadow: palette.shadow };
+const chapterTitleStyle = { fontFamily: type.serif, fontSize: 28, lineHeight: 1.08, fontWeight: type.weight.heading, letterSpacing: 0 };
+const chapterBodyStyle = { color: palette.faint, lineHeight: 1.65, fontSize: 14, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" };

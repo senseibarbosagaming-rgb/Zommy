@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { appSurface, field, palette, type } from "./designSystem";
 import { supabase } from "./supabase";
 
 const COPY = {
@@ -9,8 +10,8 @@ const COPY = {
     delete: "Delete",
     cancel: "Cancel",
     save: "Save changes",
-    saving: "Saving…",
-    deleting: "Deleting…",
+    saving: "Saving...",
+    deleting: "Deleting...",
     favorite: "Favorite",
     removeFavorite: "Remove favorite",
     note: "Note",
@@ -31,8 +32,8 @@ const COPY = {
     delete: "Eliminar",
     cancel: "Cancelar",
     save: "Guardar alterações",
-    saving: "A guardar…",
-    deleting: "A eliminar…",
+    saving: "A guardar...",
+    deleting: "A eliminar...",
     favorite: "Favorita",
     removeFavorite: "Remover favorita",
     note: "Nota",
@@ -138,6 +139,7 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
 
   const displayDate = date ? formatDate(date, lang) : "";
   const displayAge = ageAtMemory(profile, date, lang);
+  const profileColor = profile?.color || palette.accent;
 
   const refreshParent = async () => {
     await onChanged?.();
@@ -226,33 +228,33 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
   };
 
   return (
-    <main className="zommy-primary-screen" style={{ position: "fixed", inset: 0, zIndex: 1800, background: "#101418", color: "#fff", overflowY: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
+    <main className="zommy-primary-screen" style={{ ...appSurface, zIndex: 1800 }}>
       <div style={{ maxWidth: 480, minHeight: "100dvh", margin: "0 auto", display: "grid", alignContent: "start", paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
-        <header style={{ position: "sticky", top: 0, zIndex: 3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "calc(10px + env(safe-area-inset-top, 0px)) 14px 10px", background: "rgba(16,20,24,0.88)", backdropFilter: "blur(18px)", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <header style={headerStyle}>
           <button onClick={onClose} aria-label={copy.close} disabled={busy} style={backButton()}>←</button>
           <div style={{ minWidth: 0, textAlign: "center" }}>
-            <div style={{ color: profile?.color || "#34D399", fontSize: 11, fontWeight: 950, textTransform: "uppercase", letterSpacing: "0.7px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.emoji || "👶"} {profile?.name || "Memory"}</div>
-            <div style={{ color: "rgba(255,255,255,0.58)", fontSize: 12, marginTop: 2 }}>{displayDate}</div>
+            <div style={{ color: profileColor, fontSize: 11, fontWeight: type.weight.ui, textTransform: "uppercase", letterSpacing: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.emoji || "👶"} {profile?.name || "Memory"}</div>
+            <div style={{ color: palette.muted, fontSize: 12, marginTop: 2 }}>{displayDate}</div>
           </div>
           <button onClick={shareMemory} aria-label={copy.share} disabled={busy} style={backButton()}>↗</button>
         </header>
 
         {selectedPhoto?.url ? (
-          <section style={{ background: "#050608" }}>
+          <section style={{ background: palette.stone }}>
             <img src={selectedPhoto.url} alt={`${profile?.name || "Child"} memory`} style={{ width: "100%", maxHeight: "62dvh", objectFit: "cover", objectPosition: selectedPhoto.position || entry.cover_position || "50% 50%", display: "block" }} />
           </section>
         ) : (
-          <section style={{ minHeight: 280, display: "grid", placeItems: "center", background: "rgba(255,255,255,0.035)", fontSize: 42 }}>{profile?.emoji || "📷"}</section>
+          <section style={{ minHeight: 280, display: "grid", placeItems: "center", background: profile?.bg || palette.accentSoft, color: profileColor, fontSize: 42 }}>{profile?.emoji || "○"}</section>
         )}
 
-        <div style={{ padding: 16, display: "grid", gap: 14 }}>
+        <div style={{ padding: 20, display: "grid", gap: 16 }}>
           <div>
-            <h1 id="zommy-memory-detail-title" style={{ fontFamily: "Lora, Georgia, serif", fontSize: 30, lineHeight: 1.08, fontWeight: 650 }}>{displayDate}</h1>
-            {displayAge && <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, marginTop: 5 }}>{displayAge}</p>}
+            <h1 id="zommy-memory-detail-title" style={titleStyle}>{displayDate}</h1>
+            {displayAge && <p style={{ color: palette.muted, fontSize: 13, marginTop: 5 }}>{displayAge}</p>}
           </div>
 
           {mode === "edit" ? (
-            <section style={{ display: "grid", gap: 10 }}>
+            <section style={{ display: "grid", gap: 12 }}>
               <label style={fieldLabel()}>
                 {copy.date}
                 <input type="date" value={date} onChange={(event) => setDate(event.target.value)} disabled={busy} style={inputStyle()} />
@@ -263,13 +265,13 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
               </label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
                 <button onClick={() => { setMode("view"); setNote(entry.note || ""); setDate(entry.date || ""); setFavorite(Boolean(entry.favorite)); }} disabled={busy} style={secondaryButton()}>{copy.cancel}</button>
-                <button onClick={saveChanges} disabled={busy} style={primaryButton(profile?.color || "#34D399")}>{copy.save}</button>
+                <button onClick={saveChanges} disabled={busy} style={primaryButton()}>{copy.save}</button>
               </div>
             </section>
           ) : mode === "confirmDelete" ? (
-            <section style={{ border: "1px solid rgba(248,113,113,0.34)", background: "rgba(248,113,113,0.1)", borderRadius: 18, padding: 14, display: "grid", gap: 12 }}>
-              <h2 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 24, lineHeight: 1.18 }}>{copy.deleteTitle}</h2>
-              <p style={{ color: "rgba(255,255,255,0.72)", fontSize: 14, lineHeight: 1.6 }}>{copy.deleteBody(profile?.name || "", displayDate)}</p>
+            <section style={dangerPanelStyle}>
+              <h2 style={dangerTitleStyle}>{copy.deleteTitle}</h2>
+              <p style={{ color: palette.faint, fontSize: 14, lineHeight: 1.6 }}>{copy.deleteBody(profile?.name || "", displayDate)}</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
                 <button onClick={() => setMode("view")} disabled={busy} style={secondaryButton()}>{copy.cancel}</button>
                 <button onClick={deleteMemory} disabled={busy} style={dangerButton()}>{copy.deleteConfirm}</button>
@@ -280,16 +282,16 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
               {galleryPhotos.length > 1 && (
                 <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
                   {galleryPhotos.map((photo, index) => (
-                    <button key={photo.path || photo.url || index} type="button" onClick={() => setSelectedPhotoIndex(index)} disabled={busy} aria-label={`Show photo ${index + 1}`} className="zommy-elevated-card" style={{ flex: "0 0 68px", border: `2px solid ${index === selectedPhotoIndex ? profile?.color || "#34D399" : "transparent"}`, borderRadius: 15, overflow: "hidden", padding: 0, background: "rgba(255,255,255,0.06)", aspectRatio: "1", cursor: busy ? "wait" : "pointer" }}>
+                    <button key={photo.path || photo.url || index} type="button" onClick={() => setSelectedPhotoIndex(index)} disabled={busy} aria-label={`Show photo ${index + 1}`} className="zommy-elevated-card" style={{ flex: "0 0 68px", border: `2px solid ${index === selectedPhotoIndex ? profileColor : "transparent"}`, borderRadius: 15, overflow: "hidden", padding: 0, background: palette.surface, aspectRatio: "1", cursor: busy ? "wait" : "pointer", boxShadow: palette.shadow }}>
                       <img src={photo.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: photo.position || "50% 50%", display: "block" }} />
                     </button>
                   ))}
                 </div>
               )}
-              <section style={{ border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", borderRadius: 20, padding: 15 }}>
-                <p style={{ color: note ? "rgba(255,255,255,0.78)" : "rgba(255,255,255,0.42)", lineHeight: 1.65, fontSize: 15 }}>{note || copy.noteEmpty}</p>
+              <section style={noteCardStyle}>
+                <p style={{ color: note ? palette.stone : palette.muted, lineHeight: 1.65, fontSize: 15 }}>{note || copy.noteEmpty}</p>
               </section>
-              <button className="zommy-elevated-card" onClick={toggleFavorite} disabled={busy} style={{ border: `1px solid ${favorite ? "#FBBF24" : "rgba(255,255,255,0.14)"}`, background: favorite ? "rgba(251,191,36,0.16)" : "rgba(255,255,255,0.05)", color: favorite ? "#FBBF24" : "#fff", borderRadius: 16, minHeight: 50, fontSize: 14, fontWeight: 950, cursor: busy ? "wait" : "pointer" }}>
+              <button className="zommy-elevated-card" onClick={toggleFavorite} disabled={busy} style={favoriteButtonStyle(favorite)}>
                 {favorite ? "★ " + copy.removeFavorite : "☆ " + copy.favorite}
               </button>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
@@ -300,37 +302,60 @@ export default function MemoryDetailModal({ entry, profile, user, lang = "en", o
             </>
           )}
 
-          {message && <div role="status" style={{ color: message === copy.failed ? "#fca5a5" : "rgba(255,255,255,0.62)", fontSize: 13, fontWeight: 800 }}>{message}</div>}
+          {message && <div role="status" style={{ color: message === copy.failed ? palette.danger : palette.muted, fontSize: 13, fontWeight: type.weight.ui }}>{message}</div>}
         </div>
       </div>
     </main>
   );
 }
 
+const headerStyle = {
+  position: "sticky",
+  top: 0,
+  zIndex: 3,
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  padding: "calc(10px + env(safe-area-inset-top, 0px)) 20px 10px",
+  background: palette.overlaySoft,
+  backdropFilter: "blur(18px)",
+  borderBottom: `1px solid ${palette.line}`,
+};
+
+const titleStyle = { fontFamily: type.serif, fontSize: 30, lineHeight: 1.08, fontWeight: type.weight.heading, letterSpacing: 0 };
+const dangerTitleStyle = { fontFamily: type.serif, fontSize: 24, lineHeight: 1.18, fontWeight: type.weight.heading };
+const noteCardStyle = { border: "none", background: palette.surface, borderRadius: 20, padding: 16, boxShadow: palette.shadow };
+const dangerPanelStyle = { border: "none", background: palette.surface, borderRadius: 20, padding: 16, display: "grid", gap: 12, boxShadow: palette.shadow };
+
 function backButton() {
-  return { border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 999, minWidth: 42, minHeight: 42, cursor: "pointer", fontSize: 18, fontWeight: 850 };
+  return { border: `1px solid ${palette.line}`, background: palette.surface, color: palette.stone, borderRadius: 999, minWidth: 48, minHeight: 48, cursor: "pointer", fontSize: 18, fontWeight: type.weight.ui };
 }
 
 function fieldLabel() {
-  return { display: "grid", gap: 7, color: "rgba(255,255,255,0.68)", fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.7px" };
+  return { display: "grid", gap: 7, color: palette.muted, fontSize: 11, fontWeight: type.weight.ui, textTransform: "uppercase", letterSpacing: 0 };
 }
 
 function inputStyle() {
-  return { width: "100%", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 13, padding: "12px 13px", font: "inherit", fontSize: 16 };
+  return { ...field, fontSize: 16 };
 }
 
 function secondaryButton() {
-  return { border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.06)", color: "#fff", borderRadius: 14, minHeight: 48, fontSize: 14, fontWeight: 900, cursor: "pointer" };
+  return { border: `1px solid ${palette.line}`, background: palette.surface, color: palette.stone, borderRadius: 14, minHeight: 48, fontSize: 14, fontWeight: type.weight.ui, cursor: "pointer" };
 }
 
-function primaryButton(color) {
-  return { border: "none", background: color, color: "#101418", borderRadius: 14, minHeight: 48, fontSize: 14, fontWeight: 950, cursor: "pointer" };
+function primaryButton() {
+  return { border: "none", background: palette.accent, color: palette.surface, borderRadius: 14, minHeight: 48, fontSize: 14, fontWeight: type.weight.heading, cursor: "pointer" };
 }
 
 function dangerButton() {
-  return { border: "1px solid rgba(248,113,113,0.45)", background: "rgba(248,113,113,0.2)", color: "#fca5a5", borderRadius: 14, minHeight: 48, fontSize: 14, fontWeight: 950, cursor: "pointer" };
+  return { border: "none", background: palette.danger, color: palette.surface, borderRadius: 14, minHeight: 48, fontSize: 14, fontWeight: type.weight.heading, cursor: "pointer" };
 }
 
 function dangerGhostButton() {
-  return { border: "1px solid rgba(248,113,113,0.34)", background: "rgba(248,113,113,0.08)", color: "#fca5a5", borderRadius: 14, minHeight: 48, fontSize: 14, fontWeight: 950, cursor: "pointer" };
+  return { border: `1px solid ${palette.dangerSoft}`, background: palette.dangerSoft, color: palette.danger, borderRadius: 14, minHeight: 48, fontSize: 14, fontWeight: type.weight.ui, cursor: "pointer" };
+}
+
+function favoriteButtonStyle(favorite) {
+  return { border: `1px solid ${favorite ? palette.warningSoft : palette.line}`, background: favorite ? palette.warningSoft : palette.surface, color: favorite ? palette.warning : palette.stone, borderRadius: 16, minHeight: 50, fontSize: 14, fontWeight: type.weight.ui, cursor: "pointer", boxShadow: palette.shadow };
 }

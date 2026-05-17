@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { appSurface, contentFrame, palette, type } from "./designSystem";
 import { supabase } from "./supabase";
 
 const getPrefs = () => {
@@ -93,49 +94,47 @@ export default function FirstRunExperience() {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#101418", color: "#fff", overflowY: "auto" }}>
-      <div style={{ minHeight: "100dvh", maxWidth: 480, margin: "0 auto", padding: "22px 20px 34px", display: "flex", flexDirection: "column", gap: 22, fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif" }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 40 }}>
-          <div aria-label="Zommy" style={{ fontWeight: 900, letterSpacing: "-0.7px", fontSize: 24 }}>Zommy</div>
-          <button onClick={dismiss} style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.72)", borderRadius: 999, minHeight: 44, padding: "8px 12px", fontSize: 13, cursor: "pointer" }}>
+    <div style={{ ...appSurface, zIndex: 1000 }}>
+      <div style={{ ...contentFrame(34), display: "flex", flexDirection: "column", gap: 24 }}>
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 48 }}>
+          <div aria-label="Zommy" style={{ fontFamily: type.serif, fontWeight: type.weight.heading, fontSize: 26 }}>Zommy</div>
+          <button onClick={dismiss} style={ghostButtonStyle}>
             {copy.cancel}
           </button>
         </header>
 
-        <main style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-          <section style={{ paddingTop: 14 }}>
-            <h1 style={{ fontFamily: "Lora, Georgia, serif", fontSize: 37, lineHeight: 1.05, letterSpacing: "-1px", fontWeight: 600, maxWidth: 380 }}>{copy.title}</h1>
-            <p style={{ marginTop: 14, color: "rgba(255,255,255,0.72)", lineHeight: 1.65, fontSize: 15 }}>{copy.body}</p>
+        <main style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <section style={{ paddingTop: 8 }}>
+            <h1 style={titleStyle}>{copy.title}</h1>
+            <p style={bodyStyle}>{copy.body}</p>
           </section>
 
-          <section style={{ border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: 16, background: "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))", boxShadow: "0 24px 70px rgba(0,0,0,0.28)" }}>
-            <div style={{ color: "rgba(255,255,255,0.56)", textTransform: "uppercase", letterSpacing: "0.9px", fontSize: 10, fontWeight: 800, marginBottom: 12 }}>{copy.previewLabel}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 10 }}>
-              <div style={{ minHeight: 176, borderRadius: 18, overflow: "hidden", background: "linear-gradient(145deg, #1e3a5f, #5f1e3a)", position: "relative" }}>
-                <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 40% 30%, rgba(255,255,255,0.34), transparent 28%), radial-gradient(circle at 66% 54%, rgba(251,191,36,0.38), transparent 23%)" }} />
-                <div style={{ position: "absolute", left: 14, right: 14, bottom: 14 }}>
-                  <div style={{ fontFamily: "Lora, Georgia, serif", fontSize: 18, fontWeight: 600 }}>{copy.fakeCardTitle}</div>
-                  <div style={{ color: "rgba(255,255,255,0.76)", fontSize: 12, marginTop: 4 }}>{copy.fakeCardMeta}</div>
+          <section style={previewCardStyle}>
+            <div style={eyebrowStyle}>{copy.previewLabel}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: 10 }}>
+              <div style={largePhotoStyle}>
+                <div style={photoCaptionStyle}>
+                  <div style={{ fontFamily: type.serif, fontSize: 18, fontWeight: type.weight.heading }}>{copy.fakeCardTitle}</div>
+                  <div style={{ color: palette.overlaySoft, fontSize: 12, marginTop: 4 }}>{copy.fakeCardMeta}</div>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ flex: 1, borderRadius: 16, background: "linear-gradient(145deg, #34D399, #60A5FA)", position: "relative", overflow: "hidden" }}>
-                  <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 70% 35%, rgba(255,255,255,0.34), transparent 28%)" }} />
-                  <div style={{ position: "absolute", left: 10, bottom: 10, fontSize: 11, fontWeight: 800, textShadow: "0 1px 8px rgba(0,0,0,0.28)" }}>{copy.fakeTileMeta}</div>
+                <div style={smallPhotoStyle}>
+                  <div style={{ position: "absolute", left: 10, bottom: 10, fontSize: 11, fontWeight: type.weight.ui, color: palette.surface, textShadow: "0 1px 8px rgba(0,0,0,0.28)" }}>{copy.fakeTileMeta}</div>
                 </div>
-                <div style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(0,0,0,0.28)", borderRadius: 16, padding: 11 }}>
+                <div style={notificationPreviewStyle}>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 5 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34D399" }} />
-                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.62)", fontWeight: 800 }}>Zommy</span>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: palette.accent }} />
+                    <span style={{ fontSize: 11, color: palette.muted, fontWeight: type.weight.ui }}>Zommy</span>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 800 }}>{copy.fakeNotificationTitle}</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.68)", marginTop: 3 }}>{copy.fakeNotificationBody}</div>
+                  <div style={{ fontSize: 13, fontWeight: type.weight.heading }}>{copy.fakeNotificationTitle}</div>
+                  <div style={{ fontSize: 11, color: palette.faint, marginTop: 3 }}>{copy.fakeNotificationBody}</div>
                 </div>
               </div>
             </div>
           </section>
 
-          <button onClick={begin} style={{ width: "100%", border: "none", background: "#fff", color: "#101418", borderRadius: 16, minHeight: 54, padding: "16px 18px", fontSize: 16, fontWeight: 900, cursor: "pointer", boxShadow: "0 14px 40px rgba(255,255,255,0.12)" }}>
+          <button onClick={begin} style={primaryButtonStyle}>
             {copy.addFirstChild}
           </button>
         </main>
@@ -143,3 +142,14 @@ export default function FirstRunExperience() {
     </div>
   );
 }
+
+const titleStyle = { fontFamily: type.serif, fontSize: 38, lineHeight: 1.06, letterSpacing: 0, fontWeight: type.weight.heading, maxWidth: 390 };
+const bodyStyle = { marginTop: 14, color: palette.muted, lineHeight: 1.65, fontSize: 15 };
+const eyebrowStyle = { color: palette.muted, textTransform: "uppercase", letterSpacing: 0, fontSize: 10, fontWeight: type.weight.ui, marginBottom: 12 };
+const ghostButtonStyle = { border: `1px solid ${palette.line}`, background: palette.surface, color: palette.muted, borderRadius: 999, minHeight: 48, padding: "8px 14px", fontSize: 13, fontWeight: type.weight.ui, cursor: "pointer" };
+const previewCardStyle = { border: "none", borderRadius: 20, padding: 16, background: palette.surface, boxShadow: palette.shadow };
+const largePhotoStyle = { minHeight: 176, borderRadius: 18, overflow: "hidden", background: `linear-gradient(145deg, ${palette.deep}, ${palette.accent})`, position: "relative" };
+const smallPhotoStyle = { flex: 1, borderRadius: 16, background: `linear-gradient(145deg, ${palette.sage}, ${palette.softBlue})`, position: "relative", overflow: "hidden" };
+const photoCaptionStyle = { position: "absolute", left: 14, right: 14, bottom: 14, color: palette.surface, textShadow: "0 1px 14px rgba(0,0,0,0.25)" };
+const notificationPreviewStyle = { background: palette.milk, borderRadius: 16, padding: 11, boxShadow: palette.shadow };
+const primaryButtonStyle = { width: "100%", border: "none", background: palette.accent, color: palette.surface, borderRadius: 16, minHeight: 54, padding: "16px 18px", fontSize: 16, fontWeight: type.weight.heading, cursor: "pointer", boxShadow: palette.shadow };
