@@ -60,6 +60,8 @@ button, input, textarea, select { font: inherit; }
 .zommy-elevated-card { transition: transform .14s ease, box-shadow .14s ease; }
 .zommy-elevated-card:active { transform: scale(.978); }
 @keyframes screen-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-enter { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .b, .zommy-primary-screen, .zommy-elevated-card { transition: none !important; animation: none !important; } }
 `;
 
