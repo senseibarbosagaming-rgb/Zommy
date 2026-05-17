@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
-const STYLE_ID = "zommy-accessibility-css";
+const STYLE_ID = 'zommy-accessibility-css';
 const CSS = `
   button, [role="button"], input, textarea, select {
     touch-action: manipulation;
@@ -16,9 +16,9 @@ const CSS = `
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
-    outline: 3px solid var(--z-accent) !important;
+    outline: 3px solid #C96A3A !important;
     outline-offset: 3px !important;
-    box-shadow: 0 0 0 5px rgba(193,123,92,0.18) !important;
+    box-shadow: 0 0 0 5px rgba(201,106,58,0.18) !important;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -34,7 +34,7 @@ const CSS = `
 export default function AccessibilitySafetyLayer() {
   useEffect(() => {
     if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement("style");
+    const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = CSS;
     document.head.appendChild(style);
