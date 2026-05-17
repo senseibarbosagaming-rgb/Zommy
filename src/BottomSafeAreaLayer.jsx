@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
-const STYLE_ID = "zommy-safe-area-css";
+const STYLE_ID = 'zommy-safe-area-css';
 const CSS = `
   :root {
-    --zommy-nav-clearance: calc(112px + env(safe-area-inset-bottom, 0px));
+    --zommy-nav-clearance: 100px;
     --zommy-edge-padding: 20px;
   }
 
@@ -48,7 +48,7 @@ const CSS = `
 export default function BottomSafeAreaLayer() {
   useEffect(() => {
     if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement("style");
+    const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = CSS;
     document.head.appendChild(style);
